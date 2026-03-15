@@ -1,0 +1,17 @@
+name: vug
+version: 0.1.0
+
+authors:
+  - kritoke <3081486+kritoke@users.noreply.github.com>
+
+description: |
+  Favicon fetching library with pluggable storage callbacks
+
+license: MIT
+
+crystal: ">= 1.18.0"
+
+development_dependencies:
+  ameba:
+    github: crystal-ameba/ameba
+    branch: master
