@@ -23,6 +23,20 @@ module Vug
     end
 
     def extract_all(site_url : String) : Array(FaviconInfo)
+      clean_url = site_url.gsub(/\/feed\/?$/, "")
+      
+      # Validate URL has a scheme before attempting HTTP request
+      begin
+        uri = URI.parse(clean_url)
+        unless uri.scheme
+          @config.debug("URL missing scheme: #{clean_url}")
+          return [] of FaviconInfo
+        end
+      rescue ex
+        @config.debug("Invalid URL for HTML extraction: #{clean_url} - #{ex.message}")
+        return [] of FaviconInfo
+      end
+
       favicons = [] of FaviconInfo
 
       begin
