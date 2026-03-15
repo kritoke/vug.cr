@@ -42,6 +42,68 @@ describe Vug::ImageValidator do
   end
 end
 
+describe Vug::DataUrlHandler do
+  describe ".extract_from_url" do
+    it "extracts valid base64 PNG data URL" do
+      # Simple 1x1 transparent PNG in base64
+      data_url = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAsgB/1KfFZIAAAAASUVORK5CYII="
+      result = Vug::DataUrlHandler.extract_from_url(data_url)
+      result.should_not be_nil
+      if result
+        data, media_type = result
+        data.size.should be > 0
+        media_type.should eq("image/png")
+      end
+    end
+
+    it "returns nil for invalid data URL" do
+      invalid_data_url = "data:image/png;base64,invalidbase64!"
+      result = Vug::DataUrlHandler.extract_from_url(invalid_data_url)
+      result.should be_nil
+    end
+  end
+
+  describe ".data_url?" do
+    it "returns true for data URLs" do
+      Vug::DataUrlHandler.data_url?("data:image/png;base64,foo").should be_true
+    end
+
+    it "returns false for regular URLs" do
+      Vug::DataUrlHandler.data_url?("https://example.com/favicon.ico").should be_false
+    end
+  end
+end
+
+describe Vug::PlaceholderGenerator do
+  describe ".generate_for_domain" do
+    it "generates SVG for domain" do
+      data, content_type = Vug::PlaceholderGenerator.generate_for_domain("example.com")
+      data.size.should be > 0
+      content_type.should eq("image/svg+xml")
+
+      # Check that it contains expected elements
+      svg_string = String.new(data)
+      svg_string.should contain("<?xml")
+      svg_string.should contain("<svg")
+      svg_string.should contain("E") # First letter of example.com
+    end
+
+    it "handles www domains" do
+      data, _ = Vug::PlaceholderGenerator.generate_for_domain("www.test.com")
+      data.size.should be > 0
+      svg_string = String.new(data)
+      svg_string.should contain("T") # First letter of test.com (not www)
+    end
+  end
+
+  describe ".generate_favicon_url" do
+    it "generates data URL for domain" do
+      url = Vug::PlaceholderGenerator.generate_favicon_url("example.com")
+      url.should start_with("data:image/svg+xml;base64,")
+    end
+  end
+end
+
 describe Vug::MemoryCache do
   it "stores and retrieves values" do
     cache = Vug::MemoryCache.new
@@ -89,6 +151,13 @@ describe Vug do
     it "extracts host from full URL" do
       url = Vug.google_favicon_url("https://example.com/path")
       url.should eq("https://www.google.com/s2/favicons?domain=example.com&sz=256")
+    end
+  end
+
+  describe ".duckduckgo_favicon_url" do
+    it "generates DuckDuckGo favicon URL for domain" do
+      url = Vug.duckduckgo_favicon_url("example.com")
+      url.should eq("https://icons.duckduckgo.com/ip3/example.com.ico")
     end
   end
 end

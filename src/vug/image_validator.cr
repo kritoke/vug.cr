@@ -1,3 +1,5 @@
+require "./advanced_image_validator"
+
 module Vug
   module ImageValidator
     PNG_SIGNATURE  = Bytes[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
@@ -11,7 +13,13 @@ module Vug
     def self.valid?(data : Bytes) : Bool
       return false if data.size < 4
 
-      png?(data) || jpeg?(data) || ico?(data) || svg?(data) || webp?(data)
+      # First try fast signature-based validation
+      if png?(data) || jpeg?(data) || ico?(data) || svg?(data) || webp?(data)
+        return true
+      end
+
+      # Fall back to advanced validation for unknown formats or edge cases
+      AdvancedImageValidator.valid?(data)
     end
 
     def self.png?(data : Bytes) : Bool
@@ -44,7 +52,14 @@ module Vug
       return "image/x-icon" if ico?(data)
       return "image/svg+xml" if svg?(data)
       return "image/webp" if webp?(data)
-      "application/octet-stream"
+
+      # Fall back to advanced detection
+      AdvancedImageValidator.detect_content_type(data)
+    end
+
+    def self.get_image_dimensions(data : Bytes) : {Int32, Int32}?
+      # Try to get dimensions from advanced validator
+      AdvancedImageValidator.get_image_dimensions(data)
     end
   end
 end

@@ -16,6 +16,8 @@ dependencies:
     github: straight-shoota/sanitize
   lexbor:
     github: kostya/lexbor
+  crimage:
+    github: naqvis/crimage
 
 development_dependencies:
   ameba:

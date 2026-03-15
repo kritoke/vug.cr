@@ -101,7 +101,14 @@ module Vug
         return Vug.failure("Invalid image", url)
       end
 
-      @config.debug("Favicon fetched: #{url}, size=#{data.size}, type=#{content_type}")
+      # Get actual image dimensions if available
+      dimensions_info = ""
+      if dims = ImageValidator.get_image_dimensions(data)
+        width, height = dims
+        dimensions_info = " (#{width}x#{height})"
+      end
+
+      @config.debug("Favicon fetched: #{url}, size=#{data.size}, type=#{content_type}#{dimensions_info}")
 
       if saved_path = @config.save(url, data, content_type)
         @config.debug("Favicon saved: #{saved_path}")

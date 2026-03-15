@@ -33,6 +33,8 @@ bin/
 flake.private.nix
 .devshell-private.sh
 openspec/
+todo.md
 
 .opencode/
 lib/
+vug
