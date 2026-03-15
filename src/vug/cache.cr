@@ -30,14 +30,27 @@ module Vug
     def set(url : String, local_path : String) : Nil
       return unless local_path.starts_with?("/")
 
+      # Get actual file size instead of path string length
+      file_size = begin
+        File.info(local_path).size
+      rescue
+        # If file doesn't exist or can't be accessed, use path length as fallback
+        local_path.bytesize
+      end
+
       @mutex.synchronize do
-        new_size = local_path.bytesize
+        new_size = file_size
 
         while @current_size + new_size > @size_limit && !@cache.empty?
           oldest = @cache.min_by(&.[1][1]).[0]
           old_path = @cache[oldest]?.try(&.[0]) || ""
+          old_file_size = begin
+            File.info(old_path).size
+          rescue
+            old_path.bytesize
+          end
           @cache.delete(oldest)
-          @current_size -= old_path.bytesize
+          @current_size -= old_file_size
         end
 
         @cache[url] = {local_path, Time.local}

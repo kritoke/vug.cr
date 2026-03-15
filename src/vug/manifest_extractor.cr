@@ -2,6 +2,7 @@ require "json"
 require "http/client"
 require "uri"
 require "./config"
+require "./url_validator"
 require "./types"
 
 module Vug
@@ -64,6 +65,11 @@ module Vug
     end
 
     def extract_favicons_from_manifest(manifest_url : String) : Array(FaviconInfo)?
+      unless UrlValidator.valid_url?(manifest_url)
+        @config.debug("Manifest URL blocked by validator: #{manifest_url}")
+        return
+      end
+
       @config.debug("Fetching manifest: #{manifest_url}")
 
       begin
@@ -88,6 +94,9 @@ module Vug
             return
           end
         end
+      rescue IO::TimeoutError
+        @config.error("extract_favicons_from_manifest(#{manifest_url})", IO::TimeoutError.new("Read timed out"))
+        @config.debug("Manifest fetch timeout: #{manifest_url}")
       rescue ex
         @config.error("extract_favicons_from_manifest(#{manifest_url})", ex)
         @config.debug("Error fetching manifest: #{ex.message}")
@@ -125,7 +134,8 @@ module Vug
         "https:#{url}"
       elsif !url.starts_with?("http")
         resolved = resolve_url(url.strip, base_url)
-        return resolved if valid_scheme?(resolved)
+        # Validate resolved URL for SSRF protection
+        return resolved if UrlValidator.valid_url?(resolved) && valid_scheme?(resolved)
         url
       else
         url

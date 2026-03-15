@@ -2,6 +2,7 @@ require "http/client"
 require "uri"
 require "time"
 require "./config"
+require "./url_validator"
 require "./image_validator"
 require "./types"
 
@@ -11,6 +12,11 @@ module Vug
     end
 
     def fetch(url : String) : Result
+      unless UrlValidator.valid_url?(url)
+        @config.debug("Invalid or dangerous URL blocked: #{url}")
+        return Vug.failure("Invalid URL", url)
+      end
+
       @config.debug("Fetching favicon: #{url}")
 
       current_url = url
@@ -67,6 +73,13 @@ module Vug
           if response.status.redirection? && (location = response.headers["Location"]?)
             new_url = uri.resolve(location).to_s
             @config.debug("Favicon redirect: #{new_url}")
+
+            # Validate redirect URL for SSRF protection
+            unless UrlValidator.valid_redirect_url?(url, new_url)
+              @config.debug("Dangerous redirect blocked: #{new_url}")
+              return Vug.failure("Invalid redirect", url)
+            end
+
             return Result.new(url: new_url, local_path: nil, content_type: nil, bytes: nil, error: nil)
           end
 
@@ -81,8 +94,17 @@ module Vug
           end
         end
       rescue ex
-        @config.error("fetch_single(#{url})", ex)
-        Vug.failure(ex.message || "Unknown error", url)
+        case ex
+        when IO::TimeoutError
+          @config.error("fetch_single(#{url})", ex)
+          Vug.failure("Request timed out", url)
+        when Socket::Addrinfo::Error
+          @config.error("fetch_single(#{url})", ex)
+          Vug.failure("DNS resolution failed", url)
+        else
+          @config.error("fetch_single(#{url})", ex)
+          Vug.failure(ex.message || "Unknown error", url)
+        end
       end
     end
 

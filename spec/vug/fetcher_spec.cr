@@ -81,7 +81,7 @@ describe Vug::Fetcher do
     it "handles failure for invalid URL" do
       saved_paths = {} of String => String
       config = Vug::Config.new(
-        on_save: ->(url : String, data : Bytes, ct : String) { saved_paths[url] = "/saved"; "/saved".as(String?) }
+        on_save: ->(url : String, _data : Bytes, _ct : String) { saved_paths[url] = "/saved"; "/saved".as(String?) }
       )
       fetcher = Vug::Fetcher.new(config)
       result = fetcher.fetch("not-a-valid-url")

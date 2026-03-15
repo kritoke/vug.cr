@@ -1,5 +1,6 @@
 require "./vug/config"
 require "./vug/types"
+require "./vug/url_validator"
 require "./vug/fetcher"
 require "./vug/html_extractor"
 require "./vug/manifest_extractor"

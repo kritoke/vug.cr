@@ -4,6 +4,7 @@ require "lexbor"
 require "sanitize"
 require "digest"
 require "./config"
+require "./url_validator"
 require "./types"
 require "./manifest_extractor"
 require "./data_url_handler"
@@ -24,9 +25,14 @@ module Vug
 
     def extract_all(site_url : String) : Array(FaviconInfo)
       clean_url = site_url.gsub(/\/feed\/?$/, "")
-      
-      # Validate URL has a scheme before attempting HTTP request
+
+      # Validate URL has a scheme and is not dangerous before attempting HTTP request
       begin
+        unless UrlValidator.valid_url?(clean_url)
+          @config.debug("URL blocked by validator: #{clean_url}")
+          return [] of FaviconInfo
+        end
+
         uri = URI.parse(clean_url)
         unless uri.scheme
           @config.debug("URL missing scheme: #{clean_url}")
@@ -81,6 +87,9 @@ module Vug
         end
       rescue Socket::Addrinfo::Error
         @config.debug("DNS lookup failed for: #{site_url}")
+      rescue IO::TimeoutError
+        @config.error("extract_all(#{site_url})", IO::TimeoutError.new("Read timed out"))
+        @config.debug("HTML fetch timeout: #{site_url}")
       rescue ex
         @config.error("extract_all(#{site_url})", ex)
         @config.debug("Error extracting favicons: #{ex.message}")
@@ -157,7 +166,8 @@ module Vug
         "https:#{favicon_url}"
       elsif !favicon_url.starts_with?("http")
         resolved = resolve_url(favicon_url.strip, base_url)
-        return resolved if valid_scheme?(resolved)
+        # Validate resolved URL for SSRF protection
+        return resolved if UrlValidator.valid_url?(resolved) && valid_scheme?(resolved)
         favicon_url
       else
         favicon_url
