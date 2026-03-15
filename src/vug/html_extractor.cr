@@ -88,10 +88,10 @@ module Vug
       rescue Socket::Addrinfo::Error
         @config.debug("DNS lookup failed for: #{site_url}")
       rescue IO::TimeoutError
-        @config.error("extract_all(#{site_url})", IO::TimeoutError.new("Read timed out"))
+        @config.error("extract_all(#{site_url})", "Read timed out")
         @config.debug("HTML fetch timeout: #{site_url}")
       rescue ex
-        @config.error("extract_all(#{site_url})", ex)
+        @config.error("extract_all(#{site_url})", ex.message || "Unknown error")
         @config.debug("Error extracting favicons: #{ex.message}")
       end
 

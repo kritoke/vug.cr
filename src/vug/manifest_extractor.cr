@@ -95,10 +95,10 @@ module Vug
           end
         end
       rescue IO::TimeoutError
-        @config.error("extract_favicons_from_manifest(#{manifest_url})", IO::TimeoutError.new("Read timed out"))
+        @config.error("extract_favicons_from_manifest(#{manifest_url})", "Read timed out")
         @config.debug("Manifest fetch timeout: #{manifest_url}")
       rescue ex
-        @config.error("extract_favicons_from_manifest(#{manifest_url})", ex)
+        @config.error("extract_favicons_from_manifest(#{manifest_url})", ex.message || "Unknown error")
         @config.debug("Error fetching manifest: #{ex.message}")
       end
     end

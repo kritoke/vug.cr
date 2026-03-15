@@ -19,7 +19,7 @@ module Vug
     property on_save : Proc(String, Bytes, String, String?)? = nil
     property on_load : Proc(String, String?)? = nil
     property on_debug : Proc(String, Nil)? = nil
-    property on_error : Proc(String, Exception, Nil)? = nil
+    property on_error : Proc(String, String, Nil)? = nil
     property on_warning : Proc(String, Nil)? = nil
 
     def initialize(
@@ -35,7 +35,7 @@ module Vug
       on_save : Proc(String, Bytes, String, String?)? = nil,
       on_load : Proc(String, String?)? = nil,
       on_debug : Proc(String, Nil)? = nil,
-      on_error : Proc(String, Exception, Nil)? = nil,
+      on_error : Proc(String, String, Nil)? = nil,
       on_warning : Proc(String, Nil)? = nil,
     )
       @timeout = timeout if timeout
@@ -58,8 +58,8 @@ module Vug
       @on_debug.try(&.call(message))
     end
 
-    def error(context : String, ex : Exception) : Nil
-      @on_error.try(&.call(context, ex))
+    def error(context : String, message : String) : Nil
+      @on_error.try(&.call(context, message))
     end
 
     def warning(message : String) : Nil

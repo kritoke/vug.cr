@@ -94,17 +94,16 @@ module Vug
           end
         end
       rescue ex
-        case ex
+        error_msg = case ex
         when IO::TimeoutError
-          @config.error("fetch_single(#{url})", ex)
-          Vug.failure("Request timed out", url)
+          "Request timed out"
         when Socket::Addrinfo::Error
-          @config.error("fetch_single(#{url})", ex)
-          Vug.failure("DNS resolution failed", url)
+          "DNS resolution failed"
         else
-          @config.error("fetch_single(#{url})", ex)
-          Vug.failure(ex.message || "Unknown error", url)
+          ex.message || "Unknown error"
         end
+        @config.error("fetch_single(#{url})", error_msg)
+        Vug.failure(error_msg, url)
       end
     end
 
@@ -166,7 +165,7 @@ module Vug
             end
           end
         rescue ex
-          @config.error("gray placeholder fallback(#{url})", ex)
+          @config.error("gray placeholder fallback(#{url})", ex.message || "Unknown error")
         end
       end
 
