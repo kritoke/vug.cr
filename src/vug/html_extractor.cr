@@ -16,7 +16,7 @@ module Vug
       "link[rel='apple-touch-icon']",
       "link[rel='apple-touch-icon-precomposed']",
       "link[type='image/x-icon']",
-    ].freeze
+    ]
 
     def initialize(@config : Config = Config.new)
       @manifest_extractor = ManifestExtractor.new(@config)
