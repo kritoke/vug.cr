@@ -59,7 +59,7 @@ module Vug
         io = IO::Memory.new(data)
         image = CrImage.read(io)
         return if image.nil?
-        {image.width, image.height}
+        {image.bounds.width, image.bounds.height}
       rescue
         nil
       end
