@@ -12,10 +12,10 @@ module Vug
     type : String?,
     purpose : String? do
     def size_pixels : Int32?
-      return if sizes.nil? || sizes == "any"
+      size_val = sizes
+      return if size_val.nil? || size_val == "any"
 
-      # Handle multiple sizes like "16x16 32x32" - take the largest
-      size_list = sizes.split(' ')
+      size_list = size_val.split(' ')
       max_size = 0
 
       size_list.each do |size_str|

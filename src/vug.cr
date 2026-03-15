@@ -6,7 +6,6 @@ require "./vug/manifest_extractor"
 require "./vug/favicon_collection"
 require "./vug/cache"
 require "./vug/image_validator"
-require "./vug/advanced_image_validator"
 require "./vug/data_url_handler"
 require "./vug/placeholder_generator"
 
@@ -24,41 +23,63 @@ module Vug
   end
 
   def self.fetch_for_site(site_url : String, config : Config = Config.new, cache : MemoryCache? = nil) : Result
-    # Use best favicon strategy for backward compatibility
-    if collection = fetch_all_favicons_for_site(site_url, config)
-      if best_favicon = collection.best
-        # Check if it's a data URL (already handled in extraction)
-        if best_favicon.url.starts_with?("data:")
-          # Data URL favicons are already saved during extraction
-          if cached = config.load(best_favicon.url) || cache.try(&.get(best_favicon.url))
-            return Vug.success(best_favicon.url, cached)
-          end
-        else
-          # Regular URL - fetch it
-          fetcher = Fetcher.new(config, cache)
-          result = fetcher.fetch(best_favicon.url)
-          if path = result.local_path
-            cache.try(&.set(best_favicon.url, path))
-            return result
-          end
-        end
-      end
+    if result = try_extracted_favicon(site_url, config, cache)
+      return result
     end
 
-    # Fallback chain if no favicons found in HTML/manifest
+    if result = try_fallback_chain(site_url, config, cache)
+      return result
+    end
+
+    generate_placeholder_fallback(site_url, config, cache)
+  end
+
+  private def self.try_extracted_favicon(site_url : String, config : Config, cache : MemoryCache?) : Result?
+    collection = fetch_all_favicons_for_site(site_url, config)
+    return unless collection
+
+    best = collection.best
+    return unless best
+
+    return fetch_data_url_favicon(best, config, cache) if best.url.starts_with?("data:")
+
     fetcher = Fetcher.new(config, cache)
-    clean_url = sanitize_url(site_url)
+    result = fetcher.fetch(best.url)
+    return unless path = result.local_path
 
-    host = extract_host(clean_url)
-    return Vug.failure("Invalid URL", site_url) unless host
+    cache.try(&.set(best.url, path))
+    result
+  end
 
-    # Try standard paths
-    favicon_urls = DEFAULT_FAVICON_PATHS.map { |path_segment| "https://#{host}#{path_segment}" }
-    favicon_urls.each do |url|
-      if cached = config.load(url) || cache.try(&.get(url))
-        config.debug("Found cached favicon: #{url}")
-        return Vug.success(url, cached)
-      end
+  private def self.fetch_data_url_favicon(favicon : FaviconInfo, config : Config, cache : MemoryCache?) : Result?
+    cached = config.load(favicon.url) || cache.try(&.get(favicon.url))
+    return unless cached
+
+    Vug.success(favicon.url, cached)
+  end
+
+  private def self.try_fallback_chain(site_url : String, config : Config, cache : MemoryCache?) : Result?
+    host = extract_host(sanitize_url(site_url))
+    return unless host
+
+    fetcher = Fetcher.new(config, cache)
+
+    if result = try_standard_paths(host, fetcher, config, cache)
+      return result
+    end
+
+    if result = try_duckduckgo(host, fetcher, config, cache)
+      return result
+    end
+
+    try_google(host, fetcher, config, cache)
+  end
+
+  private def self.try_standard_paths(host : String, fetcher : Fetcher, config : Config, cache : MemoryCache?) : Result?
+    DEFAULT_FAVICON_PATHS.each do |path_segment|
+      url = "https://#{host}#{path_segment}"
+      cached = config.load(url) || cache.try(&.get(url))
+      return Vug.success(url, cached) if cached
 
       result = fetcher.fetch(url)
       if path = result.local_path
@@ -66,30 +87,38 @@ module Vug
         return result
       end
     end
+    nil
+  end
 
-    # Try DuckDuckGo
-    duckduckgo_url = duckduckgo_favicon_url(host)
-    config.debug("DuckDuckGo favicon URL: #{duckduckgo_url}")
-    result = fetcher.fetch(duckduckgo_url)
-    if path = result.local_path
-      cache.try(&.set(duckduckgo_url, path))
-      return result
-    end
+  private def self.try_duckduckgo(host : String, fetcher : Fetcher, config : Config, cache : MemoryCache?) : Result?
+    url = duckduckgo_favicon_url(host)
+    config.debug("DuckDuckGo favicon URL: #{url}")
+    result = fetcher.fetch(url)
+    return unless path = result.local_path
 
-    # Final fallback to Google
-    google_url = google_favicon_url(host)
-    config.debug("Google favicon URL: #{google_url}")
-    result = fetcher.fetch(google_url)
-    if path = result.local_path
-      cache.try(&.set(google_url, path))
-      return result
-    end
+    cache.try(&.set(url, path))
+    result
+  end
 
-    # Ultimate fallback: generate placeholder SVG
+  private def self.try_google(host : String, fetcher : Fetcher, config : Config, cache : MemoryCache?) : Result?
+    url = google_favicon_url(host)
+    config.debug("Google favicon URL: #{url}")
+    result = fetcher.fetch(url)
+    return unless path = result.local_path
+
+    cache.try(&.set(url, path))
+    result
+  end
+
+  private def self.generate_placeholder_fallback(site_url : String, config : Config, cache : MemoryCache?) : Result
+    host = extract_host(sanitize_url(site_url))
+    return Vug.failure("Invalid URL", site_url) unless host
+
     config.debug("No favicon found, generating placeholder for: #{host}")
     placeholder_data, content_type = PlaceholderGenerator.generate_for_domain(host)
+
     if saved_path = config.save("placeholder:#{host}", placeholder_data, content_type)
-      cache.try(&.set("placeholder:#{host}", saved_path)) if cache
+      cache.try(&.set("placeholder:#{host}", saved_path))
       return Vug.success("placeholder:#{host}", saved_path, content_type, placeholder_data)
     end
 
@@ -108,21 +137,8 @@ module Vug
   end
 
   def self.fetch_best_favicon_for_site(site_url : String, config : Config = Config.new, cache : MemoryCache? = nil) : Result
-    if collection = fetch_all_favicons_for_site(site_url, config)
-      if best_favicon = collection.best
-        if best_favicon.url.starts_with?("data:")
-          if cached = config.load(best_favicon.url) || cache.try(&.get(best_favicon.url))
-            return Vug.success(best_favicon.url, cached)
-          end
-        else
-          fetcher = Fetcher.new(config, cache)
-          result = fetcher.fetch(best_favicon.url)
-          if path = result.local_path
-            cache.try(&.set(best_favicon.url, path))
-            return result
-          end
-        end
-      end
+    if result = try_extracted_favicon(site_url, config, cache)
+      return result
     end
 
     Vug.failure("No favicon found", site_url)

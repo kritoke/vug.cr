@@ -75,49 +75,6 @@ result = Vug.fetch_best_favicon_for_site("https://example.com", config)
 result = Vug.generate_placeholder_for_site("https://example.com", config)
 ```
 
-## Usage
-
-```crystal
-require "vug"
-
-# Configure with callbacks
-config = Vug::Config.new(
-  on_save: ->(url : String, data : Bytes, content_type : String) do
-    # Save to disk, S3, etc.
-    "/favicons/#{Digest::SHA256.hexdigest(url)[0...16]}.#{extension}"
-  end,
-  on_load: ->(url : String) do
-    # Load from disk, S3, etc.
-    "/favicons/#{Digest::SHA256.hexdigest(url)[0...16]}.png"
-  end,
-  on_debug: ->(msg : String) { puts msg },
-  on_error: ->(ctx : String, ex : Exception) { puts "#{ctx}: #{ex.message}" }
-)
-
-# Fetch favicon from direct URL
-result = Vug.fetch("https://example.com/favicon.ico", config)
-if result.success?
-  puts "Favicon saved to: #{result.local_path}"
-end
-
-# Fetch favicon for site (tries multiple strategies)
-result = Vug.fetch_for_site("https://example.com", config)
-if result.success?
-  puts "Site favicon saved to: #{result.local_path}"
-end
-
-# NEW: Get all available favicons for intelligent selection
-collection = Vug.fetch_all_favicons_for_site("https://example.com", config)
-if collection
-  puts "Found #{collection.size} favicons"
-  best = collection.best
-  largest = collection.largest
-end
-
-# NEW: Fetch only the best favicon directly
-result = Vug.fetch_best_favicon_for_site("https://example.com", config)
-```
-
 ## API
 
 ### `Vug.fetch(url, config, cache)`
@@ -171,4 +128,4 @@ crystal spec
 
 ## License
 
-MIT# test
+MIT

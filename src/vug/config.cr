@@ -12,6 +12,8 @@ module Vug
     property cache_size_limit : Int32 = 10 * 1024 * 1024
     property cache_entry_ttl : Time::Span = 7.days
 
+    # 198 bytes is the size of Google's gray placeholder favicon
+    # When detected, we try to fetch a larger size (256px) as fallback
     property gray_placeholder_size : Int32 = 198
 
     property on_save : Proc(String, Bytes, String, String?)? = nil
@@ -36,15 +38,15 @@ module Vug
       on_error : Proc(String, Exception, Nil)? = nil,
       on_warning : Proc(String, Nil)? = nil,
     )
-      @timeout = timeout || @timeout
-      @connect_timeout = connect_timeout || @connect_timeout
-      @max_redirects = max_redirects || @max_redirects
-      @max_size = max_size || @max_size
-      @user_agent = user_agent || @user_agent
-      @accept_language = accept_language || @accept_language
-      @cache_size_limit = cache_size_limit || @cache_size_limit
-      @cache_entry_ttl = cache_entry_ttl || @cache_entry_ttl
-      @gray_placeholder_size = gray_placeholder_size || @gray_placeholder_size
+      @timeout = timeout if timeout
+      @connect_timeout = connect_timeout if connect_timeout
+      @max_redirects = max_redirects if max_redirects
+      @max_size = max_size if max_size
+      @user_agent = user_agent if user_agent
+      @accept_language = accept_language if accept_language
+      @cache_size_limit = cache_size_limit if cache_size_limit
+      @cache_entry_ttl = cache_entry_ttl if cache_entry_ttl
+      @gray_placeholder_size = gray_placeholder_size if gray_placeholder_size
       @on_save = on_save
       @on_load = on_load
       @on_debug = on_debug

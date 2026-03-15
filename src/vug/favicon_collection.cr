@@ -33,11 +33,11 @@ module Vug
       # Sort by preference: any size > largest pixel area > first found
       sorted = @favicons.sort_by do |favicon|
         if favicon.has_any_size?
-          -1 # Highest priority
+          {0, 0} # Highest priority: "any" size sorts first
         elsif size_pixels = favicon.size_pixels
-          -size_pixels # Larger sizes first (negative for descending)
+          {1, -size_pixels} # Second priority: larger sizes first
         else
-          0 # Unknown size, lowest priority
+          {2, 0} # Lowest priority: unknown size
         end
       end
 
