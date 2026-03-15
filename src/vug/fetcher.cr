@@ -37,32 +37,32 @@ module Vug
 
         result = fetch_single(current_url)
 
-        case result
-        in .redirect?
+        if result.redirect?
           if new_url = result.url
             current_url = new_url
             redirects += 1
             next
           end
-        in .success?
           return result
-        in .failure?
+        elsif result.success?
+          return result
+        else
           return result
         end
       end
     end
 
     private def fetch_single(url : String) : Result
-      uri = URI.parse(url)
-      client = create_client(uri)
-
-      headers = HTTP::Headers{
-        "User-Agent"      => @config.user_agent,
-        "Accept-Language" => @config.accept_language,
-        "Connection"      => "keep-alive",
-      }
-
       begin
+        uri = URI.parse(url)
+        client = create_client(uri)
+
+        headers = HTTP::Headers{
+          "User-Agent"      => @config.user_agent,
+          "Accept-Language" => @config.accept_language,
+          "Connection"      => "keep-alive",
+        }
+
         client.get(uri.request_target, headers: headers) do |response|
           if response.status.redirection? && (location = response.headers["Location"]?)
             new_url = uri.resolve(location).to_s
