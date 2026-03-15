@@ -22,7 +22,7 @@ module Vug
     fetcher = Fetcher.new(config, cache)
     extractor = HtmlExtractor.new(config)
 
-    clean_url = site_url.gsub(/\/feed\/?$/, "")
+    clean_url = sanitize_url(site_url)
 
     host = extract_host(clean_url)
     return Vug.failure("Invalid URL", site_url) unless host
@@ -67,8 +67,12 @@ module Vug
     Fetcher.google_favicon_url(domain)
   end
 
+  private def self.sanitize_url(url : String) : String
+    url.gsub(/\/feed\/?$/, "")
+  end
+
   private def self.extract_host(url : String) : String?
-    parsed = URI.parse(url.gsub(/\/feed\/?$/, ""))
+    parsed = URI.parse(sanitize_url(url))
     parsed.host
   rescue
     nil

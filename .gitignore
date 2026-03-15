@@ -32,4 +32,7 @@ bin/
 # Local developer overrides
 flake.private.nix
 .devshell-private.sh
+openspec/
 
+.opencode/
+lib/

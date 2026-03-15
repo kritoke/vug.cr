@@ -9,6 +9,11 @@ module Vug
     property user_agent : String = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     property accept_language : String = "en-US,en;q=0.9"
 
+    property cache_size_limit : Int32 = 10 * 1024 * 1024
+    property cache_entry_ttl : Time::Span = 7.days
+
+    property gray_placeholder_size : Int32 = 198
+
     property on_save : Proc(String, Bytes, String, String?)? = nil
     property on_load : Proc(String, String?)? = nil
     property on_debug : Proc(String, Nil)? = nil
@@ -22,6 +27,9 @@ module Vug
       max_size : Int32? = nil,
       user_agent : String? = nil,
       accept_language : String? = nil,
+      cache_size_limit : Int32? = nil,
+      cache_entry_ttl : Time::Span? = nil,
+      gray_placeholder_size : Int32? = nil,
       on_save : Proc(String, Bytes, String, String?)? = nil,
       on_load : Proc(String, String?)? = nil,
       on_debug : Proc(String, Nil)? = nil,
@@ -34,6 +42,9 @@ module Vug
       @max_size = max_size || @max_size
       @user_agent = user_agent || @user_agent
       @accept_language = accept_language || @accept_language
+      @cache_size_limit = cache_size_limit || @cache_size_limit
+      @cache_entry_ttl = cache_entry_ttl || @cache_entry_ttl
+      @gray_placeholder_size = gray_placeholder_size || @gray_placeholder_size
       @on_save = on_save
       @on_load = on_load
       @on_debug = on_debug

@@ -7,8 +7,6 @@ require "./types"
 
 module Vug
   class Fetcher
-    GRAY_PLACEHOLDER_SIZE = 198
-
     def initialize(@config : Config = Config.new, @cache : MemoryCache? = nil)
     end
 
@@ -40,13 +38,15 @@ module Vug
         result = fetch_single(current_url)
 
         case result
-        when .redirect?
-          current_url = result.url.not_nil!
-          redirects += 1
-          next
-        when .success?
+        in .redirect?
+          if new_url = result.url
+            current_url = new_url
+            redirects += 1
+            next
+          end
+        in .success?
           return result
-        else
+        in .failure?
           return result
         end
       end
@@ -114,7 +114,7 @@ module Vug
     end
 
     private def handle_gray_placeholder(url : String, data : Bytes) : Result?
-      return unless data.size == GRAY_PLACEHOLDER_SIZE
+      return unless data.size == @config.gray_placeholder_size
 
       @config.debug("Gray placeholder detected (#{data.size} bytes) for #{url}")
 
