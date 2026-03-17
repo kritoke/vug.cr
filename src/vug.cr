@@ -23,6 +23,51 @@ module Vug
     fetcher.fetch(url)
   end
 
+  def self.site(site_url : String, config : Config = Config.new, cache : MemoryCache? = nil) : Result
+    if result = try_extracted_favicon(site_url, config, cache)
+      return result
+    end
+
+    if result = try_fallback_chain(site_url, config, cache)
+      return result
+    end
+
+    generate_placeholder_fallback(site_url, config, cache)
+  end
+
+  def self.favicons(site_url : String, config : Config = Config.new) : FaviconCollection?
+    extractor = HtmlExtractor.new(config)
+    favicons = extractor.extract_all(sanitize_url(site_url))
+
+    return if favicons.empty?
+
+    collection = FaviconCollection.new
+    collection.add_all(favicons)
+    collection
+  end
+
+  def self.best(site_url : String, config : Config = Config.new, cache : MemoryCache? = nil) : Result
+    if result = try_extracted_favicon(site_url, config, cache)
+      return result
+    end
+
+    Vug.failure("No favicon found", site_url)
+  end
+
+  def self.placeholder(site_url : String, config : Config = Config.new, cache : MemoryCache? = nil) : Result
+    clean_url = sanitize_url(site_url)
+    host = extract_host(clean_url)
+    return Vug.failure("Invalid URL", site_url) unless host
+
+    placeholder_data, content_type = PlaceholderGenerator.generate_for_domain(host)
+    if saved_path = config.save("placeholder:#{host}", placeholder_data, content_type)
+      cache.try(&.set("placeholder:#{host}", saved_path)) if cache
+      return Vug.success("placeholder:#{host}", saved_path, content_type, placeholder_data)
+    end
+
+    Vug.failure("Placeholder generation failed", site_url)
+  end
+
   def self.fetch_for_site(site_url : String, config : Config = Config.new, cache : MemoryCache? = nil) : Result
     if result = try_extracted_favicon(site_url, config, cache)
       return result

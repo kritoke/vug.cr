@@ -55,13 +55,13 @@ if result.success?
 end
 
 # Fetch favicon for site (tries multiple strategies, generates placeholder if none found)
-result = Vug.fetch_for_site("https://example.com", config)
+result = Vug.site("https://example.com", config)
 if result.success?
   puts "Site favicon saved to: #{result.local_path}"
 end
 
 # Get all available favicons for intelligent selection
-collection = Vug.fetch_all_favicons_for_site("https://example.com", config)
+collection = Vug.favicons("https://example.com", config)
 if collection
   puts "Found #{collection.size} favicons"
   best = collection.best
@@ -69,10 +69,10 @@ if collection
 end
 
 # Fetch only the best favicon directly
-result = Vug.fetch_best_favicon_for_site("https://example.com", config)
+result = Vug.best("https://example.com", config)
 
 # Generate placeholder favicon directly (useful for sites with no favicons)
-result = Vug.generate_placeholder_for_site("https://example.com", config)
+result = Vug.placeholder("https://example.com", config)
 ```
 
 ## API
@@ -80,7 +80,7 @@ result = Vug.generate_placeholder_for_site("https://example.com", config)
 ### `Vug.fetch(url, config, cache)`
 Fetches a favicon from a direct URL.
 
-### `Vug.fetch_for_site(site_url, config, cache)`
+### `Vug.site(site_url, config, cache)`
 Fetches a favicon for a site using the fallback chain:
 1. Extract from HTML `<link rel="icon">` tags
 2. Extract from Web App Manifest (`<link rel="manifest">`)
@@ -88,26 +88,14 @@ Fetches a favicon for a site using the fallback chain:
 4. Fall back to DuckDuckGo favicon service
 5. Fall back to Google S2 favicon service
 
-### `Vug.fetch_all_favicons_for_site(site_url, config)`
+### `Vug.favicons(site_url, config)`
 Returns a `FaviconCollection` containing all discovered favicons with metadata (sizes, types, etc.).
 
-### `Vug.fetch_best_favicon_for_site(site_url, config, cache)`
+### `Vug.best(site_url, config, cache)`
 Fetches only the best available favicon based on size and quality heuristics.
 
-### `Vug::Config`
-Configuration with callback interfaces:
-- `on_save`: Called when favicon data needs to be persisted
-- `on_load`: Called when checking for cached favicons  
-- `on_debug`: Debug logging
-- `on_error`: Error logging
-- `on_warning`: Warning logging
-
-### `Vug::FaviconCollection`
-Collection of favicons with selection methods:
-- `best` - Returns favicon with "any" size or largest pixel area
-- `largest` - Returns favicon with largest dimensions
-- `by_preferred_size(width, height)` - Returns closest match to preferred size
-- `all` - Returns all favicons
+### `Vug.placeholder(site_url, config, cache)`
+Generates a default SVG favicon with the domain's first letter.
 
 ## Storage Callbacks
 
