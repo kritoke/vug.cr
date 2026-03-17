@@ -2,45 +2,43 @@
 
 ## [0.1.0] - 2026-03-17
 
-### Added
-- **Complete favicon fetching library** with pluggable storage callbacks
-- **HTML extraction**: Extract favicon URLs from HTML pages using Lexbor CSS selectors
-- **Web App Manifest support**: Parse manifest files and extract icon information
-- **Multiple favicon collection**: Gather favicons from multiple sources with metadata
-- **Intelligent selection**: Choose best, largest, or preferred size favicons
-- **Comprehensive fallback chain**: HTML → Manifest → Standard paths → DuckDuckGo → Google S2 → Placeholder
-- **Data URL support**: Handle inline base64 encoded favicons
-- **Image validation**: Validate favicon images using crimage (PNG, JPEG, GIF, BMP, TIFF, WebP, ICO, SVG)
-- **Image dimension detection**: Extract and log image dimensions
-- **Placeholder generation**: Create default SVG favicons with domain letter when no real favicon found
-- **In-memory caching**: TTL and size-limited cache for performance
-- **SSRF protection**: Security validation to prevent server-side request forgery
-- **Pluggable storage**: Callback-based storage interface for disk, S3, memory, etc.
-- **Comprehensive error handling**: Detailed error reporting and logging callbacks
-- **Configuration options**: Tunable timeouts, limits, and behavior
-
 ### Features
+- **Complete favicon fetching library** with pluggable storage callbacks
+- **HTML extraction** using high-performance HTML parser with CSS selectors
+- **Web App Manifest support** for parsing manifest files and extracting icon metadata
+- **Multiple favicon collection** to gather favicons from multiple sources with metadata (sizes, types, purposes)
+- **Intelligent favicon selection** with methods to choose best, largest, or preferred size favicons
+- **Comprehensive fallback chain**: HTML extraction → Manifest extraction → Standard paths → DuckDuckGo → Google S2 → Placeholder generation
+- **Data URL support** for handling inline base64 encoded favicons like `data:image/png;base64,...`
+- **Advanced image validation** supporting PNG, JPEG, GIF, BMP, TIFF, WebP, ICO, and SVG formats
+- **Image dimension detection** to extract and log actual image dimensions
+- **Placeholder generation** creating default SVG favicons with domain letter when no real favicon is found
+- **In-memory caching** with TTL and size limits for performance optimization
+- **SSRF protection** with security validation to prevent server-side request forgery attacks
+- **Pluggable storage interface** via callbacks for disk, S3, memory, or custom storage solutions
+- **Comprehensive error handling** with detailed error reporting and logging callbacks
+- **Configurable options** for timeouts, limits, and behavior tuning
+
+### API
 - **Direct URL fetching**: `Vug.fetch(url)`
 - **Site favicon fetching**: `Vug.fetch_for_site(site_url)`  
 - **Best favicon fetching**: `Vug.fetch_best_favicon_for_site(site_url)`
 - **Favicon collection**: `Vug.fetch_all_favicons_for_site(site_url)`
 - **Placeholder generation**: `Vug.generate_placeholder_for_site(site_url)`
-
-### API
 - **Configurable callbacks**: `on_save`, `on_load`, `on_debug`, `on_error`, `on_warning`
 - **FaviconCollection**: Methods for selecting best, largest, or preferred size favicons
 - **Result types**: Success, failure, and redirect handling with proper error messages
 
 ### Security
 - **URL validation**: Blocks dangerous schemes (file://, ftp://, etc.)
-- **Private IP blocking**: Prevents access to localhost, 10.x.x.x, 192.168.x.x, etc.
+- **Private IP blocking**: Prevents access to localhost, 10.x.x.x, 192.168.x.x, and other private ranges
 - **Redirect validation**: Ensures safe redirects between domains
 
 ### Dependencies
-- **Lexbor**: High-performance HTML parsing
-- **Sanitize**: HTML sanitization for security
-- **Crimage**: Image validation and dimension detection
-- **Crystal 1.18+**: Modern Crystal features
+- **High-performance HTML parsing**
+- **HTML sanitization** for security
+- **Image validation and dimension detection**
+- **Crystal 1.18+** compatibility
 
 ### Testing
 - **43 comprehensive tests** covering all major functionality
