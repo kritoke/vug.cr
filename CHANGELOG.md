@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.3.3] - 2026-03-18
+
+### Bug Fixes
+- **ManifestExtractor nil handling**: Fixed nil handling in ManifestExtractor dependency injection in HtmlExtractor constructor
+
 ## [0.1.3.2] - 2026-03-18
 
 ### Bug Fixes

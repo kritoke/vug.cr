@@ -19,8 +19,8 @@ module Vug
       "link[type='image/x-icon']",
     ]
 
-    def initialize(@config : Config = Config.new, @manifest_extractor : ManifestExtractor? = nil, http_client_factory : HttpClientFactory? = nil)
-      @manifest_extractor = @manifest_extractor || ManifestExtractor.new(@config)
+    def initialize(@config : Config = Config.new, manifest_extractor : ManifestExtractor? = nil, http_client_factory : HttpClientFactory? = nil)
+      @manifest_extractor = manifest_extractor || ManifestExtractor.new(@config)
       @http_client_factory = http_client_factory || HttpClientFactory.new(@config)
     end
 
