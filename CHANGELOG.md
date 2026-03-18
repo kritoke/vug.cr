@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.3.2] - 2026-03-18
+
+### Bug Fixes
+- **HtmlExtractor initialization**: Fixed nil handling in HttpClientFactory dependency injection to prevent compilation errors
+
 ## [0.1.3.1] - 2026-03-18
 
 ### Bug Fixes
