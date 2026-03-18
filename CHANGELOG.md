@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.3.4] - 2026-03-18
+
+### Bug Fixes
+- **Constructor parameter patterns**: Fixed instance variable usage in constructor parameters across Fetcher, CacheManager, HtmlExtractor, and ManifestExtractor for consistent and safe dependency injection
+- **Test coverage**: Added comprehensive initialization tests for all extractor classes to prevent regression
+
 ## [0.1.3.3] - 2026-03-18
 
 ### Bug Fixes

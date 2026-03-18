@@ -9,9 +9,9 @@ require "./redirect_validator"
 
 module Vug
   class Fetcher
-    def initialize(@config : Config = Config.new, @cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectValidator? = nil)
+    def initialize(@config : Config = Config.new, cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectValidator? = nil)
       @http_client_factory = http_client_factory || HttpClientFactory.new(@config)
-      @cache_manager = cache_manager || CacheManager.new(@config, @cache)
+      @cache_manager = cache_manager || CacheManager.new(@config, cache)
       @redirect_validator = redirect_validator || RedirectValidator.new(@config)
     end
 

@@ -3,7 +3,8 @@ require "./cache"
 
 module Vug
   class CacheManager
-    def initialize(@config : Config, @memory_cache : MemoryCache? = nil)
+    def initialize(@config : Config, memory_cache : MemoryCache? = nil)
+      @memory_cache = memory_cache
     end
 
     def get(url : String) : String?
