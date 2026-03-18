@@ -1,6 +1,6 @@
 require "http/client"
 require "uri"
-require "lexbor"
+require "html5"
 require "sanitize"
 require "digest"
 require "./config"
@@ -107,7 +107,7 @@ module Vug
 
     private def extract_favicons_from_html(html : String, base_url : String) : Array(FaviconInfo)
       favicons = [] of FaviconInfo
-      parser = Lexbor.new(html)
+      parser = HTML5::Parser.new(html)
 
       FAVICON_SELECTORS.each do |selector|
         nodes = parser.css(selector)

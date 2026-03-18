@@ -1,6 +1,7 @@
 require "json"
 require "http/client"
 require "uri"
+require "html5"
 require "./config"
 require "./url_validator"
 require "./types"
@@ -50,7 +51,7 @@ module Vug
     end
 
     def extract_manifest_url(html_content : String, base_url : String) : String?
-      parser = Lexbor.new(html_content)
+      parser = HTML5::Parser.new(html_content)
       nodes = parser.css("link[rel='manifest']")
 
       nodes.each do |node|
