@@ -5,49 +5,15 @@ require "html5"
 require "./config"
 require "./url_validator"
 require "./types"
+require "./favicon_info"
 
 module Vug
-  # Represents a favicon entry from HTML, manifest, or other sources
-  record FaviconInfo,
-    url : String,
-    sizes : String?,
-    type : String?,
-    purpose : String? do
-    def size_pixels : Int32?
-      size_val = sizes
-      return if size_val.nil? || size_val == "any"
-
-      size_list = size_val.split(' ')
-      max_size = 0
-
-      size_list.each do |size_str|
-        if size_str.includes?('x')
-          parts = size_str.split('x')
-          if parts.size == 2
-            begin
-              width = parts[0].to_i
-              height = parts[1].to_i
-              area = width * height
-              max_size = [max_size, area].max
-            rescue
-              # Skip invalid size format
-            end
-          end
-        end
-      end
-
-      max_size > 0 ? max_size : nil
-    end
-
-    def has_any_size? : Bool
-      sizes == "any"
-    end
-  end
-
   class ManifestExtractor
     @config : Config
+    @http_client_factory : HttpClientFactory
 
-    def initialize(@config : Config)
+    def initialize(@config : Config, http_client_factory : HttpClientFactory? = nil)
+      @http_client_factory = http_client_factory || HttpClientFactory.new(@config)
     end
 
     def extract_manifest_url(html_content : String, base_url : String) : String?
@@ -60,8 +26,14 @@ module Vug
         href = href_attr.val
         next if href.empty?
 
-        normalized = normalize_url(href, base_url)
-        return normalized if valid_scheme?(normalized)
+        # Handle relative URLs by resolving against base_url first
+        if !href.starts_with?("http")
+          resolved = UrlProcessor.resolve_url(href.strip, base_url)
+          normalized = UrlProcessor.normalize_url(resolved, "https")
+        else
+          normalized = UrlProcessor.normalize_url(href, "https")
+        end
+        return normalized if UrlProcessor.valid_scheme?(normalized)
       end
 
       nil
@@ -77,7 +49,7 @@ module Vug
 
       begin
         uri = URI.parse(manifest_url)
-        client = create_client(uri)
+        client = @http_client_factory.create_client(uri)
 
         headers = HTTP::Headers{
           "User-Agent" => @config.user_agent,
@@ -115,7 +87,13 @@ module Vug
             icon_data = icon_json.as_h
             if icon_data["src"]?
               src = icon_data["src"].as_s
-              normalized_src = normalize_url(src, manifest_url)
+              # Handle relative URLs by resolving against manifest_url first
+              if !src.starts_with?("http")
+                resolved = UrlProcessor.resolve_url(src.strip, manifest_url)
+                normalized_src = UrlProcessor.normalize_url(resolved, "https")
+              else
+                normalized_src = UrlProcessor.normalize_url(src, "https")
+              end
 
               favicon_info = FaviconInfo.new(
                 url: normalized_src,
@@ -130,39 +108,6 @@ module Vug
       end
 
       icons
-    end
-
-    private def normalize_url(url : String, base_url : String) : String
-      if url.starts_with?("//")
-        "https:#{url}"
-      elsif !url.starts_with?("http")
-        resolved = resolve_url(url.strip, base_url)
-        # Validate resolved URL for SSRF protection
-        return resolved if UrlValidator.valid_url?(resolved) && valid_scheme?(resolved)
-        url
-      else
-        url
-      end
-    end
-
-    private def valid_scheme?(url : String) : Bool
-      !(url.starts_with?("javascript:") ||
-        url.starts_with?("data:") ||
-        url.starts_with?("vbscript:"))
-    end
-
-    private def resolve_url(url : String, base : String) : String
-      URI.parse(base).resolve(url.strip).to_s
-    rescue
-      url
-    end
-
-    private def create_client(uri : URI) : HTTP::Client
-      client = HTTP::Client.new(uri)
-      client.compress = true
-      client.read_timeout = @config.timeout
-      client.connect_timeout = @config.connect_timeout
-      client
     end
   end
 end

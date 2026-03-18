@@ -5,12 +5,14 @@ require "./config"
 require "./url_validator"
 require "./image_validator"
 require "./types"
+require "./redirect_validator"
 
 module Vug
   class Fetcher
-    @client : HTTP::Client? = nil
-
-    def initialize(@config : Config = Config.new, @cache : MemoryCache? = nil)
+    def initialize(@config : Config = Config.new, @cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectValidator? = nil)
+      @http_client_factory = http_client_factory || HttpClientFactory.new(@config)
+      @cache_manager = cache_manager || CacheManager.new(@config, @cache)
+      @redirect_validator = redirect_validator || RedirectValidator.new(@config)
     end
 
     def fetch(url : String) : Result
@@ -36,7 +38,7 @@ module Vug
           return Vug.failure("Too many redirects", url)
         end
 
-        if cached = load_cached(current_url)
+        if cached = @cache_manager.get(current_url)
           @config.debug("Favicon cache hit: #{current_url}")
           return Vug.success(current_url, cached)
         end
@@ -62,7 +64,7 @@ module Vug
 
     private def fetch_single(url : String) : Result
       uri = URI.parse(url)
-      client = create_client(uri)
+      client = @http_client_factory.create_client(uri)
 
       headers = HTTP::Headers{
         "User-Agent"      => @config.user_agent,
@@ -76,7 +78,7 @@ module Vug
           @config.debug("Favicon redirect: #{new_url}")
 
           # Validate redirect URL for SSRF protection
-          unless UrlValidator.valid_redirect_url?(url, new_url)
+          unless @redirect_validator.validate_redirect_url(url, new_url)
             @config.debug("Dangerous redirect blocked: #{new_url}")
             return Vug.failure("Invalid redirect", url)
           end
@@ -133,7 +135,7 @@ module Vug
 
       if saved_path = @config.save(url, data, content_type)
         @config.debug("Favicon saved: #{saved_path}")
-        @cache.try(&.set(url, saved_path))
+        @cache_manager.set(url, saved_path)
         Vug.success(url, saved_path, content_type, data)
       else
         @config.debug("Favicon save failed: #{url}")
@@ -148,7 +150,7 @@ module Vug
 
       if url.includes?("google.com/s2/favicons")
         larger_url = url.gsub(/sz=\d+/, "sz=256")
-        if cached = load_cached(larger_url)
+        if cached = @cache_manager.get(larger_url)
           return Vug.success(larger_url, cached)
         end
         return fetch(larger_url)
@@ -160,7 +162,7 @@ module Vug
             @config.debug("Google fallback URL: #{google_url}")
             result = fetch(google_url)
             if path = result.local_path
-              @cache.try(&.set(google_url, path))
+              @cache_manager.set(google_url, path)
               return result
             end
           end
@@ -182,21 +184,6 @@ module Vug
         @config.debug("Favicon error #{status_code}: #{url}")
       end
       Vug.failure("HTTP #{status_code}", url)
-    end
-
-    private def load_cached(url : String) : String?
-      if cached = @cache.try(&.get(url))
-        return cached
-      end
-      @config.load(url)
-    end
-
-    private def create_client(uri : URI) : HTTP::Client
-      @client ||= HTTP::Client.new(uri).tap do |client|
-        client.compress = true
-        client.read_timeout = @config.timeout
-        client.connect_timeout = @config.connect_timeout
-      end
     end
 
     def self.google_favicon_url(domain : String) : String

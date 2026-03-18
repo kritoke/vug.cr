@@ -36,7 +36,7 @@
 
 ### Dependencies
 - **sanitize**: HTML sanitization for security
-- **lexbor**: High-performance HTML parsing  
+- **html5**: HTML parsing (crystal-html5) for cross-platform compatibility
 - **crimage**: Image validation and dimension detection
 - **Crystal 1.18+**: Modern Crystal features
 

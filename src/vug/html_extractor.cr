@@ -19,8 +19,9 @@ module Vug
       "link[type='image/x-icon']",
     ]
 
-    def initialize(@config : Config = Config.new)
-      @manifest_extractor = ManifestExtractor.new(@config)
+    def initialize(@config : Config = Config.new, @manifest_extractor : ManifestExtractor? = nil, @http_client_factory : HttpClientFactory? = nil)
+      @manifest_extractor = @manifest_extractor || ManifestExtractor.new(@config)
+      @http_client_factory = @http_client_factory || HttpClientFactory.new(@config)
     end
 
     def extract_all(site_url : String) : Array(FaviconInfo)
@@ -50,7 +51,7 @@ module Vug
         @config.debug("Fetching HTML from: #{clean_url}")
 
         uri = URI.parse(clean_url)
-        client = create_client(uri)
+        client = @http_client_factory.create_client(uri)
 
         headers = HTTP::Headers{
           "User-Agent" => @config.user_agent,
@@ -143,8 +144,14 @@ module Vug
               @config.debug("Invalid data URL favicon: #{href}")
             end
           else
-            normalized = normalize_url(href, base_url)
-            next unless valid_scheme?(normalized)
+            # Handle relative URLs by resolving against base_url first
+            if !href.starts_with?("http")
+              resolved = UrlProcessor.resolve_url(href.strip, base_url)
+              normalized = UrlProcessor.normalize_url(resolved, "https")
+            else
+              normalized = UrlProcessor.normalize_url(href, "https")
+            end
+            next unless UrlProcessor.valid_scheme?(normalized)
 
             sizes = node["sizes"]?.try(&.val)
             type = node["type"]?.try(&.val)
@@ -161,40 +168,6 @@ module Vug
       end
 
       favicons
-    end
-
-    private def normalize_url(favicon_url : String, base_url : String) : String
-      if favicon_url.starts_with?("//")
-        "https:#{favicon_url}"
-      elsif !favicon_url.starts_with?("http")
-        resolved = resolve_url(favicon_url.strip, base_url)
-        # Validate resolved URL for SSRF protection
-        return resolved if UrlValidator.valid_url?(resolved) && valid_scheme?(resolved)
-        favicon_url
-      else
-        favicon_url
-      end
-    end
-
-    private def valid_scheme?(url : String) : Bool
-      return false if url.starts_with?("javascript:")
-      return false if url.starts_with?("vbscript:")
-      # Allow data URLs - they will be handled specially
-      true
-    end
-
-    private def resolve_url(url : String, base : String) : String
-      URI.parse(base).resolve(url.strip).to_s
-    rescue
-      url
-    end
-
-    private def create_client(uri : URI) : HTTP::Client
-      client = HTTP::Client.new(uri)
-      client.compress = true
-      client.read_timeout = @config.timeout
-      client.connect_timeout = @config.connect_timeout
-      client
     end
 
     private def sanitize_html(html : String) : String
