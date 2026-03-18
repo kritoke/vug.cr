@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.1.3] - 2026-03-18
+
+### Improvements
+- **Code quality and maintainability**: Implemented comprehensive refactoring to address DRY violations and improve code organization
+- **HTTP client factory**: Centralized HTTP client creation with consistent configuration across all components
+- **URL processor module**: Unified URL normalization, resolution, and validation logic in a single module
+- **Cache manager**: Standardized cache access patterns with unified config-based and memory cache handling  
+- **Redirect validator**: Extracted redirect validation logic into dedicated service class
+- **Dependency injection**: Improved testability and maintainability through proper dependency injection
+- **File organization**: Moved FaviconInfo to its own file for better separation of concerns
+- **Dependency cleanup**: Removed unused lexbor dependency and updated to crystal-html5 exclusively
+
+### Performance
+- **Reduced code duplication**: Eliminated redundant logic across multiple files
+- **Improved maintainability**: Smaller, focused files with clear single responsibilities
+- **Better error handling**: Standardized error contexts and logging patterns
+
+### Code Quality
+- **All files under 200 lines**: Improved readability and maintainability
+- **Function naming consistency**: All public API function names are 1-3 words as recommended
+- **Idiomatic Crystal**: Follows Crystal best practices and coding conventions
+
 ## [0.1.0] - 2026-03-17
 
 ### Features
