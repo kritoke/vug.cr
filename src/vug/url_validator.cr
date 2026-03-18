@@ -6,15 +6,16 @@ module Vug
   module UrlValidator
     # Check if an IP address string matches private ranges
     def self.private_ip?(ip : String) : Bool
-      return true if ip.starts_with?("127.")     # localhost
-      return true if ip == "0.0.0.0"             # unspecified
-      return true if ip.starts_with?("10.")      # RFC 1918 Class A
-      return true if ip.starts_with?("192.168.") # RFC 1918 Class C
+      return true if ip.starts_with?("127.")                         # localhost
+      return true if ip == "0.0.0.0"                                 # unspecified
+      return true if ip.starts_with?("10.")                          # RFC 1918 Class A (10.0.0.0/8)
+      return true if ip.starts_with?("172.") && private_class_b?(ip) # RFC 1918 Class B (172.16.0.0/12)
+      return true if ip.starts_with?("192.168.")                     # RFC 1918 Class C (192.168.0.0/16)
 
       # IPv6
       return true if ip == "::1"                                    # IPv6 localhost
-      return true if ip.starts_with?("fc") || ip.starts_with?("fd") # unique local
-      return true if ip.starts_with?("fe80:")                       # link-local
+      return true if ip.starts_with?("fc") || ip.starts_with?("fd") # IPv6 unique local (fc00::/7)
+      return true if ip.starts_with?("fe80:")                       # IPv6 link-local
       return true if ip.includes?("::ffff:")                        # IPv4-mapped IPv6
 
       false
@@ -23,7 +24,7 @@ module Vug
     def self.valid_url?(url : String) : Bool
       uri = URI.parse(url)
       return false unless valid_scheme?(uri.scheme)
-      return false if dangerous_host?(uri.host)
+      return false if dangerous_host?(uri.hostname)
       true
     rescue
       false
@@ -57,6 +58,7 @@ module Vug
 
       return true if localhost_like?(host)
       return true if ip_in_private_range?(host)
+      return true if host.ends_with?(".local") # mDNS/Bonjour can resolve to private IPs
 
       false
     end

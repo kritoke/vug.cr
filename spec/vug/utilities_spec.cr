@@ -20,6 +20,18 @@ describe Vug::DataUrlHandler do
       result = Vug::DataUrlHandler.extract_from_url(invalid_data_url)
       result.should be_nil
     end
+
+    it "handles data URL without base64 marker" do
+      simple_data_url = "data:text/plain,hello"
+      result = Vug::DataUrlHandler.extract_from_url(simple_data_url)
+      result.should be_nil
+    end
+
+    it "returns nil for non-image data URLs" do
+      data_url = "data:text/plain;base64,SGVsbG8="
+      result = Vug::DataUrlHandler.extract_from_url(data_url)
+      result.should be_nil
+    end
   end
 
   describe ".data_url?" do
@@ -80,6 +92,48 @@ describe Vug::MemoryCache do
     cache.set("https://example.com/favicon.ico", "/favicons/abc123.png")
     cache.clear
     cache.get("https://example.com/favicon.ico").should be_nil
+  end
+
+  it "updates existing entry" do
+    cache = Vug::MemoryCache.new
+    cache.set("https://example.com/favicon.ico", "/favicons/old.png")
+    cache.set("https://example.com/favicon.ico", "/favicons/new.png")
+    cache.get("https://example.com/favicon.ico").should eq("/favicons/new.png")
+  end
+
+  it "tracks size" do
+    cache = Vug::MemoryCache.new
+    cache.size.should eq(0)
+    cache.set("https://example.com/favicon.ico", "/favicons/abc.png")
+    cache.size.should eq(1)
+  end
+
+  it "rejects non-absolute paths" do
+    cache = Vug::MemoryCache.new
+    cache.set("https://example.com/favicon.ico", "relative/path.png")
+    cache.get("https://example.com/favicon.ico").should be_nil
+  end
+
+  it "evicts oldest entry when size limit exceeded" do
+    cache = Vug::MemoryCache.new(size_limit: 20)
+    cache.set("https://a.com/favicon.ico", "/favicons/a.png")
+    cache.set("https://b.com/favicon.ico", "/favicons/b.png")
+    cache.set("https://c.com/favicon.ico", "/favicons/c.png")
+    cache.get("https://a.com/favicon.ico").should be_nil
+    cache.get("https://c.com/favicon.ico").should eq("/favicons/c.png")
+  end
+
+  it "respects TTL expiration" do
+    cache = Vug::MemoryCache.new(entry_ttl: 1.millisecond)
+    cache.set("https://example.com/favicon.ico", "/favicons/abc.png")
+    sleep 2.milliseconds
+    cache.get("https://example.com/favicon.ico").should be_nil
+  end
+
+  it "keeps valid entries within TTL" do
+    cache = Vug::MemoryCache.new(entry_ttl: 1.second)
+    cache.set("https://example.com/favicon.ico", "/favicons/abc.png")
+    cache.get("https://example.com/favicon.ico").should eq("/favicons/abc.png")
   end
 end
 
@@ -155,5 +209,41 @@ describe Vug::FaviconCollection do
     largest = collection.largest
     largest.should_not be_nil
     largest.as(Vug::FaviconInfo).url.should eq("https://example.com/large.png")
+  end
+end
+
+describe Vug::FaviconInfo do
+  describe "#size_pixels" do
+    it "parses single size" do
+      favicon = Vug::FaviconInfo.new(url: "https://example.com/favicon.ico", sizes: "32x32", type: "image/png", purpose: nil)
+      favicon.size_pixels.should eq(1024)
+    end
+
+    it "parses multiple sizes" do
+      favicon = Vug::FaviconInfo.new(url: "https://example.com/favicon.ico", sizes: "16x16 32x32 48x48", type: "image/png", purpose: nil)
+      favicon.size_pixels.should eq(2304)
+    end
+
+    it "returns nil for 'any' size" do
+      favicon = Vug::FaviconInfo.new(url: "https://example.com/favicon.ico", sizes: "any", type: "image/png", purpose: nil)
+      favicon.size_pixels.should be_nil
+    end
+
+    it "returns nil for nil sizes" do
+      favicon = Vug::FaviconInfo.new(url: "https://example.com/favicon.ico", sizes: nil, type: "image/png", purpose: nil)
+      favicon.size_pixels.should be_nil
+    end
+  end
+
+  describe "#has_any_size?" do
+    it "returns true for 'any'" do
+      favicon = Vug::FaviconInfo.new(url: "https://example.com/favicon.ico", sizes: "any", type: "image/png", purpose: nil)
+      favicon.has_any_size?.should be_true
+    end
+
+    it "returns false for specific sizes" do
+      favicon = Vug::FaviconInfo.new(url: "https://example.com/favicon.ico", sizes: "32x32", type: "image/png", purpose: nil)
+      favicon.has_any_size?.should be_false
+    end
   end
 end

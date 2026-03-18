@@ -91,4 +91,31 @@ describe Vug::ImageValidator do
       dims.should eq({2, 2})
     end
   end
+
+  describe ".svg?" do
+    it "detects SVG with XML declaration" do
+      svg_data = Bytes[0x3C, 0x3F, 0x78, 0x6D, 0x6C, 0x20]
+      Vug::ImageValidator.svg?(svg_data).should be_true
+    end
+
+    it "detects SVG with svg tag" do
+      svg_data = Bytes[0x3C, 0x73, 0x76, 0x67, 0x20]
+      Vug::ImageValidator.svg?(svg_data).should be_true
+    end
+
+    it "rejects short data" do
+      Vug::ImageValidator.svg?(Bytes[0x3C, 0x3F, 0x78]).should be_false
+    end
+  end
+
+  describe ".webp?" do
+    it "detects WEBP format" do
+      webp_data = Bytes[0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50]
+      Vug::ImageValidator.webp?(webp_data).should be_true
+    end
+
+    it "rejects incomplete WEBP" do
+      Vug::ImageValidator.webp?(Bytes[0x52, 0x49, 0x46, 0x46, 0x00, 0x00]).should be_false
+    end
+  end
 end

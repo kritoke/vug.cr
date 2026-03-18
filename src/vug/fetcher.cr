@@ -8,6 +8,8 @@ require "./types"
 
 module Vug
   class Fetcher
+    @client : HTTP::Client? = nil
+
     def initialize(@config : Config = Config.new, @cache : MemoryCache? = nil)
     end
 
@@ -190,11 +192,11 @@ module Vug
     end
 
     private def create_client(uri : URI) : HTTP::Client
-      client = HTTP::Client.new(uri)
-      client.compress = true
-      client.read_timeout = @config.timeout
-      client.connect_timeout = @config.connect_timeout
-      client
+      @client ||= HTTP::Client.new(uri).tap do |client|
+        client.compress = true
+        client.read_timeout = @config.timeout
+        client.connect_timeout = @config.connect_timeout
+      end
     end
 
     def self.google_favicon_url(domain : String) : String
