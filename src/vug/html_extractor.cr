@@ -114,8 +114,10 @@ module Vug
         next if nodes.empty?
 
         nodes.each do |node|
-          href = node["href"]?
-          next if href.nil? || href.empty?
+          href_attr = node["href"]?
+          next if href_attr.nil?
+          href = href_attr.val
+          next if href.empty?
 
           # Handle data URLs specially
           if DataUrlHandler.data_url?(href)
@@ -125,7 +127,7 @@ module Vug
               data_url_id = "data:#{Digest::SHA256.hexdigest(data.to_slice)}"
               favicon_info = FaviconInfo.new(
                 url: data_url_id,
-                sizes: node["sizes"]?,
+                sizes: node["sizes"]?.try(&.val),
                 type: media_type,
                 purpose: nil
               )
@@ -144,8 +146,8 @@ module Vug
             normalized = normalize_url(href, base_url)
             next unless valid_scheme?(normalized)
 
-            sizes = node["sizes"]?
-            type = node["type"]?
+            sizes = node["sizes"]?.try(&.val)
+            type = node["type"]?.try(&.val)
 
             favicon_info = FaviconInfo.new(
               url: normalized,

@@ -55,8 +55,10 @@ module Vug
       nodes = doc.css("link[rel='manifest']")
 
       nodes.each do |node|
-        href = node["href"]?
-        next if href.nil? || href.empty?
+        href_attr = node["href"]?
+        next if href_attr.nil?
+        href = href_attr.val
+        next if href.empty?
 
         normalized = normalize_url(href, base_url)
         return normalized if valid_scheme?(normalized)

@@ -59,52 +59,50 @@ module Vug
     end
 
     private def fetch_single(url : String) : Result
-      begin
-        uri = URI.parse(url)
-        client = create_client(uri)
+      uri = URI.parse(url)
+      client = create_client(uri)
 
-        headers = HTTP::Headers{
-          "User-Agent"      => @config.user_agent,
-          "Accept-Language" => @config.accept_language,
-          "Connection"      => "keep-alive",
-        }
+      headers = HTTP::Headers{
+        "User-Agent"      => @config.user_agent,
+        "Accept-Language" => @config.accept_language,
+        "Connection"      => "keep-alive",
+      }
 
-        client.get(uri.request_target, headers: headers) do |response|
-          if response.status.redirection? && (location = response.headers["Location"]?)
-            new_url = uri.resolve(location).to_s
-            @config.debug("Favicon redirect: #{new_url}")
+      client.get(uri.request_target, headers: headers) do |response|
+        if response.status.redirection? && (location = response.headers["Location"]?)
+          new_url = uri.resolve(location).to_s
+          @config.debug("Favicon redirect: #{new_url}")
 
-            # Validate redirect URL for SSRF protection
-            unless UrlValidator.valid_redirect_url?(url, new_url)
-              @config.debug("Dangerous redirect blocked: #{new_url}")
-              return Vug.failure("Invalid redirect", url)
-            end
-
-            return Result.new(url: new_url, local_path: nil, content_type: nil, bytes: nil, error: nil)
+          # Validate redirect URL for SSRF protection
+          unless UrlValidator.valid_redirect_url?(url, new_url)
+            @config.debug("Dangerous redirect blocked: #{new_url}")
+            return Vug.failure("Invalid redirect", url)
           end
 
-          if response.status.success?
-            content_type = response.content_type || "image/png"
-            memory = IO::Memory.new
-            IO.copy(response.body_io, memory, limit: @config.max_size)
-
-            return handle_success(url, memory.to_slice, content_type)
-          else
-            return handle_error(url, response.status_code)
-          end
+          return Result.new(url: new_url, local_path: nil, content_type: nil, bytes: nil, error: nil)
         end
-      rescue ex
-        error_msg = case ex
-        when IO::TimeoutError
-          "Request timed out"
-        when Socket::Addrinfo::Error
-          "DNS resolution failed"
+
+        if response.status.success?
+          content_type = response.content_type || "image/png"
+          memory = IO::Memory.new
+          IO.copy(response.body_io, memory, limit: @config.max_size)
+
+          return handle_success(url, memory.to_slice, content_type)
         else
-          ex.message || "Unknown error"
+          return handle_error(url, response.status_code)
         end
-        @config.error("fetch_single(#{url})", error_msg)
-        Vug.failure(error_msg, url)
       end
+    rescue ex
+      error_msg = case ex
+                  when IO::TimeoutError
+                    "Request timed out"
+                  when Socket::Addrinfo::Error
+                    "DNS resolution failed"
+                  else
+                    ex.message || "Unknown error"
+                  end
+      @config.error("fetch_single(#{url})", error_msg)
+      Vug.failure(error_msg, url)
     end
 
     private def handle_success(url : String, data : Bytes, content_type : String) : Result

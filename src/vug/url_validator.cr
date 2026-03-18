@@ -21,14 +21,12 @@ module Vug
     end
 
     def self.valid_url?(url : String) : Bool
-      begin
-        uri = URI.parse(url)
-        return false unless valid_scheme?(uri.scheme)
-        return false if dangerous_host?(uri.host)
-        true
-      rescue
-        false
-      end
+      uri = URI.parse(url)
+      return false unless valid_scheme?(uri.scheme)
+      return false if dangerous_host?(uri.host)
+      true
+    rescue
+      false
     end
 
     def self.valid_redirect_url?(original_url : String, redirect_url : String) : Bool
@@ -57,35 +55,38 @@ module Vug
     private def self.dangerous_host?(host : String?) : Bool
       return true if host.nil? || host.empty?
 
-      # Check for localhost variants
-      if host.downcase == "localhost" ||
-         host == "0.0.0.0" ||
-         host == "[::1]" ||
-         host == "::1"
-        return true
-      end
+      return true if localhost_like?(host)
+      return true if ip_in_private_range?(host)
 
-      # Check if host looks like an IP address
-      if host.includes?(".") || host.includes?(":")
-        # Try to validate as IP
-        if private_ip?(host)
-          return true
-        end
-        # For IPv4 addresses in 172.16-31.x.x range (RFC 1918 Class B)
-        if host.starts_with?("172.")
-          parts = host.split('.')
-          if parts.size == 4
-            second_octet = parts[1].to_i?
-            if second_octet && (16..31).includes?(second_octet)
-              return true
-            end
-          end
-        end
-      end
-
-      # Allow domain names - they will be resolved by the HTTP client
-      # which should have its own protections
       false
+    end
+
+    private def self.localhost_like?(host : String) : Bool
+      host.downcase == "localhost" ||
+        host == "0.0.0.0" ||
+        host == "[::1]" ||
+        host == "::1"
+    end
+
+    private def self.ip_in_private_range?(host : String) : Bool
+      return false unless host.includes?(".") || host.includes?(":")
+
+      return true if private_ip?(host)
+      return true if private_class_b?(host)
+
+      false
+    end
+
+    private def self.private_class_b?(host : String) : Bool
+      return false unless host.starts_with?("172.")
+
+      parts = host.split('.')
+      return false unless parts.size == 4
+
+      second_octet = parts[1].to_i?
+      return false unless second_octet
+
+      (16..31).includes?(second_octet)
     end
   end
 end
