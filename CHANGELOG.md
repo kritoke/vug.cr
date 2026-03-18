@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.3.1] - 2026-03-18
+
+### Bug Fixes
+- **Dependency compatibility**: Added explicit version constraint `~> 1.0` for crimage dependency to prevent compatibility issues with other programs using different versions of crimage
+
 ## [0.1.3] - 2026-03-18
 
 ### Improvements
