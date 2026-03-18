@@ -107,10 +107,10 @@ module Vug
 
     private def extract_favicons_from_html(html : String, base_url : String) : Array(FaviconInfo)
       favicons = [] of FaviconInfo
-      parser = HTML5::Parser.new(html)
+      doc = HTML5.parse(html)
 
       FAVICON_SELECTORS.each do |selector|
-        nodes = parser.css(selector)
+        nodes = doc.css(selector)
         next if nodes.empty?
 
         nodes.each do |node|

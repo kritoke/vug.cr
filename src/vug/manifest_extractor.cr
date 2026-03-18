@@ -51,8 +51,8 @@ module Vug
     end
 
     def extract_manifest_url(html_content : String, base_url : String) : String?
-      parser = HTML5::Parser.new(html_content)
-      nodes = parser.css("link[rel='manifest']")
+      doc = HTML5.parse(html_content)
+      nodes = doc.css("link[rel='manifest']")
 
       nodes.each do |node|
         href = node["href"]?
