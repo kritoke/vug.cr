@@ -148,7 +148,7 @@ module Vug
   end
 
   private def self.try_fallback_chain(site_url : String, config : Config, cache : MemoryCache?) : Result?
-    host = extract_host(sanitize_url(site_url), config)
+    host = extract_host(UrlProcessor.sanitize_feed_url(site_url), config)
     return unless host
 
     fetcher = Fetcher.new(config, cache, HttpClientFactory.new(config))
@@ -211,7 +211,7 @@ module Vug
   end
 
   private def self.generate_placeholder_fallback(site_url : String, config : Config, cache : MemoryCache?) : Result
-    host = extract_host(sanitize_url(site_url), config)
+    host = extract_host(UrlProcessor.sanitize_feed_url(site_url), config)
     return Vug.failure("Invalid URL", site_url) unless host
 
     config.debug("No favicon found, generating placeholder for: #{host}")

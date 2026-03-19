@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.4.1] - 2026-03-19
+
+### Fixed
+- **Fixed `sanitize_url` undefined method error**: Replaced references to private `sanitize_url` with `UrlProcessor.sanitize_feed_url` in `try_fallback_chain` and `generate_placeholder_fallback` methods
+- **Fixed `else nil` blocks**: Removed redundant `else nil` blocks in `get_gray_placeholder_fallback_url` method
+
+### Added
+- **Comprehensive tests**: Added 5 new integration tests for feed URL handling across all main Vug module methods to prevent regression
+
 ## [0.1.4] - 2026-03-19
 
 ### Performance Improvements

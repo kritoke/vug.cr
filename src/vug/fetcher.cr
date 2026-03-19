@@ -183,12 +183,9 @@ module Vug
             google_url = "https://www.google.com/s2/favicons?domain=#{host}&sz=256"
             @config.debug("Google fallback URL: #{google_url}")
             google_url
-          else
-            nil
           end
         rescue ex
           @config.error("gray placeholder fallback(#{current_url})", ex.message || "Unknown error")
-          nil
         end
       end
     end
