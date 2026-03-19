@@ -18,7 +18,6 @@ dependencies:
     github: naqvis/crystal-html5
   crimage:
     github: naqvis/crimage
-    version: ~> 1.0
 
 development_dependencies:
   ameba:
