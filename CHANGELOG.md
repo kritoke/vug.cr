@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.1.4] - 2026-03-19
+
+### Performance Improvements
+- **URL processing optimization**: Eliminated repeated URL sanitization operations by caching sanitized URLs within method execution flows
+- **HttpClientFactory reuse**: Reduced redundant object creation by reusing HttpClientFactory instances within single favicon fetching operations  
+- **MemoryCache monotonic time**: Replaced `Time.local` with monotonic time tracking for consistent cache TTL behavior across different timezone configurations
+
+### Security & Reliability Enhancements
+- **Gray placeholder fallback safety**: Replaced recursive fetch calls with iterative loop to prevent potential stack overflow scenarios
+- **Recursion depth protection**: Added maximum attempts limit (3) for gray placeholder fallback to prevent infinite loops
+- **Consistent URL validation**: Unified URL processing logic across all modules using shared `UrlProcessor` utilities
+
+### Code Quality & Maintainability
+- **Centralized URL processing**: Extracted duplicated URL normalization and host extraction logic into `UrlProcessor` module
+- **Improved error handling**: Enhanced edge case validation in `PlaceholderGenerator` for empty or whitespace-only domains
+- **Reduced code duplication**: Eliminated redundant string operations and factory instantiation across the codebase
+
+### Testing
+- **Added comprehensive tests**: 11 new test cases for `UrlProcessor` methods covering feed URL handling, host extraction, and sanitization
+- **Maintained 100% test coverage**: All existing functionality preserved with no regressions
+- **Enhanced test robustness**: Better validation of edge cases and error conditions
+
+### Compatibility
+- **Crystal 1.18.2 support**: Maintained full compatibility with Crystal 1.18.2 (no `Time::Instant` usage)
+- **Backward compatible API**: No breaking changes to public interfaces
+- **Dependency updates**: No dependency changes required
+
 ## [0.1.3.4] - 2026-03-18
 
 ### Bug Fixes

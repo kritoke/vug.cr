@@ -25,7 +25,7 @@ module Vug
     end
 
     def extract_all(site_url : String) : Array(FaviconInfo)
-      clean_url = site_url.gsub(/\/feed\/?$/, "")
+      clean_url = UrlProcessor.sanitize_feed_url(site_url)
 
       # Validate URL has a scheme and is not dangerous before attempting HTTP request
       begin
@@ -47,7 +47,6 @@ module Vug
       favicons = [] of FaviconInfo
 
       begin
-        clean_url = site_url.gsub(/\/feed\/?$/, "")
         @config.debug("Fetching HTML from: #{clean_url}")
 
         uri = URI.parse(clean_url)

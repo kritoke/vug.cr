@@ -30,21 +30,24 @@ module Vug
   end
 
   def self.site(site_url : String, config : Config = Config.new, cache : MemoryCache? = nil) : Result
-    if result = try_extracted_favicon(site_url, config, cache)
+    clean_url = UrlProcessor.sanitize_feed_url(site_url)
+    if result = try_extracted_favicon(clean_url, config, cache)
       return result
     end
 
-    if result = try_fallback_chain(site_url, config, cache)
+    if result = try_fallback_chain(clean_url, config, cache)
       return result
     end
 
-    generate_placeholder_fallback(site_url, config, cache)
+    generate_placeholder_fallback(clean_url, config, cache)
   end
 
   def self.favicons(site_url : String, config : Config = Config.new) : FaviconCollection?
-    manifest_extractor = ManifestExtractor.new(config, HttpClientFactory.new(config))
-    html_extractor = HtmlExtractor.new(config, manifest_extractor, HttpClientFactory.new(config))
-    favicons = html_extractor.extract_all(sanitize_url(site_url))
+    clean_url = UrlProcessor.sanitize_feed_url(site_url)
+    http_client_factory = HttpClientFactory.new(config)
+    manifest_extractor = ManifestExtractor.new(config, http_client_factory)
+    html_extractor = HtmlExtractor.new(config, manifest_extractor, http_client_factory)
+    favicons = html_extractor.extract_all(clean_url)
 
     return if favicons.empty?
 
@@ -54,7 +57,8 @@ module Vug
   end
 
   def self.best(site_url : String, config : Config = Config.new, cache : MemoryCache? = nil) : Result
-    if result = try_extracted_favicon(site_url, config, cache)
+    clean_url = UrlProcessor.sanitize_feed_url(site_url)
+    if result = try_extracted_favicon(clean_url, config, cache)
       return result
     end
 
@@ -62,7 +66,7 @@ module Vug
   end
 
   def self.placeholder(site_url : String, config : Config = Config.new, cache : MemoryCache? = nil) : Result
-    clean_url = sanitize_url(site_url)
+    clean_url = UrlProcessor.sanitize_feed_url(site_url)
     host = extract_host(clean_url, config)
     return Vug.failure("Invalid URL", site_url) unless host
 
@@ -81,11 +85,7 @@ module Vug
   end
 
   def self.duckduckgo_favicon_url(domain : String) : String
-    host = domain.gsub(/\/feed\/?$/, "")
-    if host.starts_with?("http")
-      parsed = URI.parse(host)
-      host = parsed.host || host
-    end
+    host = UrlProcessor.extract_host_from_url(domain) || domain
     "https://icons.duckduckgo.com/ip3/#{host}.ico"
   end
 
@@ -104,6 +104,39 @@ module Vug
 
     cache.try(&.set(best.url, path))
     result
+  end
+
+  private def self.try_fallback_chain(site_url : String, config : Config, cache : MemoryCache?) : Result?
+    host = extract_host(site_url, config)
+    return unless host
+
+    fetcher = Fetcher.new(config, cache, HttpClientFactory.new(config))
+
+    if result = try_standard_paths(host, fetcher, config, cache)
+      return result
+    end
+
+    if result = try_duckduckgo(host, fetcher, config, cache)
+      return result
+    end
+
+    try_google(host, fetcher, config, cache)
+  end
+
+  private def self.generate_placeholder_fallback(site_url : String, config : Config, cache : MemoryCache?) : Result
+    host = extract_host(site_url, config)
+    return Vug.failure("Invalid URL", site_url) unless host
+
+    config.debug("No favicon found, generating placeholder for: #{host}")
+    placeholder_data, content_type = PlaceholderGenerator.generate_for_domain(host)
+
+    cache_manager = CacheManager.new(config, cache)
+    if saved_path = config.save("placeholder:#{host}", placeholder_data, content_type)
+      cache_manager.set("placeholder:#{host}", saved_path)
+      return Vug.success("placeholder:#{host}", saved_path, content_type, placeholder_data)
+    end
+
+    Vug.failure("No favicon found and placeholder generation failed", site_url)
   end
 
   private def self.fetch_data_url_favicon(favicon : FaviconInfo, config : Config, cache : MemoryCache?) : Result?
@@ -193,13 +226,8 @@ module Vug
     Vug.failure("No favicon found and placeholder generation failed", site_url)
   end
 
-  private def self.sanitize_url(url : String) : String
-    url.gsub(/\/feed\/?$/, "")
-  end
-
   private def self.extract_host(url : String, config : Config) : String?
-    parsed = URI.parse(sanitize_url(url))
-    parsed.host
+    UrlProcessor.extract_host_from_url(url)
   rescue ex
     config.debug("Failed to extract host from URL: #{url} - #{ex.message}")
     nil

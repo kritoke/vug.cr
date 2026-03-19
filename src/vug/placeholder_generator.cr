@@ -12,10 +12,16 @@ module Vug
     ]
 
     def self.generate_for_domain(domain : String) : {Bytes, String}
-      # Get first letter of domain (excluding www, etc.)
-      clean_domain = domain.downcase
-      if clean_domain.starts_with?("www.")
-        clean_domain = clean_domain[4..-1]
+      # Handle empty or whitespace-only domains
+      clean_domain = domain.strip
+      if clean_domain.empty?
+        clean_domain = "?"
+      else
+        # Get first letter of domain (excluding www, etc.)
+        clean_domain = clean_domain.downcase
+        if clean_domain.starts_with?("www.")
+          clean_domain = clean_domain[4..-1]
+        end
       end
 
       first_char = clean_domain.chars.first?.try(&.upcase) || "?"

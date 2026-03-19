@@ -28,5 +28,28 @@ module Vug
       return false if url.starts_with?("ftp:")
       true
     end
+
+    # Extracts host from URL, handling feed URLs and HTTP/HTTPS schemes
+    # Sanitizes by removing /feed/ suffix and extracts hostname from URI
+    def self.extract_host_from_url(url : String) : String?
+      sanitized = url.gsub(/\/feed\/?$/, "")
+
+      if sanitized.starts_with?("http")
+        begin
+          parsed = URI.parse(sanitized)
+          host = parsed.host
+          host.nil? || host.empty? ? nil : host
+        rescue
+          nil
+        end
+      else
+        sanitized.empty? ? nil : sanitized
+      end
+    end
+
+    # Sanitizes URL by removing /feed/ suffix
+    def self.sanitize_feed_url(url : String) : String
+      url.gsub(/\/feed\/?$/, "")
+    end
   end
 end

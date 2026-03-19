@@ -26,6 +26,8 @@ module Vug
       current_url = url
       redirects = 0
       start_time = Time.monotonic
+      gray_placeholder_attempts = 0
+      max_gray_attempts = 3 # Prevent infinite loops
 
       loop do
         if (Time.monotonic - start_time).total_seconds > @config.timeout.total_seconds
@@ -36,6 +38,11 @@ module Vug
         if redirects > @config.max_redirects
           @config.debug("Too many redirects (#{redirects}) for favicon: #{url}")
           return Vug.failure("Too many redirects", url)
+        end
+
+        if gray_placeholder_attempts >= max_gray_attempts
+          @config.debug("Too many gray placeholder attempts (#{gray_placeholder_attempts}) for favicon: #{url}")
+          return Vug.failure("Too many gray placeholder attempts", url)
         end
 
         if cached = @cache_manager.get(current_url)
@@ -55,7 +62,28 @@ module Vug
           end
           return result
         elsif result.success?
-          return result
+          # Check if this is a gray placeholder that needs fallback
+          if should_handle_gray_placeholder?(current_url, result.bytes)
+            gray_placeholder_attempts += 1
+
+            # Check if we already have a cached larger version for Google URLs
+            if current_url.includes?("google.com/s2/favicons")
+              larger_url = current_url.gsub(/sz=\d+/, "sz=256")
+              if cached = @cache_manager.get(larger_url)
+                @cache_manager.set(current_url, cached)
+                return Vug.success(current_url, cached)
+              end
+            end
+
+            if new_url = get_gray_placeholder_fallback_url(current_url)
+              current_url = new_url
+              next
+            else
+              return result
+            end
+          else
+            return result
+          end
         else
           return result
         end
@@ -115,10 +143,6 @@ module Vug
         return Vug.failure("Empty response", url)
       end
 
-      if gray_result = handle_gray_placeholder(url, data)
-        return gray_result
-      end
-
       unless ImageValidator.valid?(data)
         @config.debug("Invalid favicon content (not an image): #{url}")
         return Vug.failure("Invalid image", url)
@@ -143,35 +167,30 @@ module Vug
       end
     end
 
-    private def handle_gray_placeholder(url : String, data : Bytes) : Result?
-      return unless data.size == @config.gray_placeholder_size
+    private def should_handle_gray_placeholder?(url : String, data : Bytes?) : Bool
+      return false if data.nil?
+      data.size == @config.gray_placeholder_size
+    end
 
-      @config.debug("Gray placeholder detected (#{data.size} bytes) for #{url}")
-
-      if url.includes?("google.com/s2/favicons")
-        larger_url = url.gsub(/sz=\d+/, "sz=256")
-        if cached = @cache_manager.get(larger_url)
-          return Vug.success(larger_url, cached)
-        end
-        return fetch(larger_url)
+    private def get_gray_placeholder_fallback_url(current_url : String) : String?
+      if current_url.includes?("google.com/s2/favicons")
+        larger_url = current_url.gsub(/sz=\d+/, "sz=256")
+        larger_url
       else
         @config.debug("Gray placeholder from non-Google source, trying Google fallback")
         begin
-          if host = URI.parse(url).host
+          if host = URI.parse(current_url).host
             google_url = "https://www.google.com/s2/favicons?domain=#{host}&sz=256"
             @config.debug("Google fallback URL: #{google_url}")
-            result = fetch(google_url)
-            if path = result.local_path
-              @cache_manager.set(google_url, path)
-              return result
-            end
+            google_url
+          else
+            nil
           end
         rescue ex
-          @config.error("gray placeholder fallback(#{url})", ex.message || "Unknown error")
+          @config.error("gray placeholder fallback(#{current_url})", ex.message || "Unknown error")
+          nil
         end
       end
-
-      nil
     end
 
     private def handle_error(url : String, status_code : Int32) : Result
@@ -187,11 +206,7 @@ module Vug
     end
 
     def self.google_favicon_url(domain : String) : String
-      host = domain.gsub(/\/feed\/?$/, "")
-      if host.starts_with?("http")
-        parsed = URI.parse(host)
-        host = parsed.host || host
-      end
+      host = UrlProcessor.extract_host_from_url(domain) || domain
       "https://www.google.com/s2/favicons?domain=#{host}&sz=256"
     end
   end

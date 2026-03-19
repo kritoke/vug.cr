@@ -7,7 +7,8 @@ module Vug
       @size_limit : Int32 = 10 * 1024 * 1024,
       @entry_ttl : Time::Span = 7.days,
     )
-      @cache = Hash(String, {String, Time, Int32}).new
+      # Store {path, monotonic_timestamp, size} where monotonic_timestamp is Time::Span
+      @cache = Hash(String, {String, Time::Span, Int32}).new
       @current_size = 0
       @mutex = Mutex.new
     end
@@ -16,7 +17,8 @@ module Vug
       @mutex.synchronize do
         if entry = @cache[url]?
           path, timestamp, _size = entry
-          if Time.local - timestamp < @entry_ttl
+          # Check if entry has expired based on elapsed monotonic time
+          if Time.monotonic - timestamp < @entry_ttl
             path
           else
             _, _, file_size = @cache[url]
@@ -51,7 +53,7 @@ module Vug
           @current_size -= old_size
         end
 
-        @cache[url] = {local_path, Time.local, new_size}
+        @cache[url] = {local_path, Time.monotonic, new_size}
         @current_size += new_size
       end
     end

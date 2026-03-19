@@ -65,4 +65,63 @@ describe Vug::UrlProcessor do
       Vug::UrlProcessor.valid_scheme?("ftp://example.com/file.txt").should be_false
     end
   end
+
+  describe ".extract_host_from_url" do
+    it "extracts host from HTTP URL" do
+      result = Vug::UrlProcessor.extract_host_from_url("http://example.com/path")
+      result.should eq("example.com")
+    end
+
+    it "extracts host from HTTPS URL" do
+      result = Vug::UrlProcessor.extract_host_from_url("https://example.com/path")
+      result.should eq("example.com")
+    end
+
+    it "handles feed URLs" do
+      result = Vug::UrlProcessor.extract_host_from_url("https://example.com/feed/")
+      result.should eq("example.com")
+    end
+
+    it "handles feed URLs without trailing slash" do
+      result = Vug::UrlProcessor.extract_host_from_url("https://example.com/feed")
+      result.should eq("example.com")
+    end
+
+    it "returns domain as-is for non-HTTP URLs" do
+      result = Vug::UrlProcessor.extract_host_from_url("example.com")
+      result.should eq("example.com")
+    end
+
+    it "returns nil for invalid HTTP URLs" do
+      result = Vug::UrlProcessor.extract_host_from_url("http://")
+      result.should be_nil
+    end
+
+    it "returns nil for empty strings" do
+      result = Vug::UrlProcessor.extract_host_from_url("")
+      result.should be_nil
+    end
+  end
+
+  describe ".sanitize_feed_url" do
+    it "removes /feed/ suffix" do
+      result = Vug::UrlProcessor.sanitize_feed_url("https://example.com/feed/")
+      result.should eq("https://example.com")
+    end
+
+    it "removes /feed suffix without trailing slash" do
+      result = Vug::UrlProcessor.sanitize_feed_url("https://example.com/feed")
+      result.should eq("https://example.com")
+    end
+
+    it "leaves non-feed URLs unchanged" do
+      result = Vug::UrlProcessor.sanitize_feed_url("https://example.com/path")
+      result.should eq("https://example.com/path")
+    end
+
+    it "handles multiple feed patterns" do
+      result = Vug::UrlProcessor.sanitize_feed_url("https://example.com/feed/feed/")
+      result.should eq("https://example.com/feed")
+    end
+  end
 end
