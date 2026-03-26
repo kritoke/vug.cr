@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.5.1] - 2026-03-26
+
+### Security & Reliability
+- **Added internal semaphore protection**: Added `Semaphore` class to limit concurrent HTTP requests to 8, preventing potential race conditions with HTTP::Client internal connection pooling
+
 ## [0.1.5.0] - 2026-03-26
 
 ### Security & Reliability
