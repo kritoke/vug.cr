@@ -135,6 +135,127 @@ describe Vug::MemoryCache do
     cache.set("https://example.com/favicon.ico", "/favicons/abc.png")
     cache.get("https://example.com/favicon.ico").should eq("/favicons/abc.png")
   end
+
+  it "handles concurrent access from multiple fibers without deadlock" do
+    cache = Vug::MemoryCache.new
+    results = Channel(String?).new(100)
+    errors = Channel(Exception).new
+
+    10.times do |i|
+      spawn do
+        begin
+          url = "https://example#{i}.com/favicon.ico"
+          path = "/favicons/#{i}.png"
+          cache.set(url, path)
+          result = cache.get(url)
+          results.send(result)
+        rescue e
+          errors.send(e)
+        end
+      end
+    end
+
+    timeout = 5.seconds
+    deadline = Time.monotonic + timeout
+    completed = 0
+    errors_received = [] of Exception
+
+    while completed < 10 && Time.monotonic < deadline
+      select
+      when results.receive
+        completed += 1
+      when error = errors.receive
+        errors_received << error
+        completed += 1
+      when timeout(100.milliseconds)
+      end
+    end
+
+    errors_received.should be_empty
+    completed.should eq(10)
+  end
+
+  it "handles concurrent gets and sets without deadlock" do
+    cache = Vug::MemoryCache.new
+    results = Channel(String?).new(50)
+    errors = Channel(Exception).new
+
+    5.times do |i|
+      spawn do
+        begin
+          10.times do |j|
+            url = "https://example#{i}.com/favicon#{j}.ico"
+            cache.set(url, "/favicons/#{i}-#{j}.png")
+          end
+          results.send("set_done")
+        rescue e
+          errors.send(e)
+        end
+      end
+    end
+
+    5.times do |i|
+      spawn do
+        begin
+          10.times do |j|
+            url = "https://example#{i}.com/favicon#{j}.ico"
+            cache.get(url)
+          end
+          results.send("get_done")
+        rescue e
+          errors.send(e)
+        end
+      end
+    end
+
+    timeout = 5.seconds
+    deadline = Time.monotonic + timeout
+    completed = 0
+    errors_received = [] of Exception
+
+    while completed < 10 && Time.monotonic < deadline
+      select
+      when results.receive
+        completed += 1
+      when error = errors.receive
+        errors_received << error
+        completed += 1
+      when timeout(100.milliseconds)
+      end
+    end
+
+    errors_received.should be_empty
+    completed.should eq(10)
+  end
+
+  it "maintains consistency under concurrent set operations on same key" do
+    cache = Vug::MemoryCache.new(size_limit: 1000)
+    results = Channel(String).new(10)
+
+    10.times do |i|
+      spawn do
+        cache.set("https://example.com/favicon.ico", "/favicons/#{i}.png")
+        results.send("done")
+      end
+    end
+
+    timeout = 5.seconds
+    deadline = Time.monotonic + timeout
+    completed = 0
+
+    while completed < 10 && Time.monotonic < deadline
+      select
+      when results.receive
+        completed += 1
+      when timeout(100.milliseconds)
+      end
+    end
+
+    completed.should eq(10)
+    final_value = cache.get("https://example.com/favicon.ico")
+    final_value.should_not be_nil
+    final_value.as(String).should start_with("/favicons/")
+  end
 end
 
 describe Vug::Config do

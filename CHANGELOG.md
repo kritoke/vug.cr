@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.5.0] - 2026-03-26
+
+### Security & Reliability
+- **Verified fiber-safety of MemoryCache**: Reviewed and confirmed `MemoryCache` mutex usage is safe for concurrent fiber access in Crystal
+- **No deadlock conditions**: Verified `get()` and `set()` use single isolated `synchronize` blocks with no re-entrancy
+
+### Testing
+- **Fiber-safety tests**: Added 3 new concurrent access tests proving `MemoryCache` handles multiple fibers safely:
+  - Concurrent get/set from multiple fibers without deadlock
+  - Concurrent gets and sets interleaving without deadlock
+  - Consistency under concurrent set operations on same key
+
 ## [0.1.4.1] - 2026-03-19
 
 ### Fixed
