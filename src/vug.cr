@@ -147,23 +147,6 @@ module Vug
     Vug.success(favicon.url, cached)
   end
 
-  private def self.try_fallback_chain(site_url : String, config : Config, cache : MemoryCache?) : Result?
-    host = extract_host(UrlProcessor.sanitize_feed_url(site_url), config)
-    return unless host
-
-    fetcher = Fetcher.new(config, cache, HttpClientFactory.new(config))
-
-    if result = try_standard_paths(host, fetcher, config, cache)
-      return result
-    end
-
-    if result = try_duckduckgo(host, fetcher, config, cache)
-      return result
-    end
-
-    try_google(host, fetcher, config, cache)
-  end
-
   private def self.try_standard_paths(host : String, fetcher : Fetcher, config : Config, cache : MemoryCache?) : Result?
     cache_manager = CacheManager.new(config, cache)
     DEFAULT_FAVICON_PATHS.each do |path_segment|
@@ -208,22 +191,6 @@ module Vug
 
     cache_manager.set(url, path)
     result
-  end
-
-  private def self.generate_placeholder_fallback(site_url : String, config : Config, cache : MemoryCache?) : Result
-    host = extract_host(UrlProcessor.sanitize_feed_url(site_url), config)
-    return Vug.failure("Invalid URL", site_url) unless host
-
-    config.debug("No favicon found, generating placeholder for: #{host}")
-    placeholder_data, content_type = PlaceholderGenerator.generate_for_domain(host)
-
-    cache_manager = CacheManager.new(config, cache)
-    if saved_path = config.save("placeholder:#{host}", placeholder_data, content_type)
-      cache_manager.set("placeholder:#{host}", saved_path)
-      return Vug.success("placeholder:#{host}", saved_path, content_type, placeholder_data)
-    end
-
-    Vug.failure("No favicon found and placeholder generation failed", site_url)
   end
 
   private def self.extract_host(url : String, config : Config) : String?

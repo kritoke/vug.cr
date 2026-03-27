@@ -21,7 +21,7 @@ module Vug
     private class Semaphore
       def initialize(@limit : Int32)
         @count = 0
-        @mutex = Mutex.new
+        @mutex = Mutex.new(:unchecked)
         @channel = Channel(Nil).new(@limit)
         @limit.times { @channel.send(nil) }
       end
@@ -47,23 +47,12 @@ module Vug
       redirects = 0
       start_time = Time.monotonic
       gray_placeholder_attempts = 0
-      max_gray_attempts = 3 # Prevent infinite loops
+      max_gray_attempts = 3
 
       loop do
-        if (Time.monotonic - start_time).total_seconds > @config.timeout.total_seconds
-          @config.warning("fetch(#{url}) timeout after #{@config.timeout.total_seconds}s")
-          return Vug.failure("Timeout", url)
-        end
-
-        if redirects > @config.max_redirects
-          @config.debug("Too many redirects (#{redirects}) for favicon: #{url}")
-          return Vug.failure("Too many redirects", url)
-        end
-
-        if gray_placeholder_attempts >= max_gray_attempts
-          @config.debug("Too many gray placeholder attempts (#{gray_placeholder_attempts}) for favicon: #{url}")
-          return Vug.failure("Too many gray placeholder attempts", url)
-        end
+        return Vug.failure("Timeout", url) if timed_out?(start_time)
+        return Vug.failure("Too many redirects", url) if redirects > @config.max_redirects
+        return Vug.failure("Too many gray placeholder attempts", url) if gray_placeholder_attempts >= max_gray_attempts
 
         if cached = @cache_manager.get(current_url)
           @config.debug("Favicon cache hit: #{current_url}")
@@ -75,39 +64,48 @@ module Vug
         result = fetch_single(current_url)
 
         if result.redirect?
-          if new_url = result.url
-            current_url = new_url
-            redirects += 1
-            next
-          end
-          return result
-        elsif result.success?
-          # Check if this is a gray placeholder that needs fallback
-          if should_handle_gray_placeholder?(current_url, result.bytes)
+          current_url = result.url.as(String)
+          redirects += 1
+          next
+        end
+
+        if result.success?
+          gray_check = check_gray_placeholder_and_get_next_url(current_url, result.bytes, gray_placeholder_attempts, max_gray_attempts)
+          case gray_check
+          when :found_larger_cache
+            return result
+          when :try_fallback
             gray_placeholder_attempts += 1
-
-            # Check if we already have a cached larger version for Google URLs
-            if current_url.includes?("google.com/s2/favicons")
-              larger_url = current_url.gsub(/sz=\d+/, "sz=256")
-              if cached = @cache_manager.get(larger_url)
-                @cache_manager.set(current_url, cached)
-                return Vug.success(current_url, cached)
-              end
-            end
-
             if new_url = get_gray_placeholder_fallback_url(current_url)
               current_url = new_url
               next
-            else
-              return result
             end
-          else
+            return result
+          when :no_gray_placeholder
             return result
           end
-        else
-          return result
+        end
+
+        return result
+      end
+    end
+
+    private def timed_out?(start_time : Time::Span) : Bool
+      (Time.monotonic - start_time).total_seconds > @config.timeout.total_seconds
+    end
+
+    private def check_gray_placeholder_and_get_next_url(current_url : String, bytes : Bytes?, gray_placeholder_attempts : Int32, max_gray_attempts : Int32) : Symbol
+      return :no_gray_placeholder unless should_handle_gray_placeholder?(current_url, bytes)
+
+      if current_url.includes?("google.com/s2/favicons")
+        larger_url = current_url.gsub(/sz=\d+/, "sz=256")
+        if cached = @cache_manager.get(larger_url)
+          @cache_manager.set(current_url, cached)
+          return :found_larger_cache
         end
       end
+
+      :try_fallback
     end
 
     private def fetch_single(url : String) : Result

@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.5.2] - 2026-03-27
+
+### Security & Reliability
+- **Fixed mutex deadlock on FreeBSD/Docker**: Changed `Mutex.new` to `Mutex.new(:unchecked)` in `Semaphore` class to prevent recursive mutex locking during GC operations that cause deadlocks in FreeBSD jails and Docker containers
+
+### Bug Fixes
+- **Removed duplicate method definitions**: Removed duplicate `try_fallback_chain` and `generate_placeholder_fallback` methods that were causing code duplication and potential confusion
+
+### Testing
+- **New test coverage**: Added 18 new tests for fetcher logic, configuration validation, and semaphore concurrency
+
 ## [0.1.5.1] - 2026-03-26
 
 ### Security & Reliability
