@@ -19,7 +19,7 @@ module Vug
       "link[type='image/x-icon']",
     ]
 
-    def initialize(@config : Config = Config.new, manifest_extractor : ManifestExtractor? = nil, http_client_factory : HttpClientFactory? = nil)
+    def initialize(@config : Config = Config.default, manifest_extractor : ManifestExtractor? = nil, http_client_factory : HttpClientFactory? = nil)
       @manifest_extractor = manifest_extractor || ManifestExtractor.new(@config)
       @http_client_factory = http_client_factory || HttpClientFactory.new(@config)
     end
@@ -39,7 +39,7 @@ module Vug
           @config.debug("URL missing scheme: #{clean_url}")
           return [] of FaviconInfo
         end
-      rescue ex
+      rescue ex : URI::Error
         @config.debug("Invalid URL for HTML extraction: #{clean_url} - #{ex.message}")
         return [] of FaviconInfo
       end
@@ -90,7 +90,7 @@ module Vug
       rescue IO::TimeoutError
         @config.error("extract_all(#{site_url})", "Read timed out")
         @config.debug("HTML fetch timeout: #{site_url}")
-      rescue ex
+      rescue ex : IO::Error | Socket::Error
         @config.error("extract_all(#{site_url})", ex.message || "Unknown error")
         @config.debug("Error extracting favicons: #{ex.message}")
       end
@@ -165,8 +165,8 @@ module Vug
 
     private def sanitize_html(html : String) : String
       Sanitize::Policy::HTMLSanitizer.common.process(html)
-    rescue Exception
-      @config.debug("HTML sanitization failed, returning empty string")
+    rescue ex : Exception
+      @config.debug("HTML sanitization failed: #{ex.message}")
       ""
     end
   end

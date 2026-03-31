@@ -9,7 +9,7 @@ require "./redirect_validator"
 
 module Vug
   class Fetcher
-    def initialize(@config : Config = Config.new, cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectValidator? = nil)
+    def initialize(@config : Config = Config.default, cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectValidator? = nil)
       @http_client_factory = http_client_factory || HttpClientFactory.new(@config)
       @cache_manager = cache_manager || CacheManager.new(@config, cache)
       @redirect_validator = redirect_validator || RedirectValidator.new(@config)
@@ -19,7 +19,7 @@ module Vug
     def fetch(url : String) : Result
       unless UrlValidator.valid_url?(url)
         @config.debug("Invalid or dangerous URL blocked: #{url}")
-        return Vug.failure("Invalid URL", url)
+        return Vug.failure("Invalid URL", url, error_type: :invalid_url)
       end
 
       @config.debug("Fetching favicon: #{url}")
@@ -31,9 +31,9 @@ module Vug
       max_gray_attempts = 3
 
       loop do
-        return Vug.failure("Timeout", url) if timed_out?(start_time)
-        return Vug.failure("Too many redirects", url) if redirects > @config.max_redirects
-        return Vug.failure("Too many gray placeholder attempts", url) if gray_placeholder_attempts >= max_gray_attempts
+        return Vug.failure("Timeout", url, error_type: :timeout) if timed_out?(start_time)
+        return Vug.failure("Too many redirects", url, error_type: :too_many_redirects) if redirects > @config.max_redirects
+        return Vug.failure("Too many gray placeholder attempts", url, error_type: :too_many_gray_placeholder_attempts) if gray_placeholder_attempts >= max_gray_attempts
 
         if cached = @cache_manager.get(current_url)
           @config.debug("Favicon cache hit: #{current_url}")
@@ -95,7 +95,7 @@ module Vug
         # Re-validate DNS at connection time to prevent DNS rebinding
         unless UrlValidator.revalidate_url?(url)
           @config.debug("DNS revalidation failed (possible rebinding): #{url}")
-          return Vug.failure("DNS revalidation failed", url)
+          return Vug.failure("DNS revalidation failed", url, error_type: :dns_revalidation_failed)
         end
 
         uri = URI.parse(url)
@@ -115,10 +115,10 @@ module Vug
             # Validate redirect URL for SSRF protection
             unless @redirect_validator.validate_redirect_url(url, new_url)
               @config.debug("Dangerous redirect blocked: #{new_url}")
-              return Vug.failure("Invalid redirect", url)
+              return Vug.failure("Invalid redirect", url, error_type: :invalid_redirect)
             end
 
-            return Result.new(url: new_url, local_path: nil, content_type: nil, bytes: nil, error: nil)
+            return Result.new(url: new_url, local_path: nil, content_type: nil, bytes: nil, error: nil, error_type: nil)
           end
 
           if response.status.success?
@@ -131,7 +131,7 @@ module Vug
             return handle_error(url, response.status_code)
           end
         end
-      rescue ex
+      rescue ex : IO::Error | Socket::Error | URI::Error
         error_msg = case ex
                     when IO::TimeoutError
                       "Request timed out"
@@ -141,7 +141,7 @@ module Vug
                       ex.message || "Unknown error"
                     end
         @config.error("fetch_single(#{url})", error_msg)
-        Vug.failure(error_msg, url)
+        Vug.failure(error_msg, url, error_type: :fetch_error)
       ensure
         @semaphore.release
       end
@@ -150,12 +150,12 @@ module Vug
     private def handle_success(url : String, data : Bytes, content_type : String) : Result
       if data.size == 0
         @config.debug("Empty favicon response: #{url}")
-        return Vug.failure("Empty response", url)
+        return Vug.failure("Empty response", url, error_type: :empty_response)
       end
 
       unless ImageValidator.valid?(data, @config.image_validation_hard?)
         @config.debug("Invalid favicon content (not an image): #{url}")
-        return Vug.failure("Invalid image", url)
+        return Vug.failure("Invalid image", url, error_type: :invalid_image)
       end
 
       # Get actual image dimensions if available
@@ -173,7 +173,7 @@ module Vug
         Vug.success(url, saved_path, content_type, data)
       else
         @config.debug("Favicon save failed: #{url}")
-        Vug.failure("Save failed", url)
+        Vug.failure("Save failed", url, error_type: :save_failed)
       end
     end
 
@@ -195,7 +195,7 @@ module Vug
             @config.debug("Google fallback URL: #{google_url}")
             google_url
           end
-        rescue ex
+        rescue ex : URI::Error
           @config.error("gray placeholder fallback(#{current_url})", ex.message || "Unknown error")
         end
       end
@@ -210,7 +210,7 @@ module Vug
       else
         @config.debug("Favicon error #{status_code}: #{url}")
       end
-      Vug.failure("HTTP #{status_code}", url)
+      Vug.failure("HTTP #{status_code}", url, error_type: :http_error)
     end
 
     def self.google_favicon_url(domain : String) : String

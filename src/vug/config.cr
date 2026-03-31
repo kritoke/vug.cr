@@ -28,6 +28,12 @@ module Vug
     property on_error : Proc(String, String, Nil)? = nil
     property on_warning : Proc(String, Nil)? = nil
 
+    DEFAULT = Config.new
+
+    def self.default : Config
+      DEFAULT
+    end
+
     def initialize(
       timeout : Time::Span? = nil,
       connect_timeout : Time::Span? = nil,

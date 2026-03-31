@@ -75,7 +75,7 @@ module Vug
         image = CrImage.read(io)
         return if image.nil?
         {image.bounds.width, image.bounds.height}
-      rescue Exception
+      rescue CrImage::Error | CrImage::UnknownFormat | IO::Error | ArgumentError
         nil
       end
     end
@@ -109,7 +109,7 @@ module Vug
         io = IO::Memory.new(data)
         image = CrImage.read(io)
         !image.nil?
-      rescue Exception
+      rescue CrImage::Error | CrImage::UnknownFormat | IO::Error | ArgumentError
         false
       end
     end
@@ -129,7 +129,7 @@ module Vug
         else
           "image/unknown"
         end
-      rescue Exception
+      rescue CrImage::Error | CrImage::UnknownFormat | IO::Error | ArgumentError
         "application/octet-stream"
       end
     end

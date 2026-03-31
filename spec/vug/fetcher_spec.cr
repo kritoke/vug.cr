@@ -28,7 +28,7 @@ describe Vug::Result do
 
   describe "#redirect?" do
     it "returns true for redirect result" do
-      result = Vug::Result.new(url: "https://example.com/new-favicon.ico", local_path: nil, content_type: nil, bytes: nil, error: nil)
+      result = Vug::Result.new(url: "https://example.com/new-favicon.ico", local_path: nil, content_type: nil, bytes: nil, error: nil, error_type: nil)
       result.redirect?.should be_true
     end
 
@@ -48,7 +48,7 @@ describe "Result case statement type checking" do
   it "exercises all result predicates" do
     success = Vug.success("https://example.com/icon.png", "/path/icon.png")
     failure = Vug.failure("Error", "https://example.com/icon.png")
-    redirect = Vug::Result.new(url: "https://example.com/new.png", local_path: nil, content_type: nil, bytes: nil, error: nil)
+    redirect = Vug::Result.new(url: "https://example.com/new.png", local_path: nil, content_type: nil, bytes: nil, error: nil, error_type: nil)
 
     success.success?.should be_true
     success.failure?.should be_false
