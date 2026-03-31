@@ -121,7 +121,7 @@ module Vug
 
           # Handle data URLs specially
           if DataUrlHandler.data_url?(href)
-            if data_result = DataUrlHandler.extract_from_url(href)
+            if data_result = DataUrlHandler.extract_from_url(href, @config.max_size)
               data, media_type = data_result
               # Create a temporary URL identifier for data URLs
               data_url_id = "data:#{Digest::SHA256.hexdigest(data.to_slice)}"
@@ -135,7 +135,6 @@ module Vug
               @config.debug("Found data URL favicon: #{data_url_id}")
               favicons << favicon_info
 
-              # Also save the data immediately since it's already available
               if saved_path = @config.save(data_url_id, data, media_type)
                 @config.debug("Data URL favicon saved: #{saved_path}")
               end

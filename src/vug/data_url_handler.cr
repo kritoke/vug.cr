@@ -5,16 +5,14 @@ module Vug
   # Handles base64-encoded data URLs in favicon href attributes
   # Example: data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...
   module DataUrlHandler
-    def self.extract_from_url(data_url : String) : {Bytes, String}?
+    def self.extract_from_url(data_url : String, max_size : Int32? = nil) : {Bytes, String}?
       return unless data_url.starts_with?("data:")
 
-      # Parse data URL format: data:[<mediatype>][;base64],<data>
       if data_url.includes?(",")
         parts = data_url.split(",", 2)
         header = parts[0]
         encoded_data = parts[1]
 
-        # Extract media type and check if it's base64
         is_base64 = false
 
         media_type = if header.includes?(";")
@@ -25,15 +23,21 @@ module Vug
                        header.sub("data:", "")
                      end
 
+        if max_size && encoded_data.size > max_size * 4 / 3
+          return
+        end
+
         begin
           decoded_data = is_base64 ? Base64.decode(encoded_data) : encoded_data.to_slice
 
-          # Validate that it's actually an image
+          if max_size && decoded_data.size > max_size
+            return
+          end
+
           if ImageValidator.valid?(decoded_data)
             return {decoded_data, media_type}
           end
         rescue
-          # Invalid base64 or other decoding error
         end
       end
 

@@ -1,4 +1,5 @@
 require "uri"
+require "socket"
 
 module Vug
   # Validates URLs to prevent SSRF (Server-Side Request Forgery) attacks
@@ -30,24 +31,6 @@ module Vug
       false
     end
 
-    def self.valid_redirect_url?(original_url : String, redirect_url : String) : Bool
-      # Validate both original and redirect URLs
-      return false unless valid_url?(original_url)
-      return false unless valid_url?(redirect_url)
-
-      # Additional check: ensure redirect doesn't change scheme in dangerous ways
-      original_uri = URI.parse(original_url)
-      redirect_uri = URI.parse(redirect_url)
-
-      # Allow HTTPS -> HTTP redirects only if explicitly configured (not by default)
-      # For now, be conservative and block scheme downgrades
-      if original_uri.scheme == "https" && redirect_uri.scheme == "http"
-        return false
-      end
-
-      true
-    end
-
     private def self.valid_scheme?(scheme : String?) : Bool
       return false if scheme.nil?
       ["http", "https"].includes?(scheme.downcase)
@@ -58,9 +41,42 @@ module Vug
 
       return true if localhost_like?(host)
       return true if ip_in_private_range?(host)
-      return true if host.ends_with?(".local") # mDNS/Bonjour can resolve to private IPs
+      return true if host.ends_with?(".local")
+
+      return true if resolves_to_private_ip?(host)
 
       false
+    end
+
+    def self.resolves_to_private_ip?(host : String) : Bool
+      return private_ip?(host) if host.includes?(".") || host.includes?(":")
+
+      ch = Channel(Bool).new
+
+      spawn do
+        begin
+          addrinfos = Socket::Addrinfo.resolve(host, "80", type: Socket::Type::STREAM)
+          blocked = addrinfos.any? do |addrinfo|
+            if ip = addrinfo.ip_address
+              private_ip?(ip.to_s)
+            else
+              false
+            end
+          end
+          ch.send(blocked)
+        rescue
+          ch.send(true)
+        end
+      end
+
+      select
+      when blocked = ch.receive
+        blocked
+      when timeout(5.seconds)
+        true
+      end
+    rescue
+      true
     end
 
     private def self.localhost_like?(host : String) : Bool

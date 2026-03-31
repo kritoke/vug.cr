@@ -56,6 +56,23 @@ describe Vug::UrlValidator do
       Vug::UrlValidator.valid_url?("not a url").should be_false
       Vug::UrlValidator.valid_url?("").should be_false
     end
+
+    it "accepts public domains (DNS resolution check)" do
+      Vug::UrlValidator.valid_url?("https://example.com/favicon.ico").should be_true
+      Vug::UrlValidator.valid_url?("https://google.com/favicon.ico").should be_true
+    end
+  end
+
+  describe ".resolves_to_private_ip?" do
+    it "returns false for public domains" do
+      result = Vug::UrlValidator.resolves_to_private_ip?("example.com")
+      result.should be_false
+    end
+
+    it "rejects domains that resolve to private IPs" do
+      Vug::UrlValidator.resolves_to_private_ip?("localhost").should be_true
+      Vug::UrlValidator.resolves_to_private_ip?("0.0.0.0").should be_true
+    end
   end
 
   describe ".private_ip? (via host validation)" do
@@ -104,57 +121,6 @@ describe Vug::UrlValidator do
 
     it "detects IPv6 link-local addresses" do
       Vug::UrlValidator.valid_url?("http://[fe80::1]/favicon.ico").should be_false
-    end
-  end
-
-  describe ".valid_redirect_url?" do
-    it "allows HTTPS to HTTPS redirects" do
-      Vug::UrlValidator.valid_redirect_url?(
-        "https://example.com/favicon.ico",
-        "https://cdn.example.com/favicon.ico"
-      ).should be_true
-    end
-
-    it "allows HTTP to HTTP redirects" do
-      Vug::UrlValidator.valid_redirect_url?(
-        "http://example.com/favicon.ico",
-        "http://cdn.example.com/favicon.ico"
-      ).should be_true
-    end
-
-    it "allows HTTP to HTTPS redirects" do
-      Vug::UrlValidator.valid_redirect_url?(
-        "http://example.com/favicon.ico",
-        "https://example.com/favicon.ico"
-      ).should be_true
-    end
-
-    it "blocks HTTPS to HTTP redirects (scheme downgrade)" do
-      Vug::UrlValidator.valid_redirect_url?(
-        "https://example.com/favicon.ico",
-        "http://example.com/favicon.ico"
-      ).should be_false
-    end
-
-    it "blocks redirects to invalid URLs" do
-      Vug::UrlValidator.valid_redirect_url?(
-        "https://example.com/favicon.ico",
-        "http://localhost/favicon.ico"
-      ).should be_false
-    end
-
-    it "blocks redirects from invalid URLs" do
-      Vug::UrlValidator.valid_redirect_url?(
-        "http://localhost/favicon.ico",
-        "https://example.com/favicon.ico"
-      ).should be_false
-    end
-
-    it "blocks redirects to private IPs" do
-      Vug::UrlValidator.valid_redirect_url?(
-        "https://example.com/favicon.ico",
-        "http://192.168.1.1/favicon.ico"
-      ).should be_false
     end
   end
 end

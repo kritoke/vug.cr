@@ -33,17 +33,16 @@ module Vug
     def set(url : String, local_path : String) : Nil
       return unless local_path.starts_with?("/")
 
+      new_size = begin
+        File.size(local_path).to_i32
+      rescue
+        local_path.bytesize
+      end
+
       @mutex.synchronize do
         if existing_entry = @cache[url]?
           _, _, existing_size = existing_entry
           @current_size -= existing_size
-        end
-
-        # Get actual file size, fallback to path length if file doesn't exist
-        begin
-          new_size = File.size(local_path).to_i32
-        rescue
-          new_size = local_path.bytesize
         end
 
         while @current_size + new_size > @size_limit && !@cache.empty?

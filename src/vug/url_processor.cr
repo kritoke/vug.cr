@@ -20,13 +20,11 @@ module Vug
     end
 
     # Validates that a URL has a safe scheme (http/https only)
+    ALLOWED_SCHEMES = {"http", "https"}
+
     def self.valid_scheme?(url : String) : Bool
-      return false if url.starts_with?("javascript:")
-      return false if url.starts_with?("vbscript:")
-      return false if url.starts_with?("data:")
-      return false if url.starts_with?("file:")
-      return false if url.starts_with?("ftp:")
-      true
+      scheme = url.split("://").first?.try(&.downcase)
+      ALLOWED_SCHEMES.includes?(scheme)
     end
 
     # Extracts host from URL, handling feed URLs and HTTP/HTTPS schemes

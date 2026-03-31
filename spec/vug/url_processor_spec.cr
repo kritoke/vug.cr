@@ -45,6 +45,14 @@ describe Vug::UrlProcessor do
       Vug::UrlProcessor.valid_scheme?("https://example.com/favicon.ico").should be_true
     end
 
+    it "allows uppercase HTTP scheme" do
+      Vug::UrlProcessor.valid_scheme?("HTTP://example.com/favicon.ico").should be_true
+    end
+
+    it "allows mixed case HTTPS scheme" do
+      Vug::UrlProcessor.valid_scheme?("HtTpS://example.com/favicon.ico").should be_true
+    end
+
     it "rejects javascript URLs" do
       Vug::UrlProcessor.valid_scheme?("javascript:alert(1)").should be_false
     end
@@ -63,6 +71,14 @@ describe Vug::UrlProcessor do
 
     it "rejects ftp URLs" do
       Vug::UrlProcessor.valid_scheme?("ftp://example.com/file.txt").should be_false
+    end
+
+    it "rejects gopher URLs" do
+      Vug::UrlProcessor.valid_scheme?("gopher://example.com/").should be_false
+    end
+
+    it "rejects unknown schemes" do
+      Vug::UrlProcessor.valid_scheme?("custom://example.com/").should be_false
     end
   end
 

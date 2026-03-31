@@ -31,22 +31,25 @@ module Vug
 
   def self.site(site_url : String, config : Config = Config.new, cache : MemoryCache? = nil) : Result
     clean_url = UrlProcessor.sanitize_feed_url(site_url)
-    if result = try_extracted_favicon(clean_url, config, cache)
+    http_client_factory = HttpClientFactory.new(config)
+    cache_manager = CacheManager.new(config, cache)
+
+    if result = try_extracted_favicon(clean_url, config, cache, http_client_factory, cache_manager)
       return result
     end
 
-    if result = try_fallback_chain(clean_url, config, cache)
+    if result = try_fallback_chain(clean_url, config, cache, http_client_factory, cache_manager)
       return result
     end
 
-    generate_placeholder_fallback(clean_url, config, cache)
+    generate_placeholder_fallback(clean_url, config, cache, cache_manager)
   end
 
-  def self.favicons(site_url : String, config : Config = Config.new) : FaviconCollection?
+  def self.favicons(site_url : String, config : Config = Config.new, http_client_factory : HttpClientFactory? = nil) : FaviconCollection?
     clean_url = UrlProcessor.sanitize_feed_url(site_url)
-    http_client_factory = HttpClientFactory.new(config)
-    manifest_extractor = ManifestExtractor.new(config, http_client_factory)
-    html_extractor = HtmlExtractor.new(config, manifest_extractor, http_client_factory)
+    factory = http_client_factory || HttpClientFactory.new(config)
+    manifest_extractor = ManifestExtractor.new(config, factory)
+    html_extractor = HtmlExtractor.new(config, manifest_extractor, factory)
     favicons = html_extractor.extract_all(clean_url)
 
     return if favicons.empty?
@@ -58,7 +61,10 @@ module Vug
 
   def self.best(site_url : String, config : Config = Config.new, cache : MemoryCache? = nil) : Result
     clean_url = UrlProcessor.sanitize_feed_url(site_url)
-    if result = try_extracted_favicon(clean_url, config, cache)
+    http_client_factory = HttpClientFactory.new(config)
+    cache_manager = CacheManager.new(config, cache)
+
+    if result = try_extracted_favicon(clean_url, config, cache, http_client_factory, cache_manager)
       return result
     end
 
@@ -89,16 +95,16 @@ module Vug
     "https://icons.duckduckgo.com/ip3/#{host}.ico"
   end
 
-  private def self.try_extracted_favicon(site_url : String, config : Config, cache : MemoryCache?) : Result?
-    collection = favicons(site_url, config)
+  private def self.try_extracted_favicon(site_url : String, config : Config, cache : MemoryCache?, http_client_factory : HttpClientFactory, cache_manager : CacheManager) : Result?
+    collection = favicons(site_url, config, http_client_factory)
     return unless collection
 
     best = collection.best
     return unless best
 
-    return fetch_data_url_favicon(best, config, cache) if best.url.starts_with?("data:")
+    return fetch_data_url_favicon(best, config, cache_manager) if best.url.starts_with?("data:")
 
-    fetcher = Fetcher.new(config, cache, HttpClientFactory.new(config))
+    fetcher = Fetcher.new(config, cache, http_client_factory)
     result = fetcher.fetch(best.url)
     return unless path = result.local_path
 
@@ -106,31 +112,30 @@ module Vug
     result
   end
 
-  private def self.try_fallback_chain(site_url : String, config : Config, cache : MemoryCache?) : Result?
+  private def self.try_fallback_chain(site_url : String, config : Config, cache : MemoryCache?, http_client_factory : HttpClientFactory, cache_manager : CacheManager) : Result?
     host = extract_host(site_url, config)
     return unless host
 
-    fetcher = Fetcher.new(config, cache, HttpClientFactory.new(config))
+    fetcher = Fetcher.new(config, cache, http_client_factory)
 
-    if result = try_standard_paths(host, fetcher, config, cache)
+    if result = try_standard_paths(host, fetcher, cache_manager)
       return result
     end
 
-    if result = try_duckduckgo(host, fetcher, config, cache)
+    if result = try_duckduckgo(host, fetcher, cache_manager, config)
       return result
     end
 
-    try_google(host, fetcher, config, cache)
+    try_google(host, fetcher, cache_manager, config)
   end
 
-  private def self.generate_placeholder_fallback(site_url : String, config : Config, cache : MemoryCache?) : Result
+  private def self.generate_placeholder_fallback(site_url : String, config : Config, cache : MemoryCache?, cache_manager : CacheManager) : Result
     host = extract_host(site_url, config)
     return Vug.failure("Invalid URL", site_url) unless host
 
     config.debug("No favicon found, generating placeholder for: #{host}")
     placeholder_data, content_type = PlaceholderGenerator.generate_for_domain(host)
 
-    cache_manager = CacheManager.new(config, cache)
     if saved_path = config.save("placeholder:#{host}", placeholder_data, content_type)
       cache_manager.set("placeholder:#{host}", saved_path)
       return Vug.success("placeholder:#{host}", saved_path, content_type, placeholder_data)
@@ -139,16 +144,17 @@ module Vug
     Vug.failure("No favicon found and placeholder generation failed", site_url)
   end
 
-  private def self.fetch_data_url_favicon(favicon : FaviconInfo, config : Config, cache : MemoryCache?) : Result?
-    cache_manager = CacheManager.new(config, cache)
+  private def self.fetch_data_url_favicon(favicon : FaviconInfo, config : Config, cache_manager : CacheManager) : Result?
     cached = cache_manager.get(favicon.url)
     return unless cached
 
     Vug.success(favicon.url, cached)
+  rescue ex
+    config.debug("Failed to fetch data URL favicon: #{ex.message}")
+    nil
   end
 
-  private def self.try_standard_paths(host : String, fetcher : Fetcher, config : Config, cache : MemoryCache?) : Result?
-    cache_manager = CacheManager.new(config, cache)
+  private def self.try_standard_paths(host : String, fetcher : Fetcher, cache_manager : CacheManager) : Result?
     DEFAULT_FAVICON_PATHS.each do |path_segment|
       url = "https://#{host}#{path_segment}"
       cached = cache_manager.get(url)
@@ -163,11 +169,10 @@ module Vug
     nil
   end
 
-  private def self.try_duckduckgo(host : String, fetcher : Fetcher, config : Config, cache : MemoryCache?) : Result?
+  private def self.try_duckduckgo(host : String, fetcher : Fetcher, cache_manager : CacheManager, config : Config) : Result?
     url = duckduckgo_favicon_url(host)
     config.debug("DuckDuckGo favicon URL: #{url}")
 
-    cache_manager = CacheManager.new(config, cache)
     cached = cache_manager.get(url)
     return Vug.success(url, cached) if cached
 
@@ -178,11 +183,10 @@ module Vug
     result
   end
 
-  private def self.try_google(host : String, fetcher : Fetcher, config : Config, cache : MemoryCache?) : Result?
+  private def self.try_google(host : String, fetcher : Fetcher, cache_manager : CacheManager, config : Config) : Result?
     url = google_favicon_url(host)
     config.debug("Google favicon URL: #{url}")
 
-    cache_manager = CacheManager.new(config, cache)
     cached = cache_manager.get(url)
     return Vug.success(url, cached) if cached
 

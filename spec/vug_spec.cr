@@ -52,6 +52,17 @@ describe Vug do
     end
   end
 
+  describe "data URL favicon handling" do
+    it "returns result type for URLs that would contain data URL favicons" do
+      config = Vug::Config.new(
+        on_save: ->(url : String, _data : Bytes, _content_type : String) : String? { "/tmp/favicons/#{url.hash}.ico" },
+        on_load: ->(_url : String) : String? { nil }
+      )
+      result = Vug.site("https://example.com", config)
+      result.should be_a(Vug::Result)
+    end
+  end
+
   describe "URL processing integration" do
     it "processes feed URLs through all main methods without errors" do
       config = Vug::Config.new(
