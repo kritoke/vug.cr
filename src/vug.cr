@@ -1,3 +1,4 @@
+require "uri"
 require "./vug/config"
 require "./vug/types"
 require "./vug/url_validator"
@@ -22,6 +23,31 @@ module Vug
     "/apple-touch-icon.png",
     "/apple-touch-icon-180x180.png",
   ]
+
+  # Shared concurrency limiter for all Fetcher instances
+  @@semaphore : Semaphore? = nil
+  @@semaphore_mutex = Mutex.new
+
+  class Semaphore
+    def initialize(@limit : Int32)
+      @channel = Channel(Nil).new(@limit)
+      @limit.times { @channel.send(nil) }
+    end
+
+    def acquire : Nil
+      @channel.receive
+    end
+
+    def release : Nil
+      @channel.send(nil)
+    end
+  end
+
+  def self.shared_semaphore(limit : Int32) : Semaphore
+    @@semaphore_mutex.synchronize do
+      @@semaphore ||= Semaphore.new(limit)
+    end
+  end
 
   def self.fetch(url : String, config : Config = Config.new, cache : MemoryCache? = nil) : Result
     http_client_factory = HttpClientFactory.new(config)
@@ -92,7 +118,8 @@ module Vug
 
   def self.duckduckgo_favicon_url(domain : String) : String
     host = UrlProcessor.extract_host_from_url(domain) || domain
-    "https://icons.duckduckgo.com/ip3/#{host}.ico"
+    encoded_host = URI.encode_path(host)
+    "https://icons.duckduckgo.com/ip3/#{encoded_host}.ico"
   end
 
   private def self.try_extracted_favicon(site_url : String, config : Config, cache : MemoryCache?, http_client_factory : HttpClientFactory, cache_manager : CacheManager) : Result?

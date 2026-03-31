@@ -5,6 +5,12 @@ module Vug
   # Validates URLs to prevent SSRF (Server-Side Request Forgery) attacks
   # Blocks requests to private IP ranges, localhost, and other dangerous destinations
   module UrlValidator
+    DNS_CACHE_TTL = 30.seconds
+
+    # DNS cache: hostname -> {resolved_ips, timestamp}
+    @@dns_cache = Hash(String, {Array(String), Time::Span}).new
+    @@dns_cache_mutex = Mutex.new
+
     # Check if an IP address string matches private ranges
     def self.private_ip?(ip : String) : Bool
       return true if ip.starts_with?("127.")                         # localhost
@@ -27,8 +33,63 @@ module Vug
       return false unless valid_scheme?(uri.scheme)
       return false if dangerous_host?(uri.hostname)
       true
-    rescue
+    rescue URI::Error
       false
+    end
+
+    # Re-validate a URL's DNS resolution before making an HTTP request.
+    # Returns false if the DNS resolution differs from the cached validation
+    # (possible DNS rebinding attack) or if any resolved IP is private.
+    def self.revalidate_url?(url : String) : Bool
+      uri = URI.parse(url)
+      host = uri.hostname
+      return false if host.nil? || host.empty?
+      return true if localhost_like?(host)
+
+      # If host is a raw IP, check it directly
+      if host.includes?(".") || host.includes?(":")
+        return !private_ip?(host)
+      end
+
+      # Resolve fresh and check if any result is a private IP
+      ips = resolve_ips_cached(host)
+      return false if ips.empty?
+
+      !ips.any? { |ip| private_ip?(ip) }
+    rescue URI::Error
+      false
+    end
+
+    # Resolve a hostname to a list of IP strings, using the DNS cache.
+    def self.resolve_ips_cached(host : String) : Array(String)
+      @@dns_cache_mutex.synchronize do
+        if entry = @@dns_cache[host]?
+          ips, timestamp = entry
+          if Time.monotonic - timestamp < DNS_CACHE_TTL
+            return ips
+          end
+        end
+      end
+
+      ips = resolve_ips_uncached(host)
+
+      @@dns_cache_mutex.synchronize do
+        @@dns_cache[host] = {ips, Time.monotonic}
+      end
+
+      ips
+    end
+
+    private def self.resolve_ips_uncached(host : String) : Array(String)
+      addrinfos = Socket::Addrinfo.resolve(host, "80", type: Socket::Type::STREAM)
+      addrinfos.compact_map { |addrinfo| addrinfo.ip_address.try(&.to_s) }
+    rescue Socket::Addrinfo::Error
+      [] of String
+    end
+
+    # Clear the DNS cache (useful for testing)
+    def self.clear_dns_cache : Nil
+      @@dns_cache_mutex.synchronize { @@dns_cache.clear }
     end
 
     private def self.valid_scheme?(scheme : String?) : Bool
@@ -64,7 +125,7 @@ module Vug
             end
           end
           ch.send(blocked)
-        rescue
+        rescue Socket::Addrinfo::Error
           ch.send(true)
         end
       end
@@ -75,7 +136,7 @@ module Vug
       when timeout(5.seconds)
         true
       end
-    rescue
+    rescue Channel::ClosedError
       true
     end
 

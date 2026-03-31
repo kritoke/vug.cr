@@ -4,20 +4,16 @@ Favicon fetching library with pluggable storage callbacks.
 
 ## Features
 
-- Fetch favicons from URLs with proper HTTP client handling
-- Extract favicon URLs from HTML pages using proper CSS selectors (Lexbor)
-- Web App Manifest parsing support (extracts icons from manifest files)
-- Multiple favicon collection and intelligent selection (best, largest, by size)
-- Size attribute extraction and utilization from HTML and manifest
-- DuckDuckGo favicon API support as additional fallback
-- Base64 data URL support (handles inline favicons like `data:image/png;base64,...`)
-- Advanced image validation using crimage (supports PNG, JPEG, GIF, BMP, TIFF, WebP, ICO, SVG)
-- Image dimension detection and logging
-- **Placeholder generation** - creates default SVG favicons with domain letter when no real favicon is found
-- Fallback chain: HTML extraction → Manifest extraction → Standard paths → DuckDuckGo → Google S2 → Placeholder
-- Pluggable storage via callbacks (disk, memory, S3, etc.)
+- Fetch favicons from direct URLs
+- Extract favicon URLs from HTML pages (`<link rel="icon">`, `<link rel="apple-touch-icon">`, etc.)
+- Web App Manifest parsing for icon extraction
+- Multiple favicon collection with intelligent best/largest/by-size selection
+- DuckDuckGo and Google favicon service fallbacks
+- Inline base64 data URL support (`data:image/png;base64,...`)
+- SVG placeholder generation when no real favicon is found
 - In-memory caching with TTL and size limits
-- Comprehensive error handling and logging callbacks
+- SSRF protection with DNS rebinding detection
+- Pluggable storage via callbacks (disk, S3, database, memory — your choice)
 
 ## Installation
 
@@ -29,90 +25,84 @@ dependencies:
     github: kritoke/vug.cr
 ```
 
-## Usage
+## Quick Start
 
 ```crystal
 require "vug"
 
-# Configure with callbacks
+# Minimal — no config needed
+result = Vug.site("https://example.com")
+if result.success?
+  puts result.local_path
+end
+```
+
+## With Storage Callbacks
+
+```crystal
+require "vug"
+
 config = Vug::Config.new(
-  on_save: ->(url : String, data : Bytes, content_type : String) do
-    # Save to disk, S3, etc.
-    "/favicons/#{Digest::SHA256.hexdigest(url)[0...16]}.#{extension}"
-  end,
-  on_load: ->(url : String) do
-    # Load from disk, S3, etc.
-    "/favicons/#{Digest::SHA256.hexdigest(url)[0...16]}.png"
-  end,
-  on_debug: ->(msg : String) { puts msg },
-  on_error: ->(ctx : String, ex : Exception) { puts "#{ctx}: #{ex.message}" }
+  on_save: ->(url : String, data : Bytes, content_type : String) {
+    path = "/tmp/favicons/#{Digest::SHA256.hexdigest(url)}.png"
+    File.write(path, data)
+    path  # return the saved path
+  },
+  on_load: ->(url : String) {
+    path = "/tmp/favicons/#{Digest::SHA256.hexdigest(url)}.png"
+    File.exists?(path) ? path : nil  # return path or nil
+  },
+  on_debug: ->(msg : String) { Log.debug { msg } },
 )
 
-# Fetch favicon from direct URL
-result = Vug.fetch("https://example.com/favicon.ico", config)
-if result.success?
-  puts "Favicon saved to: #{result.local_path}"
-end
-
-# Fetch favicon for site (tries multiple strategies, generates placeholder if none found)
+# Fetch favicon for a website (tries HTML, manifest, fallbacks, placeholder)
 result = Vug.site("https://example.com", config)
 if result.success?
-  puts "Site favicon saved to: #{result.local_path}"
+  puts "Saved to: #{result.local_path}"
+elsif result.failure?
+  puts "Error: #{result.error}"
 end
 
-# Get all available favicons for intelligent selection
+# Fetch from a direct URL
+result = Vug.fetch("https://example.com/favicon.ico", config)
+
+# Get all available favicons for custom selection
 collection = Vug.favicons("https://example.com", config)
 if collection
+  best = collection.best       # highest quality available
+  largest = collection.largest # biggest pixel area
   puts "Found #{collection.size} favicons"
-  best = collection.best
-  largest = collection.largest
 end
 
-# Fetch only the best favicon directly
-result = Vug.best("https://example.com", config)
-
-# Generate placeholder favicon directly (useful for sites with no favicons)
+# Generate a placeholder SVG (first letter of domain)
 result = Vug.placeholder("https://example.com", config)
 ```
 
-## API
+## Caching
 
-### `Vug.fetch(url, config, cache)`
-Fetches a favicon from a direct URL.
+Pass a `MemoryCache` to share cache across calls:
 
-### `Vug.site(site_url, config, cache)`
-Fetches a favicon for a site using the fallback chain:
-1. Extract from HTML `<link rel="icon">` tags
-2. Extract from Web App Manifest (`<link rel="manifest">`)
-3. Try standard paths (`/favicon.ico`, `/favicon.png`, etc.)
-4. Fall back to DuckDuckGo favicon service
-5. Fall back to Google S2 favicon service
+```crystal
+cache = Vug::MemoryCache.new(size_limit: 5_000_000, entry_ttl: 1.hour)
 
-### `Vug.favicons(site_url, config)`
-Returns a `FaviconCollection` containing all discovered favicons with metadata (sizes, types, etc.).
-
-### `Vug.best(site_url, config, cache)`
-Fetches only the best available favicon based on size and quality heuristics.
-
-### `Vug.placeholder(site_url, config, cache)`
-Generates a default SVG favicon with the domain's first letter.
-
-## Storage Callbacks
-
-The library is storage-agnostic. You provide callbacks to handle persistence:
-
-- **`on_save`**: `(url, data, content_type) -> saved_path`
-- **`on_load`**: `(url) -> saved_path_or_nil`
-
-This allows you to store favicons on disk, in S3, in a database, or in memory.
-
-## Testing
-
-Run specs with:
-
-```bash
-crystal spec
+result1 = Vug.site("https://example.com", config, cache) # fetches
+result2 = Vug.site("https://example.com", config, cache) # cache hit
 ```
+
+## Configuration
+
+All options have sensible defaults. Override only what you need:
+
+```crystal
+config = Vug::Config.new(
+  timeout: 15.seconds,
+  max_redirects: 5,
+  max_size: 200 * 1024,           # 200KB max favicon size
+  user_agent: "MyApp/1.0",
+)
+```
+
+See [API.md](API.md) for the full configuration reference and advanced usage.
 
 ## License
 

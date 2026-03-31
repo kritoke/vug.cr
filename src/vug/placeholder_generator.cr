@@ -1,4 +1,6 @@
 require "digest"
+require "html"
+require "base64"
 
 module Vug
   # Generates default SVG favicons when no real favicon is found
@@ -24,7 +26,8 @@ module Vug
         end
       end
 
-      first_char = clean_domain.chars.first?.try(&.upcase) || "?"
+      raw_char = clean_domain.chars.first?.try(&.upcase.to_s) || "?"
+      first_char = HTML.escape(raw_char)
 
       # Generate consistent color based on domain - use simple hash
       # Convert domain to a number by summing character codes

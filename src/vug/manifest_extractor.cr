@@ -27,12 +27,7 @@ module Vug
         next if href.empty?
 
         # Handle relative URLs by resolving against base_url first
-        if !href.starts_with?("http")
-          resolved = UrlProcessor.resolve_url(href.strip, base_url)
-          normalized = UrlProcessor.normalize_url(resolved, "https")
-        else
-          normalized = UrlProcessor.normalize_url(href, "https")
-        end
+        normalized = UrlProcessor.resolve_and_normalize(href, base_url)
         return normalized if UrlProcessor.valid_scheme?(normalized)
       end
 
@@ -88,12 +83,7 @@ module Vug
             if icon_data["src"]?
               src = icon_data["src"].as_s
               # Handle relative URLs by resolving against manifest_url first
-              if !src.starts_with?("http")
-                resolved = UrlProcessor.resolve_url(src.strip, manifest_url)
-                normalized_src = UrlProcessor.normalize_url(resolved, "https")
-              else
-                normalized_src = UrlProcessor.normalize_url(src, "https")
-              end
+              normalized_src = UrlProcessor.resolve_and_normalize(src, manifest_url)
 
               favicon_info = FaviconInfo.new(
                 url: normalized_src,

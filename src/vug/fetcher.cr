@@ -9,30 +9,11 @@ require "./redirect_validator"
 
 module Vug
   class Fetcher
-    MAX_CONCURRENT_REQUESTS = 8
-
     def initialize(@config : Config = Config.new, cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectValidator? = nil)
       @http_client_factory = http_client_factory || HttpClientFactory.new(@config)
       @cache_manager = cache_manager || CacheManager.new(@config, cache)
       @redirect_validator = redirect_validator || RedirectValidator.new(@config)
-      @semaphore = Semaphore.new(MAX_CONCURRENT_REQUESTS)
-    end
-
-    private class Semaphore
-      def initialize(@limit : Int32)
-        @count = 0
-        @mutex = Mutex.new(:unchecked)
-        @channel = Channel(Nil).new(@limit)
-        @limit.times { @channel.send(nil) }
-      end
-
-      def acquire
-        @channel.receive
-      end
-
-      def release
-        @channel.send(nil)
-      end
+      @semaphore = Vug.shared_semaphore(@config.max_concurrent_requests)
     end
 
     def fetch(url : String) : Result
@@ -111,6 +92,12 @@ module Vug
     private def fetch_single(url : String) : Result
       @semaphore.acquire
       begin
+        # Re-validate DNS at connection time to prevent DNS rebinding
+        unless UrlValidator.revalidate_url?(url)
+          @config.debug("DNS revalidation failed (possible rebinding): #{url}")
+          return Vug.failure("DNS revalidation failed", url)
+        end
+
         uri = URI.parse(url)
         client = @http_client_factory.create_client(uri)
 
@@ -166,7 +153,7 @@ module Vug
         return Vug.failure("Empty response", url)
       end
 
-      unless ImageValidator.valid?(data)
+      unless ImageValidator.valid?(data, @config.image_validation_hard?)
         @config.debug("Invalid favicon content (not an image): #{url}")
         return Vug.failure("Invalid image", url)
       end
@@ -203,7 +190,8 @@ module Vug
         @config.debug("Gray placeholder from non-Google source, trying Google fallback")
         begin
           if host = URI.parse(current_url).host
-            google_url = "https://www.google.com/s2/favicons?domain=#{host}&sz=256"
+            encoded_host = URI.encode_www_form(host)
+            google_url = "https://www.google.com/s2/favicons?domain=#{encoded_host}&sz=256"
             @config.debug("Google fallback URL: #{google_url}")
             google_url
           end
@@ -227,7 +215,8 @@ module Vug
 
     def self.google_favicon_url(domain : String) : String
       host = UrlProcessor.extract_host_from_url(domain) || domain
-      "https://www.google.com/s2/favicons?domain=#{host}&sz=256"
+      encoded_host = URI.encode_www_form(host)
+      "https://www.google.com/s2/favicons?domain=#{encoded_host}&sz=256"
     end
   end
 end

@@ -12,10 +12,22 @@ module Vug
       end
     end
 
+    # Resolves relative URLs and normalizes protocol-relative URLs in one step.
+    # If href is already absolute, it is normalized. If relative, it is resolved
+    # against base first, then normalized.
+    def self.resolve_and_normalize(href : String, base : String, base_scheme : String = "https") : String
+      if href.starts_with?("http")
+        normalize_url(href, base_scheme)
+      else
+        resolved = resolve_url(href.strip, base)
+        normalize_url(resolved, base_scheme)
+      end
+    end
+
     # Resolves relative URLs against a base URL
     def self.resolve_url(url : String, base : String) : String
       URI.parse(base).resolve(url.strip).to_s
-    rescue
+    rescue URI::Error
       url
     end
 
@@ -37,7 +49,7 @@ module Vug
           parsed = URI.parse(sanitized)
           host = parsed.host
           host.nil? || host.empty? ? nil : host
-        rescue
+        rescue URI::Error
           nil
         end
       else

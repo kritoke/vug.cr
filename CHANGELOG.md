@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.2.0] - 2026-03-31
+
+### Security
+- **Fixed SVG XSS in placeholder generator**: Domain-derived characters are now HTML-escaped before interpolation into SVG `<text>` elements, preventing injection via crafted domain names
+- **Fixed DNS rebinding TOCTOU**: Added IP re-validation at connection time in `Fetcher#fetch_single` to detect DNS rebinding attacks where initial validation resolves to a public IP but the actual request resolves to a private IP
+- **DNS result caching**: Added 30-second TTL DNS cache in `UrlValidator` to avoid repeated resolution and provide consistent results during validation
+- **URL-encoded domains in external service URLs**: Domains are now properly encoded via `URI.encode_www_form` / `URI.encode_path` in Google and DuckDuckGo favicon URLs to prevent parameter injection
+- **Scheme downgrade protection**: `RedirectValidator` now blocks HTTPS to HTTP redirect chains
+
+### Bug Fixes
+- **Shared concurrency semaphore**: Moved `Semaphore` from per-Fetcher instance to module-level shared resource. Previously, multiple `Fetcher` instances (created during `Vug.site` fallback chain) each had their own semaphore, bypassing the 8-concurrent limit
+- **Safe HTML sanitization fallback**: `HtmlExtractor#sanitize_html` now returns `""` on failure instead of returning raw unsanitized HTML
+- **Typed exception handling**: Replaced 9 bare `rescue` blocks with typed rescues (`URI::Error`, `Base64::Error`, `File::Error`, `ArgumentError`, etc.) to avoid swallowing critical exceptions
+- **Added missing `require "base64"`** to `placeholder_generator.cr`
+
+### Performance
+- **Efficient cache eviction**: `MemoryCache` eviction now uses explicit single-pass scan instead of `min_by` lambda with block overhead
+
+### Added
+- **`Config#max_concurrent_requests`** (default: 8): Configurable shared semaphore limit for concurrent HTTP fetches
+- **`Config#image_validation_hard?`** (default: false): Opt-in CrImage decode fallback for `ImageValidator`. When false (default), only magic-byte signature checks are used for PNG, JPEG, ICO, SVG, and WebP. Set to `true` to enable CrImage-based validation for unknown formats
+- **`UrlProcessor.resolve_and_normalize(href, base)`**: New helper that combines relative URL resolution and protocol-relative URL normalization in a single call
+- **`API.md`**: Comprehensive API documentation
+
+### Changed
+- **`ImageValidator.valid?` and `detect_content_type`**: Default behavior no longer uses CrImage decode fallback (`hard_validation` defaults to `false`). Most favicon formats (PNG, JPEG, ICO, SVG, WebP) are covered by magic-byte checks. Enable `hard_validation: true` for CrImage fallback
+- **Removed `ICO_SIGNATURE` constant**: Was misleading (two null bytes aren't a distinctive signature). ICO validation logic unchanged
+
+### Removed
+- **`Vug.fetch_for_site`** — use `Vug.site` instead
+- **`Vug.fetch_all_favicons_for_site`** — use `Vug.favicons` instead
+- **`Vug.fetch_best_favicon_for_site`** — use `Vug.best` instead
+- **`Vug.generate_placeholder_for_site`** — use `Vug.placeholder` instead
+
 ## [0.1.5.2] - 2026-03-27
 
 ### Security & Reliability

@@ -19,6 +19,9 @@ module Vug
     # When detected, we try to fetch a larger size (256px) as fallback
     property gray_placeholder_size : Int32 = 198
 
+    property max_concurrent_requests : Int32 = 8
+    property? image_validation_hard : Bool = false
+
     property on_save : Proc(String, Bytes, String, String?)? = nil
     property on_load : Proc(String, String?)? = nil
     property on_debug : Proc(String, Nil)? = nil
@@ -35,6 +38,7 @@ module Vug
       cache_size_limit : Int32? = nil,
       cache_entry_ttl : Time::Span? = nil,
       gray_placeholder_size : Int32? = nil,
+      max_concurrent_requests : Int32? = nil,
       on_save : Proc(String, Bytes, String, String?)? = nil,
       on_load : Proc(String, String?)? = nil,
       on_debug : Proc(String, Nil)? = nil,
@@ -48,6 +52,7 @@ module Vug
       @cache_size_limit = validate_positive_int(cache_size_limit, "cache_size_limit", 10 * 1024 * 1024)
       @cache_entry_ttl = validate_positive_timespan(cache_entry_ttl, "cache_entry_ttl", 7.days)
       @gray_placeholder_size = validate_non_negative_int(gray_placeholder_size, "gray_placeholder_size", 198)
+      @max_concurrent_requests = validate_positive_int(max_concurrent_requests, "max_concurrent_requests", 8)
 
       @user_agent = user_agent || DEFAULT_USER_AGENT
       @accept_language = accept_language || DEFAULT_ACCEPT_LANGUAGE

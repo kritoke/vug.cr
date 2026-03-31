@@ -35,7 +35,7 @@ module Vug
 
       new_size = begin
         File.size(local_path).to_i32
-      rescue
+      rescue File::Error
         local_path.bytesize
       end
 
@@ -46,10 +46,22 @@ module Vug
         end
 
         while @current_size + new_size > @size_limit && !@cache.empty?
-          oldest = @cache.min_by(&.[1][1]).[0]
-          _, _, old_size = @cache[oldest]
-          @cache.delete(oldest)
-          @current_size -= old_size
+          oldest_key = nil
+          oldest_time = Time::Span::MAX
+          oldest_size = 0
+
+          @cache.each do |key, (_, timestamp, size)|
+            if timestamp < oldest_time
+              oldest_key = key
+              oldest_time = timestamp
+              oldest_size = size
+            end
+          end
+
+          if oldest_key
+            @cache.delete(oldest_key)
+            @current_size -= oldest_size
+          end
         end
 
         @cache[url] = {local_path, Time.monotonic, new_size}

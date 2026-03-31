@@ -143,12 +143,7 @@ module Vug
             end
           else
             # Handle relative URLs by resolving against base_url first
-            if !href.starts_with?("http")
-              resolved = UrlProcessor.resolve_url(href.strip, base_url)
-              normalized = UrlProcessor.normalize_url(resolved, "https")
-            else
-              normalized = UrlProcessor.normalize_url(href, "https")
-            end
+            normalized = UrlProcessor.resolve_and_normalize(href, base_url)
             next unless UrlProcessor.valid_scheme?(normalized)
 
             sizes = node["sizes"]?.try(&.val)
@@ -170,8 +165,9 @@ module Vug
 
     private def sanitize_html(html : String) : String
       Sanitize::Policy::HTMLSanitizer.common.process(html)
-    rescue
-      html
+    rescue Exception
+      @config.debug("HTML sanitization failed, returning empty string")
+      ""
     end
   end
 end

@@ -37,7 +37,7 @@ module Vug
           if ImageValidator.valid?(decoded_data)
             return {decoded_data, media_type}
           end
-        rescue
+        rescue Base64::Error
         end
       end
 

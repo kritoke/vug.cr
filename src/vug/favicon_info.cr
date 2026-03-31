@@ -21,7 +21,7 @@ module Vug
               height = parts[1].to_i
               area = width * height
               max_size = [max_size, area].max
-            rescue
+            rescue ArgumentError
               # Skip invalid size format
             end
           end
