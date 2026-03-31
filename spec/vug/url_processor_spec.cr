@@ -139,5 +139,65 @@ describe Vug::UrlProcessor do
       result = Vug::UrlProcessor.sanitize_feed_url("https://example.com/feed/feed/")
       result.should eq("https://example.com/feed")
     end
+
+    it "handles URLs with query parameters and feed" do
+      result = Vug::UrlProcessor.sanitize_feed_url("https://example.com/feed/?page=1")
+      # /feed/ is only stripped at end of string, not before query params
+      result.should eq("https://example.com/feed/?page=1")
+    end
+
+    it "does not affect feed in path segment" do
+      result = Vug::UrlProcessor.sanitize_feed_url("https://example.com/feeds/atom.xml")
+      result.should eq("https://example.com/feeds/atom.xml")
+    end
+  end
+
+  describe ".resolve_and_normalize" do
+    it "resolves relative href against base" do
+      result = Vug::UrlProcessor.resolve_and_normalize("/icon.png", "https://example.com/page")
+      result.should eq("https://example.com/icon.png")
+    end
+
+    it "normalizes protocol-relative absolute href" do
+      result = Vug::UrlProcessor.resolve_and_normalize("//cdn.example.com/icon.png", "https://example.com/page")
+      result.should eq("https://cdn.example.com/icon.png")
+    end
+
+    it "passes through already-absolute hrefs" do
+      result = Vug::UrlProcessor.resolve_and_normalize("https://cdn.example.com/icon.png", "https://example.com/page")
+      result.should eq("https://cdn.example.com/icon.png")
+    end
+
+    it "resolves relative paths with dot-dot" do
+      result = Vug::UrlProcessor.resolve_and_normalize("../icons/favicon.png", "https://example.com/docs/page.html")
+      result.should eq("https://example.com/icons/favicon.png")
+    end
+
+    it "handles empty relative href" do
+      result = Vug::UrlProcessor.resolve_and_normalize("", "https://example.com/page")
+      result.should eq("https://example.com/page")
+    end
+
+    it "strips whitespace from relative hrefs" do
+      result = Vug::UrlProcessor.resolve_and_normalize("  /icon.png  ", "https://example.com/page")
+      result.should eq("https://example.com/icon.png")
+    end
+  end
+
+  describe ".extract_host_from_url" do
+    it "returns nil for empty string" do
+      result = Vug::UrlProcessor.extract_host_from_url("")
+      result.should be_nil
+    end
+
+    it "handles URLs with port numbers" do
+      result = Vug::UrlProcessor.extract_host_from_url("https://example.com:8080/path")
+      result.should eq("example.com")
+    end
+
+    it "handles URLs with subdomains" do
+      result = Vug::UrlProcessor.extract_host_from_url("https://sub.domain.example.com/path")
+      result.should eq("sub.domain.example.com")
+    end
   end
 end

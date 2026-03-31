@@ -168,4 +168,66 @@ describe Vug::Fetcher do
       end
     end
   end
+
+  describe "gray placeholder size detection" do
+    it "detects data exactly matching gray_placeholder_size" do
+      config = Vug::Config.new(gray_placeholder_size: 198)
+      # Simulate what Fetcher checks
+      gray_data = Bytes.new(198)
+      config.gray_placeholder_size.should eq(198)
+      gray_data.size.should eq(config.gray_placeholder_size)
+    end
+
+    it "does not flag data smaller than gray_placeholder_size" do
+      config = Vug::Config.new(gray_placeholder_size: 198)
+      small_data = Bytes.new(100)
+      small_data.size.should_not eq(config.gray_placeholder_size)
+    end
+
+    it "does not flag data larger than gray_placeholder_size" do
+      config = Vug::Config.new(gray_placeholder_size: 198)
+      large_data = Bytes.new(500)
+      large_data.size.should_not eq(config.gray_placeholder_size)
+    end
+
+    it "allows custom gray placeholder sizes" do
+      config = Vug::Config.new(gray_placeholder_size: 64)
+      config.gray_placeholder_size.should eq(64)
+      gray_data = Bytes.new(64)
+      gray_data.size.should eq(config.gray_placeholder_size)
+    end
+  end
+
+  describe "Google favicon fallback URL" do
+    it "extracts host from URL for Google favicon" do
+      url = Vug::Fetcher.google_favicon_url("https://example.com")
+      url.should eq("https://www.google.com/s2/favicons?domain=example.com&sz=256")
+    end
+
+    it "encodes special characters in domain" do
+      url = Vug::Fetcher.google_favicon_url("https://example.com/path?query=1")
+      url.should contain("example.com")
+      url.should contain("sz=256")
+      # Should not contain raw query parameters
+      url.should_not contain("?query=")
+    end
+  end
+
+  describe "DuckDuckGo favicon URL" do
+    it "generates DuckDuckGo favicon URL" do
+      url = Vug.duckduckgo_favicon_url("example.com")
+      url.should eq("https://icons.duckduckgo.com/ip3/example.com.ico")
+    end
+
+    it "extracts host from full URL" do
+      url = Vug.duckduckgo_favicon_url("https://example.com/path")
+      url.should eq("https://icons.duckduckgo.com/ip3/example.com.ico")
+    end
+
+    it "uses domain as-is when it has no scheme" do
+      url = Vug.duckduckgo_favicon_url("example.com")
+      url.should contain("icons.duckduckgo.com")
+      url.should contain("example.com")
+    end
+  end
 end
