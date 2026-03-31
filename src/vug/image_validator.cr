@@ -4,8 +4,8 @@ module Vug
   module ImageValidator
     PNG_SIGNATURE  = Bytes[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
     JPEG_SIGNATURE = Bytes[0xFF, 0xD8, 0xFF]
-    SVG_XML_START  = Bytes[0x3C, 0x3F, 0x78, 0x6D, 0x6C]
     SVG_TAG_START  = Bytes[0x3C, 0x73, 0x76, 0x67]
+    SVG_TAG_BYTES  = Bytes[0x3C, 0x73, 0x76, 0x67, 0x20, 0x3E, 0x09, 0x0A, 0x0D] # <svg followed by space, >, tab, newline
     WEBP_RIFF      = Bytes[0x52, 0x49, 0x46, 0x46]
     WEBP_WEBP      = Bytes[0x57, 0x45, 0x42, 0x50]
 
@@ -35,8 +35,20 @@ module Vug
         data[3] == 0x00
     end
 
+    SVG_DECLARATION = Bytes[0x3C, 0x3F, 0x78, 0x6D, 0x6C] # <?xml
+
     def self.svg?(data : Bytes) : Bool
-      data.size >= 5 && (data[0..4] == SVG_XML_START || data[0..3] == SVG_TAG_START)
+      return false if data.size < 5
+
+      # Direct <svg at the start
+      return true if data[0..3] == SVG_TAG_START
+
+      # <?xml declaration — must also contain <svg to be SVG, not just any XML
+      if data[0..4] == SVG_DECLARATION
+        return contains_svg_tag?(data)
+      end
+
+      false
     end
 
     def self.webp?(data : Bytes) : Bool
@@ -66,6 +78,28 @@ module Vug
       rescue Exception
         nil
       end
+    end
+
+    private def self.contains_svg_tag?(data : Bytes) : Bool
+      # Scan a reasonable window after <?xml for the <svg element
+      limit = Math.min(data.size, 1024)
+      i = 0
+
+      while i < limit - 4
+        if data[i] == 0x3C &&     # <
+           data[i + 1] == 0x73 && # s
+           data[i + 2] == 0x76 && # v
+           data[i + 3] == 0x67    # g
+          # Verify next byte is a valid tag separator
+          if i + 4 < limit
+            next_byte = data[i + 4]
+            return true if SVG_TAG_BYTES.includes?(next_byte)
+          end
+        end
+        i += 1
+      end
+
+      false
     end
 
     private def self.valid_via_crimage?(data : Bytes) : Bool

@@ -93,14 +93,21 @@ describe Vug::ImageValidator do
   end
 
   describe ".svg?" do
-    it "detects SVG with XML declaration" do
-      svg_data = Bytes[0x3C, 0x3F, 0x78, 0x6D, 0x6C, 0x20]
+    it "detects SVG with XML declaration followed by svg tag" do
+      # <?xml version="1.0"?>\n<svg xmlns="...
+      svg_data = "<?xml version=\"1.0\"?>\n<svg xmlns=\"http://www.w3.org/2000/svg\">".to_slice
       Vug::ImageValidator.svg?(svg_data).should be_true
     end
 
-    it "detects SVG with svg tag" do
+    it "detects SVG with svg tag at start" do
       svg_data = Bytes[0x3C, 0x73, 0x76, 0x67, 0x20]
       Vug::ImageValidator.svg?(svg_data).should be_true
+    end
+
+    it "rejects non-SVG XML starting with <?xml" do
+      # <?xml version="1.0"?>\n<root>... — this is XML but not SVG
+      xml_data = "<?xml version=\"1.0\"?>\n<root><item>hello</item></root>".to_slice
+      Vug::ImageValidator.svg?(xml_data).should be_false
     end
 
     it "rejects short data" do

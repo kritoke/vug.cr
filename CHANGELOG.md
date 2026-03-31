@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.2.1] - 2026-03-31
+
+### Bug Fixes
+- **Fixed SVG validator matching all XML**: `ImageValidator.svg?` matched any XML starting with `<?xml`, not just SVG. Now scans for the `<svg` tag after the XML declaration
+
 ## [0.2.0] - 2026-03-31
 
 ### Security
