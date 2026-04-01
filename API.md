@@ -135,8 +135,17 @@ record Vug::Result,
   local_path : String?, # Path returned by on_save callback
   content_type : String?,
   bytes : Bytes?,
-  error : String?
+  error : String?,
+  error_type : ErrorType?
 ```
+
+### Factory Methods
+
+| Method | Description |
+|--------|-------------|
+| `Vug.success(url, local_path, content_type?, bytes?)` | Create a success result |
+| `Vug.failure(error, url?, error_type?)` | Create a failure result |
+| `Vug.redirect(url)` | Create a redirect result (internal use) |
 
 ### Methods
 
@@ -156,6 +165,7 @@ when .success?
   puts result.bytes          # raw image data, if available
 when .failure?
   puts result.error          # e.g. "HTTP 404", "Invalid URL"
+  puts result.error_type     # e.g. :http_error, :invalid_url
 end
 ```
 
@@ -303,6 +313,44 @@ if favicon
   favicon.size_pixels # 36864 (192 * 192)
 end
 ```
+
+---
+
+## ErrorType
+
+Typed error enum on `Result` for programmatic error handling.
+
+```crystal
+case result.error_type
+when :invalid_url         then # URL failed validation
+when :timeout             then # request timed out
+when :too_many_redirects  then # exceeded max_redirects
+when :http_error          then # non-success HTTP status
+when :invalid_image       then # failed image validation
+when :no_favicon_found    then # all strategies exhausted
+when :dns_revalidation_failed then # possible DNS rebinding
+else                           # other errors
+end
+```
+
+### Variants
+
+| Value | Description |
+|-------|-------------|
+| `:invalid_url` | URL failed validation (scheme, host, or SSRF check) |
+| `:timeout` | Request exceeded timeout |
+| `:too_many_redirects` | Redirect chain too long |
+| `:too_many_gray_placeholder_attempts` | Google gray placeholder loop exhausted |
+| `:dns_revalidation_failed` | DNS rebinding detected |
+| `:invalid_redirect` | Redirect target failed SSRF validation |
+| `:empty_response` | Server returned empty body |
+| `:invalid_image` | Response failed image validation |
+| `:save_failed` | `on_save` callback returned `nil` |
+| `:http_error` | Non-success HTTP status |
+| `:fetch_error` | Network/IO error |
+| `:no_favicon_found` | No favicon found and no fallback available |
+| `:placeholder_generation_failed` | SVG placeholder generation failed |
+| `:unknown` | Unclassified error |
 
 ---
 

@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.3.0] - 2026-04-01
+
+### Changed
+- **Internal restructuring**: Extracted monolithic module into focused classes (`Fetcher`, `FaviconResolver`, `HtmlExtractor`, `ManifestExtractor`, `RedirectValidator`, `ImageValidator`, `DataUrlHandler`, `PlaceholderGenerator`) for better testability and separation of concerns
+- **Named cache entries**: `MemoryCache` and `DnsCache` now use `CacheEntry` and `DnsEntry` records instead of positional tuples for improved type safety
+
+### Added
+- **`Vug.redirect(url)`**: Factory method for creating redirect `Result` objects
+- **`ErrorType` enum**: Typed error classification on `Result` (`result.error_type`) for programmatic error handling
+- **`FaviconResolver`**: Public class exposing the full fallback chain (HTML → manifest → standard paths → DuckDuckGo → Google → placeholder)
+- **`DnsCache`**: Public module with 30-second TTL DNS resolution cache
+
+### Fixed
+- **Nil crash in `by_preferred_size`**: Fixed crash when collection contains favicons with unknown sizes
+- **Discarded expression in `favicon_resolver.cr`**: `get || set` no-op replaced with proper `set` call
+- **Deduplicated Google URL logic**: Consolidated duplicate Google favicon URL construction
+- **Idiomatic Crystal patterns**: `data.size == 0` → `data.empty?` throughout codebase
+
 ## [0.2.1] - 2026-03-31
 
 ### Bug Fixes
