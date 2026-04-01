@@ -53,7 +53,7 @@ module Vug
       result = @fetcher.fetch(best.url)
       return unless path = result.local_path
 
-      @cache_manager.get(best.url) || @cache_manager.set(best.url, path)
+      @cache_manager.set(best.url, path)
       result
     end
 

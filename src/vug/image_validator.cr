@@ -73,7 +73,7 @@ module Vug
     end
 
     def self.get_image_dimensions(data : Bytes) : {Int32, Int32}?
-      return if data.size == 0
+      return if data.empty?
 
       begin
         io = IO::Memory.new(data)
@@ -108,7 +108,7 @@ module Vug
     end
 
     private def self.valid_via_crimage?(data : Bytes) : Bool
-      return false if data.size == 0
+      return false if data.empty?
 
       begin
         io = IO::Memory.new(data)
@@ -120,7 +120,7 @@ module Vug
     end
 
     private def self.detect_via_crimage(data : Bytes) : String
-      return "application/octet-stream" if data.size == 0
+      return "application/octet-stream" if data.empty?
 
       begin
         io = IO::Memory.new(data)

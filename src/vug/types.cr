@@ -40,6 +40,10 @@ module Vug
     Result.new(url: url, local_path: local_path, content_type: content_type, bytes: bytes, error: nil, error_type: nil)
   end
 
+  def self.redirect(url : String) : Result
+    Result.new(url: url, local_path: nil, content_type: nil, bytes: nil, error: nil, error_type: nil)
+  end
+
   def self.failure(error : String, url : String? = nil, error_type : ErrorType = :unknown) : Result
     Result.new(url: url, local_path: nil, content_type: nil, bytes: nil, error: error, error_type: error_type)
   end

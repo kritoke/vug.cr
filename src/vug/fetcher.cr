@@ -125,7 +125,7 @@ module Vug
               return Vug.failure("Invalid redirect", url, error_type: :invalid_redirect)
             end
 
-            return Result.new(url: new_url, local_path: nil, content_type: nil, bytes: nil, error: nil, error_type: nil)
+            return Vug.redirect(new_url)
           end
 
           if response.status.success?
@@ -155,7 +155,7 @@ module Vug
     end
 
     private def handle_success(url : String, data : Bytes, content_type : String) : Result
-      if data.size == 0
+      if data.empty?
         @config.debug("Empty favicon response: #{url}")
         return Vug.failure("Empty response", url, error_type: :empty_response)
       end

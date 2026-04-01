@@ -4,23 +4,24 @@ module Vug
   module DnsCache
     DNS_CACHE_TTL = 30.seconds
 
+    record DnsEntry, ips : Array(String), timestamp : Time::Span
+
     class Instance
       def initialize
         @mutex = Mutex.new
-        @cache = Hash(String, {Array(String), Time::Span}).new
+        @cache = Hash(String, DnsEntry).new
       end
 
       def resolve(host : String) : Array(String)
         @mutex.synchronize do
           if entry = @cache[host]?
-            ips, timestamp = entry
-            if Time.monotonic - timestamp < DNS_CACHE_TTL
-              return ips
+            if Time.monotonic - entry.timestamp < DNS_CACHE_TTL
+              return entry.ips
             end
           end
 
           ips = resolve_uncached(host)
-          @cache[host] = {ips, Time.monotonic}
+          @cache[host] = DnsEntry.new(ips, Time.monotonic)
           ips
         end
       end
