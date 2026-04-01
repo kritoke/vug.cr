@@ -48,23 +48,9 @@ module Vug
     def largest : FaviconInfo?
       return if @favicons.empty?
 
-      largest_favicon = nil
-      max_area = 0
-
-      @favicons.each do |favicon|
-        if favicon.has_any_size?
-          return favicon # "any" size is considered largest
-        end
-
-        if size_pixels = favicon.size_pixels
-          if size_pixels > max_area
-            max_area = size_pixels
-            largest_favicon = favicon
-          end
-        end
-      end
-
-      largest_favicon || @favicons.first?
+      @favicons.find(&.has_any_size?) ||
+        @favicons.max_by? { |favicon| favicon.size_pixels || 0 } ||
+        @favicons.first?
     end
 
     # Get favicon closest to preferred size (e.g., "32x32")
@@ -72,24 +58,9 @@ module Vug
       return if @favicons.empty?
 
       target_area = preferred_width * preferred_height
-      best_match = nil
-      min_diff = Int32::MAX
-
-      @favicons.each do |favicon|
-        if favicon.has_any_size?
-          return favicon # "any" size matches any preference
-        end
-
-        if size_pixels = favicon.size_pixels
-          diff = (size_pixels - target_area).abs
-          if diff < min_diff
-            min_diff = diff
-            best_match = favicon
-          end
-        end
-      end
-
-      best_match || best # Fallback to best available
+      @favicons.find(&.has_any_size?) ||
+        @favicons.min_by? { |favicon| (favicon.size_pixels - target_area).abs } ||
+        best
     end
   end
 end

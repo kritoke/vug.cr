@@ -24,7 +24,6 @@ module Vug
           else
             @current_size -= size
             @cache.delete(url)
-            @insertion_order.reject!(&.==(url))
             nil
           end
         end

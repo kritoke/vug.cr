@@ -9,6 +9,11 @@ module Vug
     WEBP_RIFF      = Bytes[0x52, 0x49, 0x46, 0x46]
     WEBP_WEBP      = Bytes[0x57, 0x45, 0x42, 0x50]
 
+    # Window size (in bytes) to scan for <svg> tag after <?xml declaration.
+    # 1024 bytes is sufficient to handle typical XML declarations with namespaces
+    # and processing instructions before the root <svg> element.
+    SVG_SCAN_WINDOW = 1024
+
     def self.valid?(data : Bytes, hard_validation : Bool = false) : Bool
       return false if data.size < 4
 
@@ -82,7 +87,7 @@ module Vug
 
     private def self.contains_svg_tag?(data : Bytes) : Bool
       # Scan a reasonable window after <?xml for the <svg element
-      limit = Math.min(data.size, 1024)
+      limit = Math.min(data.size, SVG_SCAN_WINDOW)
       i = 0
 
       while i < limit - 4

@@ -1,6 +1,12 @@
 require "time"
 
 module Vug
+  # Configuration for Vug favicon fetching.
+  #
+  # NOTE: This is a class rather than a record because it contains Proc callbacks
+  # (on_save, on_load, on_debug, etc.) which are not comparable and cannot be used
+  # in Crystal records. If callback support is ever removed, consider converting
+  # to a record to gain automatic `copy_with` support.
   class Config
     DEFAULT_USER_AGENT      = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     DEFAULT_ACCEPT_LANGUAGE = "en-US,en;q=0.9"

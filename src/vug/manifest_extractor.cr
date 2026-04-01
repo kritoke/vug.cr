@@ -9,9 +9,6 @@ require "./favicon_info"
 
 module Vug
   class ManifestExtractor
-    @config : Config
-    @http_client_factory : HttpClientFactory
-
     def initialize(@config : Config, http_client_factory : HttpClientFactory? = nil)
       @http_client_factory = http_client_factory || HttpClientFactory.new(@config)
     end
