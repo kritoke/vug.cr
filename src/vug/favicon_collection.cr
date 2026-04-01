@@ -59,7 +59,7 @@ module Vug
 
       target_area = preferred_width * preferred_height
       @favicons.find(&.has_any_size?) ||
-        @favicons.min_by? { |favicon| (favicon.size_pixels - target_area).abs } ||
+        @favicons.min_by? { |favicon| ((favicon.size_pixels || 0) - target_area).abs } ||
         best
     end
   end

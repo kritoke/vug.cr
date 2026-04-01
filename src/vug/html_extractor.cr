@@ -100,8 +100,7 @@ module Vug
     # Backward compatibility method - returns first favicon only
     def extract(site_url : String) : String?
       favicons = extract_all(site_url)
-      return favicons.first?.try(&.url) if !favicons.empty?
-      nil
+      favicons.first?.try(&.url)
     end
 
     private def extract_favicons_from_html(html : String, base_url : String) : Array(FaviconInfo)

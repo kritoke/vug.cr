@@ -85,7 +85,7 @@ module Vug
       return {:return_result, nil} unless should_handle_gray_placeholder?(current_url, result.bytes)
 
       if current_url.includes?("google.com/s2/favicons")
-        larger_url = current_url.gsub(/sz=\d+/, "sz=256")
+        larger_url = google_larger_url(current_url)
         if cached = @cache_manager.get(larger_url)
           @cache_manager.set(current_url, cached)
           return {:return_result, nil}
@@ -191,8 +191,7 @@ module Vug
 
     private def get_gray_placeholder_fallback_url(current_url : String) : String?
       if current_url.includes?("google.com/s2/favicons")
-        larger_url = current_url.gsub(/sz=\d+/, "sz=256")
-        larger_url
+        google_larger_url(current_url)
       else
         @config.debug("Gray placeholder from non-Google source, trying Google fallback")
         begin
@@ -206,6 +205,10 @@ module Vug
           @config.error("gray placeholder fallback(#{current_url})", ex.message || "Unknown error")
         end
       end
+    end
+
+    private def google_larger_url(url : String) : String
+      url.gsub(/sz=\d+/, "sz=256")
     end
 
     private def handle_error(url : String, status_code : Int32) : Result
