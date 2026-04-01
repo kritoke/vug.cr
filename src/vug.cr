@@ -26,13 +26,31 @@ module Vug
     "/apple-touch-icon-180x180.png",
   ]
 
-  @@semaphore : Semaphore? = nil
-  @@semaphore_mutex = Mutex.new
+  class SharedState
+    def self.instance : self
+      @@instance ||= new
+    end
+
+    def self.instance=(value : self)
+      @@instance = value
+    end
+
+    def initialize
+      @semaphore_mutex = Mutex.new
+    end
+
+    def semaphore(limit : Int32) : Semaphore
+      @semaphore_mutex.synchronize do
+        @semaphore ||= Semaphore.new(limit)
+      end
+    end
+
+    private getter semaphore_mutex : Mutex
+    private property semaphore : Semaphore? = nil
+  end
 
   def self.shared_semaphore(limit : Int32) : Semaphore
-    @@semaphore_mutex.synchronize do
-      @@semaphore ||= Semaphore.new(limit)
-    end
+    SharedState.instance.semaphore(limit)
   end
 
   def self.fetch(url : String, config : Config = Config.default, cache : MemoryCache? = nil) : Result
@@ -78,7 +96,7 @@ module Vug
   end
 
   def self.google_favicon_url(domain : String) : String
-    Fetcher.google_favicon_url(domain)
+    FaviconResolver.google_favicon_url(domain)
   end
 
   def self.duckduckgo_favicon_url(domain : String) : String

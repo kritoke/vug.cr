@@ -27,18 +27,18 @@ module Vug
     def extract_all(site_url : String) : Array(FaviconInfo)
       clean_url = UrlProcessor.sanitize_feed_url(site_url)
 
-      # Validate URL has a scheme and is not dangerous before attempting HTTP request
-      begin
+      uri = begin
         unless UrlValidator.valid_url?(clean_url)
           @config.debug("URL blocked by validator: #{clean_url}")
           return [] of FaviconInfo
         end
 
-        uri = URI.parse(clean_url)
-        unless uri.scheme
+        parsed = URI.parse(clean_url)
+        unless parsed.scheme
           @config.debug("URL missing scheme: #{clean_url}")
           return [] of FaviconInfo
         end
+        parsed
       rescue ex : URI::Error
         @config.debug("Invalid URL for HTML extraction: #{clean_url} - #{ex.message}")
         return [] of FaviconInfo
@@ -49,7 +49,6 @@ module Vug
       begin
         @config.debug("Fetching HTML from: #{clean_url}")
 
-        uri = URI.parse(clean_url)
         client = @http_client_factory.create_client(uri)
 
         headers = HTTP::Headers{

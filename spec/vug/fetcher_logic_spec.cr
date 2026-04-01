@@ -2,23 +2,6 @@ require "../spec_helper"
 require "../../src/vug"
 
 describe Vug::Fetcher do
-  describe ".google_favicon_url" do
-    it "generates Google favicon URL for domain" do
-      url = Vug::Fetcher.google_favicon_url("example.com")
-      url.should eq("https://www.google.com/s2/favicons?domain=example.com&sz=256")
-    end
-
-    it "extracts host from full URL" do
-      url = Vug::Fetcher.google_favicon_url("https://example.com/path")
-      url.should eq("https://www.google.com/s2/favicons?domain=example.com&sz=256")
-    end
-
-    it "handles www prefix" do
-      url = Vug::Fetcher.google_favicon_url("www.example.com")
-      url.should eq("https://www.google.com/s2/favicons?domain=www.example.com&sz=256")
-    end
-  end
-
   describe "#fetch" do
     it "handles failure for invalid URL" do
       config = Vug::Config.new(
@@ -200,12 +183,12 @@ describe Vug::Fetcher do
 
   describe "Google favicon fallback URL" do
     it "extracts host from URL for Google favicon" do
-      url = Vug::Fetcher.google_favicon_url("https://example.com")
+      url = Vug::FaviconResolver.google_favicon_url("https://example.com")
       url.should eq("https://www.google.com/s2/favicons?domain=example.com&sz=256")
     end
 
     it "encodes special characters in domain" do
-      url = Vug::Fetcher.google_favicon_url("https://example.com/path?query=1")
+      url = Vug::FaviconResolver.google_favicon_url("https://example.com/path?query=1")
       url.should contain("example.com")
       url.should contain("sz=256")
       # Should not contain raw query parameters

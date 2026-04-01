@@ -127,7 +127,7 @@ module Vug
         elsif image.is_a?(CrImage::Gray)
           "image/jpeg"
         else
-          "image/unknown"
+          "application/octet-stream"
         end
       rescue CrImage::Error | CrImage::UnknownFormat | IO::Error | ArgumentError
         "application/octet-stream"

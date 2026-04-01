@@ -1,5 +1,6 @@
 require "time"
 require "mutex"
+require "deque"
 
 module Vug
   class MemoryCache
@@ -8,6 +9,7 @@ module Vug
       @entry_ttl : Time::Span = 7.days,
     )
       @cache = Hash(String, {String, Time::Span, Int32}).new
+      @insertion_order = Deque(String).new
       @current_size = 0
       @mutex = Mutex.new
     end
@@ -15,14 +17,14 @@ module Vug
     def get(url : String) : String?
       @mutex.synchronize do
         if entry = @cache[url]?
-          path, timestamp, _size = entry
+          path, timestamp, size = entry
 
           if Time.monotonic - timestamp < @entry_ttl
             path
           else
-            _, _, file_size = @cache[url]
-            @current_size -= file_size
+            @current_size -= size
             @cache.delete(url)
+            @insertion_order.reject!(&.==(url))
             nil
           end
         end
@@ -42,24 +44,18 @@ module Vug
         if existing_entry = @cache[url]?
           _, _, existing_size = existing_entry
           @current_size -= existing_size
+        else
+          @insertion_order << url
         end
 
         while @current_size + new_size > @size_limit && !@cache.empty?
-          oldest_key = nil
-          oldest_time = Time.monotonic
-          oldest_size = 0
+          oldest_key = @insertion_order.shift?
+          break unless oldest_key
 
-          @cache.each do |key, (_, timestamp, size)|
-            if timestamp < oldest_time
-              oldest_key = key
-              oldest_time = timestamp
-              oldest_size = size
-            end
-          end
-
-          if oldest_key
-            @cache.delete(oldest_key)
+          if entry = @cache[oldest_key]?
+            _, _, oldest_size = entry
             @current_size -= oldest_size
+            @cache.delete(oldest_key)
           end
         end
 
@@ -71,6 +67,7 @@ module Vug
     def clear : Nil
       @mutex.synchronize do
         @cache.clear
+        @insertion_order.clear
         @current_size = 0
       end
     end

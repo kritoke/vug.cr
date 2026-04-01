@@ -65,18 +65,6 @@ describe "Result case statement type checking" do
 end
 
 describe Vug::Fetcher do
-  describe ".google_favicon_url" do
-    it "generates Google favicon URL for domain" do
-      url = Vug::Fetcher.google_favicon_url("example.com")
-      url.should eq("https://www.google.com/s2/favicons?domain=example.com&sz=256")
-    end
-
-    it "extracts host from full URL" do
-      url = Vug::Fetcher.google_favicon_url("https://example.com/path")
-      url.should eq("https://www.google.com/s2/favicons?domain=example.com&sz=256")
-    end
-  end
-
   describe "#fetch" do
     it "handles failure for invalid URL" do
       saved_paths = {} of String => String

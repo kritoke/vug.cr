@@ -4,37 +4,49 @@ module Vug
   module DnsCache
     DNS_CACHE_TTL = 30.seconds
 
-    @@cache = Hash(String, {Array(String), Time::Span}).new
-    @@mutex = Mutex.new
+    class Instance
+      def initialize
+        @mutex = Mutex.new
+        @cache = Hash(String, {Array(String), Time::Span}).new
+      end
 
-    def self.resolve(host : String) : Array(String)
-      @@mutex.synchronize do
-        if entry = @@cache[host]?
-          ips, timestamp = entry
-          if Time.monotonic - timestamp < DNS_CACHE_TTL
-            return ips
+      def resolve(host : String) : Array(String)
+        @mutex.synchronize do
+          if entry = @cache[host]?
+            ips, timestamp = entry
+            if Time.monotonic - timestamp < DNS_CACHE_TTL
+              return ips
+            end
           end
+
+          ips = resolve_uncached(host)
+          @cache[host] = {ips, Time.monotonic}
+          ips
         end
       end
 
-      ips = resolve_uncached(host)
-
-      @@mutex.synchronize do
-        @@cache[host] = {ips, Time.monotonic}
+      def clear : Nil
+        @mutex.synchronize { @cache.clear }
       end
 
-      ips
+      private def resolve_uncached(host : String) : Array(String)
+        addrinfos = Socket::Addrinfo.resolve(host, "80", type: Socket::Type::STREAM)
+        addrinfos.compact_map { |addrinfo| addrinfo.ip_address.try(&.to_s) }
+      rescue Socket::Addrinfo::Error
+        [] of String
+      end
+    end
+
+    def self.instance : Instance
+      @@instance ||= Instance.new
+    end
+
+    def self.resolve(host : String) : Array(String)
+      instance.resolve(host)
     end
 
     def self.clear : Nil
-      @@mutex.synchronize { @@cache.clear }
-    end
-
-    private def self.resolve_uncached(host : String) : Array(String)
-      addrinfos = Socket::Addrinfo.resolve(host, "80", type: Socket::Type::STREAM)
-      addrinfos.compact_map { |addrinfo| addrinfo.ip_address.try(&.to_s) }
-    rescue Socket::Addrinfo::Error
-      [] of String
+      instance.clear
     end
   end
 end

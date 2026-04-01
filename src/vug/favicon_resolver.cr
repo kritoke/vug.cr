@@ -110,9 +110,6 @@ module Vug
       return unless cached
 
       Vug.success(favicon.url, cached)
-    rescue ex : URI::Error
-      @config.debug("Failed to fetch data URL favicon: #{ex.message}")
-      nil
     end
 
     private def generate_placeholder_fallback(site_url : String) : Result

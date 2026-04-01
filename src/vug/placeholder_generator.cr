@@ -29,13 +29,12 @@ module Vug
       raw_char = clean_domain.chars.first?.try(&.upcase.to_s) || "?"
       first_char = HTML.escape(raw_char)
 
-      # Generate consistent color based on domain - use simple hash
-      # Convert domain to a number by summing character codes
-      hash_value = 0
+      # Generate consistent color based on domain - use DJB2 hash
+      hash_value = 5381_u64
       clean_domain.each_char do |char|
-        hash_value += char.ord
+        hash_value = ((hash_value << 5) &+ hash_value) &+ char.ord.to_u64
       end
-      color_index = hash_value % COLORS.size
+      color_index = (hash_value % COLORS.size).to_i
       background_color = COLORS[color_index]
 
       # Create SVG content
