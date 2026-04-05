@@ -29,7 +29,7 @@ module Vug
       raw_char = clean_domain.chars.first?.try(&.upcase.to_s) || "?"
       first_char = HTML.escape(raw_char)
 
-      # Generate consistent color based on domain - use DJB2 hash
+      # Generate consistent color based on domain using DJB2 hash (Daniel J. Bernstein)
       hash_value = 5381_u64
       clean_domain.each_char do |char|
         hash_value = ((hash_value << 5) &+ hash_value) &+ char.ord.to_u64

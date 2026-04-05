@@ -37,6 +37,8 @@ module Vug
     def self.valid_scheme?(url : String) : Bool
       scheme = url.split("://").first?.try(&.downcase)
       ALLOWED_SCHEMES.includes?(scheme)
+    rescue URI::Error
+      false
     end
 
     # Extracts host from URL, handling feed URLs and HTTP/HTTPS schemes

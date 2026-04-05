@@ -72,16 +72,19 @@ module Vug
       detect_via_crimage(data)
     end
 
-    def self.get_image_dimensions(data : Bytes) : {Int32, Int32}?
-      return if data.empty?
+    private def self.with_crimage_result(data : Bytes, default, & : CrImage::Image -> _)
+      return default if data.empty?
+      io = IO::Memory.new(data)
+      image = CrImage.read(io)
+      return default if image.nil?
+      yield image
+    rescue CrImage::Error | CrImage::UnknownFormat | IO::Error | ArgumentError | IndexError | NotImplementedError | Compress::Deflate::Error | Compress::Zlib::Error
+      default
+    end
 
-      begin
-        io = IO::Memory.new(data)
-        image = CrImage.read(io)
-        return if image.nil?
+    def self.get_image_dimensions(data : Bytes) : {Int32, Int32}?
+      with_crimage_result(data, nil) do |image|
         {image.bounds.width, image.bounds.height}
-      rescue CrImage::Error | CrImage::UnknownFormat | IO::Error | ArgumentError
-        nil
       end
     end
 
@@ -108,25 +111,13 @@ module Vug
     end
 
     private def self.valid_via_crimage?(data : Bytes) : Bool
-      return false if data.empty?
-
-      begin
-        io = IO::Memory.new(data)
-        image = CrImage.read(io)
+      with_crimage_result(data, false) do |image|
         !image.nil?
-      rescue CrImage::Error | CrImage::UnknownFormat | IO::Error | ArgumentError
-        false
       end
     end
 
     private def self.detect_via_crimage(data : Bytes) : String
-      return "application/octet-stream" if data.empty?
-
-      begin
-        io = IO::Memory.new(data)
-        image = CrImage.read(io)
-        return "application/octet-stream" if image.nil?
-
+      with_crimage_result(data, "application/octet-stream") do |image|
         if image.is_a?(CrImage::RGBA) || image.is_a?(CrImage::NRGBA)
           "image/png"
         elsif image.is_a?(CrImage::Gray)
@@ -134,8 +125,6 @@ module Vug
         else
           "application/octet-stream"
         end
-      rescue CrImage::Error | CrImage::UnknownFormat | IO::Error | ArgumentError
-        "application/octet-stream"
       end
     end
   end

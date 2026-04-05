@@ -163,8 +163,11 @@ module Vug
 
     private def sanitize_html(html : String) : String
       Sanitize::Policy::HTMLSanitizer.common.process(html)
-    rescue ex : Exception
+    rescue ex : Sanitize::Error | HTML5::ParseException
       @config.debug("HTML sanitization failed: #{ex.message}")
+      ""
+    rescue ex : Exception
+      @config.debug("HTML processing failed: #{ex.message}")
       ""
     end
   end

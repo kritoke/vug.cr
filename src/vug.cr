@@ -35,6 +35,10 @@ module Vug
       @@instance = value
     end
 
+    # NOTE: `@@instance ||= new` is intentionally lazy and racy during first
+    # initialization. Crystal guarantees safety after the first call, and the
+    # race window is negligible in practice (one assignment). This pattern
+    # avoids the overhead of Atomic or additional Mutex for initialization.
     def initialize
       @semaphore_mutex = Mutex.new
     end

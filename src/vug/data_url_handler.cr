@@ -38,6 +38,7 @@ module Vug
             return {decoded_data, media_type}
           end
         rescue Base64::Error
+          # Silently skip malformed data URLs
         end
       end
 

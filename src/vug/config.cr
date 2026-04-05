@@ -21,6 +21,8 @@ module Vug
     getter cache_size_limit : Int32 = 10 * 1024 * 1024
     getter cache_entry_ttl : Time::Span = 7.days
 
+    # Google SVG placeholders are exactly 198 bytes when fetched from google.com/s2/favicons.
+    # Detecting this size allows us to fall back to a larger resolution.
     getter gray_placeholder_size : Int32 = 198
 
     getter max_concurrent_requests : Int32 = 8

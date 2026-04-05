@@ -66,7 +66,7 @@ module Vug
     end
 
     private def timed_out?(start_time : Time::Span) : Bool
-      (Time.monotonic - start_time).total_seconds > @config.timeout.total_seconds
+      (Time.monotonic - start_time) > @config.timeout
     end
 
     private def handle_fetch_result(current_url : String, result : Result, gray_placeholder_attempts : Int32) : {Symbol, String?}
