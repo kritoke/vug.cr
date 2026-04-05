@@ -122,5 +122,59 @@ describe Vug::UrlValidator do
     it "detects IPv6 link-local addresses" do
       Vug::UrlValidator.valid_url?("http://[fe80::1]/favicon.ico").should be_false
     end
+
+    it "allows hostnames that happen to start with private IP prefixes" do
+      Vug::UrlValidator.valid_url?("https://10thstreet.com/favicon.ico").should be_true
+      Vug::UrlValidator.valid_url?("https://192168realty.com/favicon.ico").should be_true
+      Vug::UrlValidator.valid_url?("https://172消防.com/favicon.ico").should be_true
+    end
+  end
+
+  describe ".private_ip?" do
+    it "returns false for hostnames" do
+      Vug::UrlValidator.private_ip?("example.com").should be_false
+      Vug::UrlValidator.private_ip?("10thstreet.com").should be_false
+      Vug::UrlValidator.private_ip?("192168realty.com").should be_false
+      Vug::UrlValidator.private_ip?("fcbayern.com").should be_false
+    end
+
+    it "returns true for IPv4 loopback" do
+      Vug::UrlValidator.private_ip?("127.0.0.1").should be_true
+      Vug::UrlValidator.private_ip?("127.0.0.2").should be_true
+    end
+
+    it "returns true for IPv4 private ranges" do
+      Vug::UrlValidator.private_ip?("10.0.0.1").should be_true
+      Vug::UrlValidator.private_ip?("172.16.0.1").should be_true
+      Vug::UrlValidator.private_ip?("192.168.1.1").should be_true
+    end
+
+    it "returns true for IPv6 loopback" do
+      Vug::UrlValidator.private_ip?("::1").should be_true
+    end
+
+    it "returns true for IPv6 unique local addresses" do
+      Vug::UrlValidator.private_ip?("fc00::1").should be_true
+      Vug::UrlValidator.private_ip?("fd00::1").should be_true
+    end
+
+    it "returns true for IPv6 link-local" do
+      Vug::UrlValidator.private_ip?("fe80::1").should be_true
+    end
+
+    it "returns true for IPv4-mapped IPv6 addresses in private range" do
+      Vug::UrlValidator.private_ip?("::ffff:192.168.1.1").should be_true
+      Vug::UrlValidator.private_ip?("::ffff:10.0.0.1").should be_true
+    end
+
+    it "returns false for public IPs" do
+      Vug::UrlValidator.private_ip?("8.8.8.8").should be_false
+      Vug::UrlValidator.private_ip?("1.1.1.1").should be_false
+      Vug::UrlValidator.private_ip?("2001:4860:4860::8888").should be_false
+    end
+
+    it "returns true for 0.0.0.0" do
+      Vug::UrlValidator.private_ip?("0.0.0.0").should be_true
+    end
   end
 end

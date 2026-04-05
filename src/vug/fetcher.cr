@@ -61,6 +61,11 @@ module Vug
           return result
         when :return_result
           return result
+        when :use_cached
+          if next_url
+            return Vug.success(current_url, next_url)
+          end
+          return result
         end
       end
     end
@@ -88,7 +93,7 @@ module Vug
         larger_url = google_larger_url(current_url)
         if cached = @cache_manager.get(larger_url)
           @cache_manager.set(current_url, cached)
-          return {:return_result, nil}
+          return {:use_cached, cached}
         end
       end
 

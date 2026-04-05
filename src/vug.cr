@@ -35,14 +35,13 @@ module Vug
       @@instance = value
     end
 
-    # NOTE: `@@instance ||= new` is intentionally lazy and racy during first
-    # initialization. Crystal guarantees safety after the first call, and the
-    # race window is negligible in practice (one assignment). This pattern
-    # avoids the overhead of Atomic or additional Mutex for initialization.
     def initialize
       @semaphore_mutex = Mutex.new
     end
 
+    # NOTE: The semaphore is process-wide and only the first-initialized limit
+    # is used. Subsequent calls to semaphore() with different limits are ignored.
+    # This is intentional to avoid the overhead of Atomic or additional Mutex.
     def semaphore(limit : Int32) : Semaphore
       @semaphore_mutex.synchronize do
         @semaphore ||= Semaphore.new(limit)
@@ -69,7 +68,7 @@ module Vug
 
   def self.favicons(site_url : String, config : Config = Config.default, http_client_factory : HttpClientFactory? = nil) : FaviconCollection?
     factory = http_client_factory || HttpClientFactory.new(config)
-    html_extractor = HtmlExtractor.new(config, nil, factory)
+    html_extractor = HtmlExtractor.new(config, nil, factory, nil)
     favicons = html_extractor.extract_all(UrlProcessor.sanitize_feed_url(site_url))
 
     return if favicons.empty?

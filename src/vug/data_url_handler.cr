@@ -23,7 +23,7 @@ module Vug
                        header.sub("data:", "")
                      end
 
-        if max_size && encoded_data.size > max_size * 4 / 3
+        if max_size && encoded_data.size > ((max_size * 4) / 3.0).ceil.to_i
           return
         end
 

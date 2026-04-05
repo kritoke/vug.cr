@@ -1,6 +1,19 @@
 # Changelog
 
-## [0.3.0] - 2026-04-01
+## [0.3.1] - 2026-04-05
+
+### Security
+- **Fixed SSRF bypass via hostname misidentification**: `UrlValidator.private_ip?` used fragile string prefix matching that incorrectly flagged legitimate hostnames like `10thstreet.com`, `fcbayern.com`, and `192tv.com` as private IPs. Now uses `Socket::IPAddress` parsing with proper `loopback?`, `private?`, and `link_local?` predicates. Also handles IPv4-mapped addresses (`::ffff:X.X.X.X`) and `0.0.0.0`
+
+### Bug Fixes
+- **Fixed DNS cache returning IPs with port numbers**: `addrinfo.ip_address.to_s` returned strings like `[::1]:80` and `127.0.0.1:80` including port. Changed to `addrinfo.ip_address.address` for clean IP strings
+- **Fixed data URL favicons not cached**: `HtmlExtractor` now receives `CacheManager` and calls `cache_manager.set()` after saving data URL favicons, so subsequent requests hit the cache instead of re-decoding
+- **Fixed gray placeholder result leakage**: When a cached larger Google favicon was found, the fetcher returned `{:return_result, nil}` instead of `{:use_cached, path}`, causing successful results to be silently discarded
+- **Fixed base64 size limit integer division**: `DataUrlHandler` computed `max_size * 4 / 3` using integer division (resulting in `max_size * 1`). Now uses `((max_size * 4) / 3.0).ceil.to_i` for correct limit
+- **Fixed image dimension detection**: `ImageValidator.get_image_dimensions` now parses dimensions directly from binary headers (PNG, JPEG, GIF, WebP, ICO) instead of relying on buggy `crimage` library decode. Falls back to `crimage` only for unrecognized formats
+
+### Changed
+- **Narrowed exception handling in `HtmlExtractor`**: Replaced broad `rescue ex : Exception` (with silent swallow) with typed `rescue ex : HTML5::HTMLException | URI::Error` and re-raise for unexpected exceptions
 
 ### Changed
 - **Internal restructuring**: Extracted monolithic module into focused classes (`Fetcher`, `FaviconResolver`, `HtmlExtractor`, `ManifestExtractor`, `RedirectValidator`, `ImageValidator`, `DataUrlHandler`, `PlaceholderGenerator`) for better testability and separation of concerns

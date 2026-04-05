@@ -5,15 +5,15 @@ require "./dns_cache"
 module Vug
   module UrlValidator
     def self.private_ip?(ip : String) : Bool
-      return true if ip.starts_with?("127.")
       return true if ip == "0.0.0.0"
-      return true if ip.starts_with?("10.")
-      return true if ip.starts_with?("172.") && private_class_b?(ip)
-      return true if ip.starts_with?("192.168.")
-      return true if ip == "::1"
-      return true if ip.starts_with?("fc") || ip.starts_with?("fd")
-      return true if ip.starts_with?("fe80:")
-      return true if ip.includes?("::ffff:")
+      if ip.starts_with?("::ffff:")
+        ipv4_part = ip.split("::ffff:")[1]?
+        return private_ip?(ipv4_part) if ipv4_part
+      end
+      addr = Socket::IPAddress.new(ip, 0) rescue nil
+      return false unless addr
+      addr.loopback? || addr.private? || addr.link_local?
+    rescue
       false
     end
 
@@ -76,18 +76,7 @@ module Vug
 
     private def self.ip_in_private_range?(host : String) : Bool
       return false unless host.includes?(".") || host.includes?(":")
-      return true if private_ip?(host)
-      return true if private_class_b?(host)
-      false
-    end
-
-    private def self.private_class_b?(host : String) : Bool
-      return false unless host.starts_with?("172.")
-      parts = host.split('.')
-      return false unless parts.size == 4
-      second_octet = parts[1].to_i?
-      return false unless second_octet
-      (16..31).includes?(second_octet)
+      private_ip?(host)
     end
   end
 end

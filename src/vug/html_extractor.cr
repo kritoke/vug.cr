@@ -8,6 +8,7 @@ require "./url_validator"
 require "./types"
 require "./manifest_extractor"
 require "./data_url_handler"
+require "./cache_manager"
 
 module Vug
   class HtmlExtractor
@@ -19,9 +20,10 @@ module Vug
       "link[type='image/x-icon']",
     ]
 
-    def initialize(@config : Config = Config.default, manifest_extractor : ManifestExtractor? = nil, http_client_factory : HttpClientFactory? = nil)
+    def initialize(@config : Config = Config.default, manifest_extractor : ManifestExtractor? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil)
       @manifest_extractor = manifest_extractor || ManifestExtractor.new(@config)
       @http_client_factory = http_client_factory || HttpClientFactory.new(@config)
+      @cache_manager = cache_manager
     end
 
     def extract_all(site_url : String) : Array(FaviconInfo)
@@ -135,6 +137,7 @@ module Vug
 
               if saved_path = @config.save(data_url_id, data, media_type)
                 @config.debug("Data URL favicon saved: #{saved_path}")
+                @cache_manager.try(&.set(data_url_id, saved_path))
               end
             else
               @config.debug("Invalid data URL favicon: #{href}")
@@ -163,12 +166,12 @@ module Vug
 
     private def sanitize_html(html : String) : String
       Sanitize::Policy::HTMLSanitizer.common.process(html)
-    rescue ex : Sanitize::Error | HTML5::ParseException
+    rescue ex : HTML5::HTMLException | URI::Error
       @config.debug("HTML sanitization failed: #{ex.message}")
       ""
     rescue ex : Exception
       @config.debug("HTML processing failed: #{ex.message}")
-      ""
+      raise ex
     end
   end
 end

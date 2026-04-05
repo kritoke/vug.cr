@@ -49,6 +49,12 @@ describe Vug::DataUrlHandler do
       result = Vug::DataUrlHandler.extract_from_url(large_data, max_size: 100)
       result.should be_nil
     end
+
+    it "accepts data with exact max_size limit" do
+      small_png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAsgB/1KfFZIAAAAASUVORK5CYII="
+      result = Vug::DataUrlHandler.extract_from_url(small_png, max_size: 1000)
+      result.should_not be_nil
+    end
   end
 
   describe ".data_url?" do

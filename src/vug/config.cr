@@ -25,6 +25,9 @@ module Vug
     # Detecting this size allows us to fall back to a larger resolution.
     getter gray_placeholder_size : Int32 = 198
 
+    # NOTE: This setting controls the process-wide semaphore limit.
+    # Only the first-initialized value takes effect; subsequent Fetcher
+    # instances with different values will share the existing semaphore.
     getter max_concurrent_requests : Int32 = 8
     getter? image_validation_hard : Bool = false
 

@@ -32,7 +32,7 @@ module Vug
 
       private def resolve_uncached(host : String) : Array(String)
         addrinfos = Socket::Addrinfo.resolve(host, "80", type: Socket::Type::STREAM)
-        addrinfos.compact_map { |addrinfo| addrinfo.ip_address.try(&.to_s) }
+        addrinfos.compact_map { |addrinfo| addrinfo.ip_address.try(&.address) }
       rescue Socket::Addrinfo::Error
         [] of String
       end

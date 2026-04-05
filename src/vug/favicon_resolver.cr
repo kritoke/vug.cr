@@ -4,7 +4,7 @@ module Vug
       @http_client_factory = HttpClientFactory.new(@config)
       @cache_manager = CacheManager.new(@config, cache)
       @fetcher = Fetcher.new(@config, cache, @http_client_factory)
-      @html_fetcher = HtmlExtractor.new(@config, nil, @http_client_factory)
+      @html_fetcher = HtmlExtractor.new(@config, nil, @http_client_factory, @cache_manager)
     end
 
     def site(url : String) : Result

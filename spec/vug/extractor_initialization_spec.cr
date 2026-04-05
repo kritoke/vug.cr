@@ -24,6 +24,14 @@ describe Vug::HtmlExtractor do
       extractor = Vug::HtmlExtractor.new(config, nil, factory)
       extractor.should_not be_nil
     end
+
+    it "creates instance with config, dependencies, and cache manager" do
+      config = Vug::Config.new
+      factory = Vug::HttpClientFactory.new(config)
+      cache_manager = Vug::CacheManager.new(config, nil)
+      extractor = Vug::HtmlExtractor.new(config, nil, factory, cache_manager)
+      extractor.should_not be_nil
+    end
   end
 end
 
