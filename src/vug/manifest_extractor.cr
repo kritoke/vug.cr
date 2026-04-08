@@ -81,6 +81,7 @@ module Vug
               src = icon_data["src"].as_s
               # Handle relative URLs by resolving against manifest_url first
               normalized_src = UrlProcessor.resolve_and_normalize(src, manifest_url)
+              next unless UrlValidator.valid_url?(normalized_src)
 
               favicon_info = FaviconInfo.new(
                 url: normalized_src,

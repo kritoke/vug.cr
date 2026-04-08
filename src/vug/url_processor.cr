@@ -16,12 +16,14 @@ module Vug
     # If href is already absolute, it is normalized. If relative, it is resolved
     # against base first, then normalized.
     def self.resolve_and_normalize(href : String, base : String, base_scheme : String = "https") : String
-      if href.starts_with?("http")
-        normalize_url(href, base_scheme)
-      else
-        resolved = resolve_url(href.strip, base)
-        normalize_url(resolved, base_scheme)
-      end
+      resolved = if href.starts_with?("http")
+                   normalize_url(href, base_scheme)
+                 else
+                   normalize_url(resolve_url(href.strip, base), base_scheme)
+                 end
+
+      return resolved if UrlValidator.valid_url?(resolved)
+      ""
     end
 
     # Resolves relative URLs against a base URL

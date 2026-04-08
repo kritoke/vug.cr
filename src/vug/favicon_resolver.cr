@@ -106,10 +106,16 @@ module Vug
     end
 
     private def fetch_data_url_favicon(favicon : FaviconInfo) : Result?
-      cached = @cache_manager.get(favicon.url)
-      return unless cached
+      if cached = @cache_manager.get(favicon.url)
+        return Vug.success(favicon.url, cached)
+      end
 
-      Vug.success(favicon.url, cached)
+      if path = @config.load(favicon.url)
+        @cache_manager.set(favicon.url, path)
+        return Vug.success(favicon.url, path)
+      end
+
+      nil
     end
 
     private def generate_placeholder_fallback(site_url : String) : Result
