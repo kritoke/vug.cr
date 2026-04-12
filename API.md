@@ -420,6 +420,60 @@ SSRF protection. Validates URLs against private IP ranges, localhost, and danger
 
 ---
 
+## CacheCoordinator
+
+Lightweight helper that bridges your configured on-disk/config-backed store (via Config callbacks) and an optional in-memory cache. The fetcher uses this to prefer existing saved files while still offering a fast in-memory hit for repeat requests.
+
+### Usage
+
+You normally don't need to construct this directly; the Fetcher uses it by default. If you do, construct with a Config and an optional MemoryCache and CacheManager:
+
+```crystal
+coord = Vug::CacheCoordinator.new(config, memory_cache, cache_manager)
+path = coord.fetch_from_cache(url) # -> String? (path if found)
+coord.store_to_cache(url, path)    # stores to both configured store and memory cache
+```
+
+## ImageProcessor
+
+Abstraction for validating and saving image bytes. The Fetcher delegates image validation and saving to an ImageProcessor so you can provide custom logic (e.g., transform images, save to external services, or apply additional validation).
+
+The default processor validates the bytes, calls `Config.on_save` to persist them, and returns a Result.
+
+### Interface (conceptual)
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `process_bytes` | `(url : String, data : Bytes, content_type : String) : Result` | Validate and store image bytes, returning a `Result` (success/failure) |
+
+### Example
+
+```crystal
+class MyProcessor < Vug::ImageProcessor
+  def process_bytes(url, data, content_type)
+    # custom validation/transformation
+    Vug.success(url, "/path/to/saved", content_type, data)
+  end
+end
+
+fetcher = Vug::Fetcher.new(config, nil, nil, nil, nil, nil, MyProcessor.new)
+```
+
+## RedirectHandler
+
+Redirect handling is pluggable so you can customize how redirect URLs are evaluated before following them. The default handler applies conservative checks to avoid unsafe cross-scheme downgrades or redirects into private/reserved IP ranges.
+
+### Default behavior
+
+- Validates redirect targets with the UrlValidator
+- Blocks redirects that downgrade from HTTPS to HTTP
+- Allows custom handlers to implement alternate policies
+
+### Usage
+
+You can provide a custom RedirectHandler implementation to Fetcher during construction. The handler must expose a `validate_redirect_url(original_url, new_url)`-like method that returns `true` to allow following the redirect, `false` to block it.
+
+
 ## Migration from 0.1.x
 
 ### Renamed Methods (0.2.0)
