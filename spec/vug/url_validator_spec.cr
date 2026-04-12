@@ -61,6 +61,18 @@ describe Vug::UrlValidator do
       Vug::UrlValidator.valid_url?("https://example.com/favicon.ico").should be_true
       Vug::UrlValidator.valid_url?("https://google.com/favicon.ico").should be_true
     end
+
+    it "rejects trailing-dot localhost hostnames" do
+      Vug::UrlValidator.valid_url?("http://localhost./favicon.ico").should be_false
+    end
+
+    it "recognizes IPv4-mapped IPv6 literal as loopback" do
+      Vug::UrlValidator.valid_url?("http://[::ffff:127.0.0.1]/").should be_false
+    end
+
+    it "rejects carrier-grade NAT addresses (100.64.0.0/10)" do
+      Vug::UrlValidator.valid_url?("http://100.64.0.1/").should be_false
+    end
   end
 
   describe ".resolves_to_private_ip?" do

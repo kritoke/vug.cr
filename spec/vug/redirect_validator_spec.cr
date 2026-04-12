@@ -79,5 +79,27 @@ describe Vug::RedirectValidator do
       )
       result.should be_false
     end
+
+    it "blocks redirects using IPv4-mapped IPv6" do
+      config = Vug::Config.new
+      validator = Vug::RedirectValidator.new(config)
+
+      result = validator.validate_redirect_url(
+        "https://example.com/favicon.ico",
+        "http://[::ffff:127.0.0.1]/private"
+      )
+      result.should be_false
+    end
+
+    it "blocks redirects to trailing-dot localhost host" do
+      config = Vug::Config.new
+      validator = Vug::RedirectValidator.new(config)
+
+      result = validator.validate_redirect_url(
+        "https://example.com/favicon.ico",
+        "http://localhost./"
+      )
+      result.should be_false
+    end
   end
 end
