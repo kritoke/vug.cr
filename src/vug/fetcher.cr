@@ -4,15 +4,21 @@ require "time"
 require "./config"
 require "./url_validator"
 require "./image_validator"
+require "./image_processor"
+require "./cache_coordinator"
 require "./types"
 require "./redirect_validator"
 
 module Vug
   class Fetcher
-    def initialize(@config : Config = Config.default, cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectValidator? = nil)
+    def initialize(@config : Config = Config.default, cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectValidator? = nil, cache_coordinator : CacheCoordinator? = nil, image_processor : ImageProcessor? = nil)
       @http_client_factory = http_client_factory || HttpClientFactory.new(@config)
       @cache_manager = cache_manager || CacheManager.new(@config, cache)
       @redirect_validator = redirect_validator || RedirectValidator.new(@config)
+      # Coordinator wraps config-backed cache manager and optional memory cache
+      @cache_coordinator = cache_coordinator || CacheCoordinator.new(@config, cache, @cache_manager)
+      # Image processor may use cache manager for storing saved paths
+      @image_processor = image_processor || ImageProcessor::Default.new(@config, @cache_manager)
       @semaphore = Vug.shared_semaphore(@config.max_concurrent_requests)
     end
 
@@ -38,12 +44,14 @@ module Vug
 
       loop do
         return Vug.failure("Timeout", url, error_type: :timeout) if timed_out?(start_time)
-        return Vug.failure("Too many redirects", url, error_type: :too_many_redirects) if redirects > @config.max_redirects
+        # Enforce redirect limit: block when redirects reached the configured maximum
+        return Vug.failure("Too many redirects", url, error_type: :too_many_redirects) if redirects >= @config.max_redirects
         return Vug.failure("Too many gray placeholder attempts", url, error_type: :too_many_gray_placeholder_attempts) if gray_placeholder_attempts >= max_gray_attempts
 
-        if cached = @cache_manager.get(current_url)
+        # Check coordinated cache first (which favors config-backed storage), then fall back
+        if path = @cache_coordinator.try(&.fetch_from_cache(current_url)) || @cache_manager.get(current_url)
           @config.debug("Favicon cache hit: #{current_url}")
-          return Vug.success(current_url, cached)
+          return Vug.success(current_url, path)
         end
 
         @config.debug("Fetching favicon from: #{current_url}")
@@ -81,6 +89,10 @@ module Vug
     end
 
     private def timed_out?(start_time : Time::Span) : Bool
+      # Use monotonic time to avoid issues with system clock changes. A
+      # negative elapsed value can indicate wrap/overflow on some platforms
+      # or anomalies; treat negative elapsed as an immediate timeout to be
+      # defensive about long-running requests.
       elapsed = Time.monotonic - start_time
       return true if elapsed < 0.seconds
       elapsed > @config.timeout
@@ -103,8 +115,8 @@ module Vug
 
       if current_url.includes?("google.com/s2/favicons")
         larger_url = google_larger_url(current_url)
-        if cached = @cache_manager.get(larger_url)
-          @cache_manager.set(current_url, cached)
+        if cached = @cache_coordinator.try(&.fetch_from_cache(larger_url)) || @cache_manager.get(larger_url)
+          @cache_coordinator.try(&.store_to_cache(current_url, cached)) || @cache_manager.set(current_url, cached)
           return {:use_cached, cached}
         end
       end
@@ -148,7 +160,8 @@ module Vug
             memory = IO::Memory.new
             IO.copy(response.body_io, memory, limit: @config.max_size)
 
-            return handle_success(url, memory.to_slice, content_type)
+            # Use injected ImageProcessor to validate and save image bytes
+            return @image_processor.process_bytes(url, memory.to_slice, content_type)
           else
             return handle_error(url, response.status_code)
           end
@@ -211,14 +224,14 @@ module Vug
 
       @config.debug("Favicon fetched: #{url}, size=#{data.size}, type=#{content_type}#{dimensions_info}")
 
-      if saved_path = @config.save(url, data, content_type)
-        @config.debug("Favicon saved: #{saved_path}")
-        @cache_manager.set(url, saved_path)
-        Vug.success(url, saved_path, content_type, data)
-      else
-        @config.debug("Favicon save failed: #{url}")
-        Vug.failure("Save failed", url, error_type: :save_failed)
-      end
+        if saved_path = @config.save(url, data, content_type)
+          @config.debug("Favicon saved: #{saved_path}")
+          @cache_coordinator.try(&.store_to_cache(url, saved_path)) || @cache_manager.set(url, saved_path)
+          Vug.success(url, saved_path, content_type, data)
+        else
+          @config.debug("Favicon save failed: #{url}")
+          Vug.failure("Save failed", url, error_type: :save_failed)
+        end
     end
 
     private def should_handle_gray_placeholder?(url : String, data : Bytes?) : Bool

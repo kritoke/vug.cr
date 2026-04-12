@@ -51,7 +51,9 @@ module Vug
         return false
       end
 
-      # Fallback to Socket parsing for IPv6 and other literal forms
+      # Fallback to Socket parsing for IPv6 and other literal forms.
+      # Socket::IPAddress parsing can raise for malformed input; rescue and
+      # return false to indicate the IP is not considered "private" here.
       addr = Socket::IPAddress.new(ip, 0) rescue nil
       return false unless addr
       # loopback/private/link-local detection provided by stdlib

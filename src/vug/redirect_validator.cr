@@ -19,6 +19,8 @@ module Vug
       # Allow HTTPS -> HTTP redirects only if explicitly configured (not by default)
       # For now, be conservative and block scheme downgrades
       if original_uri.scheme == "https" && redirect_uri.scheme == "http"
+        # Block scheme downgrades by default to avoid leaking secure origins to
+        # insecure ones (conservative policy for SSRF protections).
         return false
       end
 

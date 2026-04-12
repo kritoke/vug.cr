@@ -1,10 +1,11 @@
 module Vug
   class FaviconResolver
-    def initialize(@config : Config = Config.default, cache : MemoryCache? = nil)
+    def initialize(@config : Config = Config.default, cache : MemoryCache? = nil, cache_coordinator : CacheCoordinator? = nil)
       @http_client_factory = HttpClientFactory.new(@config)
       @cache_manager = CacheManager.new(@config, cache)
-      @fetcher = Fetcher.new(@config, cache, @http_client_factory)
-      @html_fetcher = HtmlExtractor.new(@config, nil, @http_client_factory, @cache_manager)
+      @cache_coordinator = cache_coordinator || CacheCoordinator.new(@config, cache, @cache_manager)
+      @fetcher = Fetcher.new(@config, cache, @http_client_factory, @cache_manager, nil, @cache_coordinator)
+      @html_fetcher = HtmlExtractor.new(@config, nil, @http_client_factory, @cache_manager, @cache_coordinator)
     end
 
     def site(url : String) : Result
@@ -53,7 +54,7 @@ module Vug
       result = @fetcher.fetch(best.url)
       return unless path = result.local_path
 
-      @cache_manager.set(best.url, path)
+      @cache_coordinator.try(&.store_to_cache(best.url, path)) || @cache_manager.set(best.url, path)
       result
     end
 
@@ -95,23 +96,23 @@ module Vug
     end
 
     private def fetch_with_cache(url : String) : Result?
-      cached = @cache_manager.get(url)
+      cached = @cache_coordinator.try(&.fetch_from_cache(url)) || @cache_manager.get(url)
       return Vug.success(url, cached) if cached
 
       result = @fetcher.fetch(url)
       return unless path = result.local_path
 
-      @cache_manager.set(url, path)
+      @cache_coordinator.try(&.store_to_cache(url, path)) || @cache_manager.set(url, path)
       result
     end
 
     private def fetch_data_url_favicon(favicon : FaviconInfo) : Result?
-      if cached = @cache_manager.get(favicon.url)
+      if cached = @cache_coordinator.try(&.fetch_from_cache(favicon.url)) || @cache_manager.get(favicon.url)
         return Vug.success(favicon.url, cached)
       end
 
       if path = @config.load(favicon.url)
-        @cache_manager.set(favicon.url, path)
+        @cache_coordinator.try(&.store_to_cache(favicon.url, path)) || @cache_manager.set(favicon.url, path)
         return Vug.success(favicon.url, path)
       end
 
@@ -142,6 +143,9 @@ module Vug
 
     def self.google_favicon_url(domain : String) : String
       host = UrlProcessor.extract_host_from_url(domain) || domain
+      # encode host as a single query component rather than a k=v form
+      # Use encode_www_form to percent-encode host; note: stdlib lacks a
+      # direct "encode component" alias, so reuse existing helper.
       encoded_host = URI.encode_www_form(host)
       "https://www.google.com/s2/favicons?domain=#{encoded_host}&sz=256"
     end
