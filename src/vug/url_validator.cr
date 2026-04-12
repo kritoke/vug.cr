@@ -1,6 +1,7 @@
 require "uri"
 require "socket"
 require "./dns_cache"
+require "./config"
 
 module Vug
   module UrlValidator
@@ -30,11 +31,9 @@ module Vug
       uri = URI.parse(url)
       host = uri.hostname
       return false if host.nil? || host.empty?
-      return true if localhost_like?(host)
 
-      if host.includes?(".") || host.includes?(":")
-        return !private_ip?(host)
-      end
+      return true if localhost_like?(host)
+      return false if private_ip?(host)
 
       ips = DnsCache.resolve(host)
       return false if ips.empty?
@@ -58,12 +57,32 @@ module Vug
       ["http", "https"].includes?(scheme.downcase)
     end
 
-    private def self.dangerous_host?(host : String?) : Bool
-      return true if host.nil? || host.empty?
-      return true if localhost_like?(host)
-      return true if ip_in_private_range?(host)
-      return true if host.ends_with?(".local")
-      return true if resolves_to_private_ip?(host)
+    private def self.dangerous_host?(host : String?, config : Vug::Config? = nil) : Bool
+      if host.nil? || host.empty?
+        config.try &.error("dangerous_host?(#{host.inspect})", "Blocked: host is nil or empty")
+        return true
+      end
+
+      if localhost_like?(host)
+        config.try &.error("dangerous_host?(#{host})", "Blocked: localhost-like host")
+        return true
+      end
+
+      if ip_in_private_range?(host)
+        config.try &.error("dangerous_host?(#{host})", "Blocked: IP in private range")
+        return true
+      end
+
+      if host.ends_with?(".local")
+        config.try &.error("dangerous_host?(#{host})", "Blocked: .local domain")
+        return true
+      end
+
+      if resolves_to_private_ip?(host)
+        config.try &.error("dangerous_host?(#{host})", "Blocked: resolves to private IP")
+        return true
+      end
+
       false
     end
 

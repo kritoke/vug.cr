@@ -61,11 +61,11 @@ module Vug
             return
           end
         end
-      rescue IO::TimeoutError
-        @config.error("extract_favicons_from_manifest(#{manifest_url})", "Read timed out")
+      rescue ex : IO::TimeoutError
+        @config.error("extract_favicons_from_manifest(#{manifest_url})", format_exception(ex, "Read timed out"))
         @config.debug("Manifest fetch timeout: #{manifest_url}")
       rescue ex : JSON::ParseException | IO::Error | Socket::Error
-        @config.error("extract_favicons_from_manifest(#{manifest_url})", ex.message || "Unknown error")
+        @config.error("extract_favicons_from_manifest(#{manifest_url})", format_exception(ex))
         @config.debug("Error fetching manifest: #{ex.message}")
       end
     end
@@ -96,6 +96,12 @@ module Vug
       end
 
       icons
+    end
+
+    private def format_exception(ex : Exception, prefix : String? = nil) : String
+      message = prefix || ex.message || "Unknown error"
+      stack = ex.backtrace.join("\n")
+      "#{message} | exception=#{ex.class} | backtrace=\n#{stack}"
     end
   end
 end

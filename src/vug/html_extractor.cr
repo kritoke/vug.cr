@@ -86,13 +86,14 @@ module Vug
             @config.debug("HTML fetch error #{response.status_code}: #{clean_url}")
           end
         end
-      rescue Socket::Addrinfo::Error
+      rescue ex : Socket::Addrinfo::Error
+        @config.error("extract_all(#{site_url})", format_exception(ex, "DNS lookup failed"))
         @config.debug("DNS lookup failed for: #{site_url}")
-      rescue IO::TimeoutError
-        @config.error("extract_all(#{site_url})", "Read timed out")
+      rescue ex : IO::TimeoutError
+        @config.error("extract_all(#{site_url})", format_exception(ex, "Read timed out"))
         @config.debug("HTML fetch timeout: #{site_url}")
       rescue ex : IO::Error | Socket::Error
-        @config.error("extract_all(#{site_url})", ex.message || "Unknown error")
+        @config.error("extract_all(#{site_url})", format_exception(ex))
         @config.debug("Error extracting favicons: #{ex.message}")
       end
 
@@ -172,6 +173,12 @@ module Vug
     rescue ex : Exception
       @config.debug("HTML processing failed: #{ex.message}")
       raise ex
+    end
+
+    private def format_exception(ex : Exception, prefix : String? = nil) : String
+      message = prefix || ex.message || "Unknown error"
+      stack = ex.backtrace.join("\n")
+      "#{message} | exception=#{ex.class} | backtrace=\n#{stack}"
     end
   end
 end

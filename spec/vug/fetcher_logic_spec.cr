@@ -46,6 +46,24 @@ describe Vug::Fetcher do
   end
 
   describe "Semaphore concurrency" do
+    it "reuses one shared semaphore instance across concurrent access" do
+      results = Channel(UInt64).new(20)
+
+      20.times do
+        spawn do
+          semaphore = Vug.shared_semaphore(8)
+          results.send(semaphore.object_id)
+        end
+      end
+
+      ids = [] of UInt64
+      20.times do
+        ids << results.receive
+      end
+
+      ids.uniq.size.should eq(1)
+    end
+
     it "limits concurrent access to configured limit" do
       config = Vug::Config.new
       fetcher = Vug::Fetcher.new(config)

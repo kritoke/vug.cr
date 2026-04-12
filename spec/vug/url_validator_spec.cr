@@ -73,6 +73,10 @@ describe Vug::UrlValidator do
       Vug::UrlValidator.resolves_to_private_ip?("localhost").should be_true
       Vug::UrlValidator.resolves_to_private_ip?("0.0.0.0").should be_true
     end
+
+    it "returns true for empty DNS result for non-dot hosts (defense-in-depth)" do
+      Vug::UrlValidator.resolves_to_private_ip?("nonexistent-ssrf-block-test").should be_true
+    end
   end
 
   describe ".private_ip? (via host validation)" do

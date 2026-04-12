@@ -28,7 +28,9 @@ module Vug
 
   class SharedState
     def self.instance : self
-      @@instance ||= new
+      @@instance_mutex.synchronize do
+        @@instance ||= new
+      end
     end
 
     def self.instance=(value : self)
@@ -50,6 +52,8 @@ module Vug
 
     private getter semaphore_mutex : Mutex
     private property semaphore : Semaphore? = nil
+
+    @@instance_mutex = Mutex.new
   end
 
   def self.shared_semaphore(limit : Int32) : Semaphore

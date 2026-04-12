@@ -100,6 +100,17 @@ describe Vug::MemoryCache do
       cache.set("url2", "/tmp/icon2.png")
       cache.get("url2").should eq("/tmp/icon2.png")
     end
+
+    it "removes expired entries from the insertion order queue" do
+      cache = Vug::MemoryCache.new(size_limit: 128, entry_ttl: 1.millisecond)
+      cache.set("url1", "/tmp/icon1.png")
+      sleep 5.milliseconds
+      cache.get("url1").should be_nil
+
+      cache.set("url2", "/tmp/icon2.png")
+      cache.get("url2").should eq("/tmp/icon2.png")
+      cache.size.should eq(1)
+    end
   end
 
   describe "#set with size limit" do
@@ -147,6 +158,23 @@ describe Vug::MemoryCache do
         cache.set("url1", small) # overwrite with smaller
         cache.size.should eq(1)
         cache.get("url1").should eq(small)
+      ensure
+        FileUtils.rm_rf(dir)
+      end
+    end
+
+    it "rejects oversized entries before storing them" do
+      dir = File.tempname("vug-cache-test")
+      Dir.mkdir_p(dir)
+      begin
+        file = File.join(dir, "too-large.png")
+        File.write(file, "x" * 128)
+
+        cache = Vug::MemoryCache.new(size_limit: 64, entry_ttl: 60.seconds)
+        cache.set("url1", file)
+
+        cache.get("url1").should be_nil
+        cache.size.should eq(0)
       ensure
         FileUtils.rm_rf(dir)
       end

@@ -29,6 +29,12 @@ module Vug
       start_time = Time.monotonic
       gray_placeholder_attempts = 0
       max_gray_attempts = 3
+      initial_dns_ips = {} of String => Array(String)
+
+      uri = URI.parse(url)
+      if host = uri.hostname
+        initial_dns_ips[host] ||= DnsCache.resolve(host)
+      end
 
       loop do
         return Vug.failure("Timeout", url, error_type: :timeout) if timed_out?(start_time)
@@ -42,12 +48,16 @@ module Vug
 
         @config.debug("Fetching favicon from: #{current_url}")
 
-        result = fetch_single(current_url)
+        result = fetch_single(current_url, initial_dns_ips)
         action, next_url = handle_fetch_result(current_url, result, gray_placeholder_attempts)
 
         case action
         when :redirect
           if next_url
+            new_uri = URI.parse(next_url)
+            if new_host = new_uri.hostname
+              initial_dns_ips[new_host] ||= DnsCache.resolve(new_host)
+            end
             current_url = next_url
           end
           redirects += 1
@@ -71,7 +81,9 @@ module Vug
     end
 
     private def timed_out?(start_time : Time::Span) : Bool
-      (Time.monotonic - start_time) > @config.timeout
+      elapsed = Time.monotonic - start_time
+      return true if elapsed < 0.seconds
+      elapsed > @config.timeout
     end
 
     private def handle_fetch_result(current_url : String, result : Result, gray_placeholder_attempts : Int32) : {Symbol, String?}
@@ -101,16 +113,14 @@ module Vug
       {:try_fallback, next_url}
     end
 
-    private def fetch_single(url : String) : Result
+    private def fetch_single(url : String, initial_dns_ips : Hash(String, Array(String))) : Result
       @semaphore.acquire
       begin
-        # Re-validate DNS at connection time to prevent DNS rebinding
-        unless UrlValidator.revalidate_url?(url)
-          @config.debug("DNS revalidation failed (possible rebinding): #{url}")
+        uri = URI.parse(url)
+        unless revalidate_dns_for?(url, uri.hostname, initial_dns_ips)
           return Vug.failure("DNS revalidation failed", url, error_type: :dns_revalidation_failed)
         end
 
-        uri = URI.parse(url)
         client = @http_client_factory.create_client(uri)
 
         headers = HTTP::Headers{
@@ -143,20 +153,42 @@ module Vug
             return handle_error(url, response.status_code)
           end
         end
+      rescue ex : IO::TimeoutError
+        @config.error("fetch_single(#{url})", format_exception(ex, "Request timed out"))
+        Vug.failure("Request timed out", url, error_type: :fetch_error)
+      rescue ex : Socket::Addrinfo::Error
+        @config.error("fetch_single(#{url})", format_exception(ex, "DNS resolution failed"))
+        Vug.failure("DNS resolution failed", url, error_type: :fetch_error)
       rescue ex : IO::Error | Socket::Error | URI::Error
-        error_msg = case ex
-                    when IO::TimeoutError
-                      "Request timed out"
-                    when Socket::Addrinfo::Error
-                      "DNS resolution failed"
-                    else
-                      ex.message || "Unknown error"
-                    end
-        @config.error("fetch_single(#{url})", error_msg)
-        Vug.failure(error_msg, url, error_type: :fetch_error)
+        @config.error("fetch_single(#{url})", format_exception(ex))
+        Vug.failure(ex.message || "Unknown error", url, error_type: :fetch_error)
       ensure
         @semaphore.release
       end
+    end
+
+    private def revalidate_dns_for?(url : String, host : String?, initial_dns_ips : Hash(String, Array(String))) : Bool
+      return false if host.nil? || host.empty?
+
+      current_ips = DnsCache.resolve(host)
+      if current_ips.empty?
+        @config.error("revalidate_dns_for?(#{url})", "Blocked: DNS resolution returned no result at connection time")
+        return false
+      end
+
+      if current_ips.any? { |ip| UrlValidator.private_ip?(ip) }
+        @config.error("revalidate_dns_for?(#{url})", "Blocked: resolved to private IP at connection time")
+        return false
+      end
+
+      if initial_ips = initial_dns_ips[host]?
+        if initial_ips.to_set != current_ips.to_set
+          @config.error("revalidate_dns_for?(#{url})", "Blocked: DNS changed from #{initial_ips} to #{current_ips} (possible rebinding)")
+          return false
+        end
+      end
+
+      true
     end
 
     private def handle_success(url : String, data : Bytes, content_type : String) : Result
@@ -226,6 +258,12 @@ module Vug
         @config.debug("Favicon error #{status_code}: #{url}")
       end
       Vug.failure("HTTP #{status_code}", url, error_type: :http_error)
+    end
+
+    private def format_exception(ex : Exception, prefix : String? = nil) : String
+      message = prefix || ex.message || "Unknown error"
+      stack = ex.backtrace.join("\n")
+      "#{message} | exception=#{ex.class} | backtrace=\n#{stack}"
     end
   end
 end

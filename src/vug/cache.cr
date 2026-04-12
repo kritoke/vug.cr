@@ -19,11 +19,18 @@ module Vug
     def get(url : String) : String?
       @mutex.synchronize do
         if entry = @cache[url]?
-          if Time.monotonic - entry.timestamp < @entry_ttl
+          age = Time.monotonic - entry.timestamp
+          if age < 0.seconds
+            @current_size -= entry.size
+            @cache.delete(url)
+            remove_from_insertion_order(url)
+            nil
+          elsif age < @entry_ttl
             entry.path
           else
             @current_size -= entry.size
             @cache.delete(url)
+            remove_from_insertion_order(url)
             nil
           end
         end
@@ -34,9 +41,13 @@ module Vug
       return unless local_path.starts_with?("/")
 
       new_size = begin
-        File.size(local_path).to_i32
+        size = File.size(local_path)
+        return if size > Int32::MAX || size > @size_limit
+        size.to_i32
       rescue File::Error
-        local_path.bytesize
+        bytesize = local_path.bytesize
+        return if bytesize > @size_limit
+        bytesize
       end
 
       @mutex.synchronize do
@@ -67,6 +78,10 @@ module Vug
         @insertion_order.clear
         @current_size = 0
       end
+    end
+
+    private def remove_from_insertion_order(url : String) : Nil
+      @insertion_order.delete(url)
     end
 
     def size : Int32
