@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Crystal
+        uses: crystallang/action-setup@v1
+        with:
+          crystal-version: '1.18.2'
+      - name: Install dependencies
+        run: shards install
+      - name: Format check
+        run: crystal tool format --check
+      - name: Run linter (ameba)
+        run: shards exec ameba
+      - name: Run specs
+        run: crystal spec

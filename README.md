@@ -113,6 +113,41 @@ What's new in v0.4.0
 - Image processing is pluggable — you can provide a custom processor to validate or transform images before they are saved.
 - Improved redirect handling to prevent unsafe redirects.
 
+Examples
+
+Custom ImageProcessor
+
+```crystal
+class MyProcessor < Vug::ImageProcessor
+  def initialize(config)
+    super(config)
+  end
+
+  def process_bytes(url, data, content_type)
+    # custom validation or transform
+    path = "/tmp/#{Digest::SHA256.hexdigest(url)}.png"
+    File.write(path, data)
+    Vug.success(url, path, content_type, data)
+  end
+end
+
+# Use it with the Fetcher
+fetcher = Vug::Fetcher.new(Vug::Config.default, nil, nil, nil, nil, nil, MyProcessor.new)
+result = fetcher.fetch("https://example.com/favicon.ico")
+```
+
+Custom RedirectHandler
+
+```crystal
+class AllowAllRedirects < Vug::RedirectHandler
+  def decide(original, redirect_url, redirect_count)
+    Vug::FetchAction::Follow.new(redirect_url)
+  end
+end
+
+fetcher = Vug::Fetcher.new(Vug::Config.default, nil, nil, nil, AllowAllRedirects.new)
+```
+
 ## License
 
 MIT

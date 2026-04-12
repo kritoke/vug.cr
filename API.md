@@ -426,36 +426,81 @@ Lightweight helper that bridges your configured on-disk/config-backed store (via
 
 ### Usage
 
-You normally don't need to construct this directly; the Fetcher uses it by default. If you do, construct with a Config and an optional MemoryCache and CacheManager:
+You normally don't need to construct this directly; the Fetcher uses it by default. Public methods:
+
+```crystal
+class Vug::CacheCoordinator
+  def initialize(config : Config, memory_cache : MemoryCache? = nil, cache_manager : CacheManager? = nil)
+  end
+
+  def fetch_from_cache(url : String) : String? # returns path or nil
+  end
+
+  def store_to_cache(url : String, path : String) : Nil
+  end
+end
+
+Example:
 
 ```crystal
 coord = Vug::CacheCoordinator.new(config, memory_cache, cache_manager)
 path = coord.fetch_from_cache(url) # -> String? (path if found)
-coord.store_to_cache(url, path)    # stores to both configured store and memory cache
+if path
+  # got a cached path (preferred from configured store)
+else
+  # fetch and then store
+  coord.store_to_cache(url, saved_path)
+end
 ```
 
 ## ImageProcessor
 
 Abstraction for validating and saving image bytes. The Fetcher delegates image validation and saving to an ImageProcessor so you can provide custom logic (e.g., transform images, save to external services, or apply additional validation).
 
-The default processor validates the bytes, calls `Config.on_save` to persist them, and returns a Result.
+The default processor validates the bytes, calls `Config.on_save` to persist them, and returns a `Result`.
 
-### Interface (conceptual)
-
-| Method | Signature | Description |
-|--------|-----------|-------------|
-| `process_bytes` | `(url : String, data : Bytes, content_type : String) : Result` | Validate and store image bytes, returning a `Result` (success/failure) |
-
-### Example
+### Public API
 
 ```crystal
-class MyProcessor < Vug::ImageProcessor
-  def process_bytes(url, data, content_type)
-    # custom validation/transformation
-    Vug.success(url, "/path/to/saved", content_type, data)
+class Vug::ImageProcessor
+  def initialize(config : Config)
+  end
+
+  def process_bytes(url : String, data : Bytes, content_type : String) : Result
   end
 end
 
+class Vug::ImageProcessor::Default < Vug::ImageProcessor
+  # constructor: (config, cache_manager = nil)
+  def initialize(config : Config, cache_manager : CacheManager? = nil)
+  end
+
+  # process_bytes behavior (summary):
+  # - Returns failure when data is empty
+  # - Validates image bytes via ImageValidator
+  # - Logs dimensions if available
+  # - Calls Config.on_save(url, data, content_type) and returns success when a path is returned
+end
+```
+
+### Example (custom processor)
+
+```crystal
+class MyProcessor < Vug::ImageProcessor
+  def initialize(config)
+    super(config)
+  end
+
+  def process_bytes(url, data, content_type)
+    # Perform custom validation or transform (e.g. resize)
+    # Save by calling config.on_save or an external service and return a Vug.result
+    saved_path = "/tmp/#{Digest::SHA256.hexdigest(url)}.png"
+    File.write(saved_path, data)
+    Vug.success(url, saved_path, content_type, data)
+  end
+end
+
+# Inject into Fetcher
 fetcher = Vug::Fetcher.new(config, nil, nil, nil, nil, nil, MyProcessor.new)
 ```
 
@@ -471,7 +516,37 @@ Redirect handling is pluggable so you can customize how redirect URLs are evalua
 
 ### Usage
 
-You can provide a custom RedirectHandler implementation to Fetcher during construction. The handler must expose a `validate_redirect_url(original_url, new_url)`-like method that returns `true` to allow following the redirect, `false` to block it.
+The fetcher uses a RedirectHandler::Default implementation by default. The abstract class exposes a single `decide` method that returns a FetchAction indicating whether to follow or deny the redirect.
+
+```crystal
+abstract class Vug::RedirectHandler
+  def initialize(config : Config)
+  end
+
+  # Decide whether to follow a redirect. Return a FetchAction::Follow or FetchAction::Deny
+  abstract def decide(original : String, redirect_url : String, redirect_count : Int32) : Vug::FetchAction::Base
+end
+
+class Vug::RedirectHandler::Default < Vug::RedirectHandler
+  # Default behavior summary:
+  # - Deny when redirect_count >= config.max_redirects
+  # - Deny scheme downgrades (https -> http)
+  # - Deny immediate redirect loops
+  # - Follow otherwise (returns FetchAction::Follow)
+end
+
+### Example (custom)
+
+```crystal
+class MyRedirectHandler < Vug::RedirectHandler
+  def decide(original, redirect_url, redirect_count)
+    # implement policy; return Vug::FetchAction::Follow.new(redirect_url)
+    # or Vug::FetchAction::Deny.new("reason")
+  end
+end
+
+fetcher = Vug::Fetcher.new(config, nil, nil, nil, MyRedirectHandler.new)
+```
 
 
 ## Migration from 0.1.x
