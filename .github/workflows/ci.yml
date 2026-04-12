@@ -10,12 +10,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Use an official Crystal Docker image so we have crystal + shards available
+    container: crystallang/crystal:1.18.2
     steps:
       - uses: actions/checkout@v4
-      - name: Install Crystal
-        uses: crystallang/action-setup@v1
-        with:
-          crystal-version: '1.18.2'
       - name: Install dependencies
         run: shards install
       - name: Format check
