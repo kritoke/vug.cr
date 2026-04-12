@@ -3,8 +3,11 @@ require "../../src/vug/cache_coordinator"
 require "../../src/vug/config"
 
 class TestCM
-  def get(url) : String?; "/cm/#{url}"; end
-  def set(url, path); end
+  def get(url) : String?
+    "/cm/#{url}"
+  end
+
+  def set(_url, _path); end
 end
 
 class TestMem
@@ -12,8 +15,13 @@ class TestMem
     @h = {} of String => String
   end
 
-  def get(url) : String?; @h[url]; end
-  def set(url, path); @h[url] = path; end
+  def get(url) : String?
+    @h[url]
+  end
+
+  def set(_url, path)
+    @h[_url] = path
+  end
 end
 
 class TestMemWithValue < TestMem
@@ -24,8 +32,11 @@ class TestMemWithValue < TestMem
 end
 
 class TestCMNil
-  def get(url) : String?; nil; end
-  def set(url, path); end
+  def get(url) : String?
+    nil
+  end
+
+  def set(_url, _path); end
 end
 
 class TestCMWrapperClass
@@ -40,14 +51,14 @@ class TestCMWrapperClass
   end
 
   def set(url, path)
-    @cm.set(url, path)
+    @cm.set(_url, path)
   end
 end
 
 describe Vug::CacheCoordinator do
   it "prefers cache_manager over memory cache" do
     # Use real CacheManager wrapper around our TestCM via a config shim
-    config = Vug::Config.new(on_load: ->(url : String) : String? { "/cm/#{url}" })
+    config = Vug::Config.new(on_load: ->(_url : String) : String? { "/cm/#{_url}" })
     cache_manager = Vug::CacheManager.new(config, nil)
     coord = Vug::CacheCoordinator.new(Vug::Config.default, nil, cache_manager)
     coord.fetch_from_cache("u").should eq("/cm/u")
@@ -55,7 +66,7 @@ describe Vug::CacheCoordinator do
 
   it "falls back to memory cache" do
     # Use real CacheManager with nil on_load to force fallback
-    config = Vug::Config.new(on_load: ->(url : String) : String? { nil })
+    config = Vug::Config.new(on_load: ->(_url : String) : String? { nil })
     cache_manager = Vug::CacheManager.new(config, nil)
     mem_cache = Vug::MemoryCache.new
     mem_cache.set("u", "/m/u")

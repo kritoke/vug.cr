@@ -89,13 +89,13 @@ module Vug
           end
         end
       rescue ex : Socket::Addrinfo::Error
-      @config.error("extract_all(#{site_url})", Vug::Diagnostics.format_exception(ex, "DNS lookup failed"))
+        @config.error("extract_all(#{site_url})", Vug::Diagnostics.format_exception(ex, "DNS lookup failed"))
         @config.debug("DNS lookup failed for: #{site_url}")
       rescue ex : IO::TimeoutError
-      @config.error("extract_all(#{site_url})", Vug::Diagnostics.format_exception(ex, "Read timed out"))
+        @config.error("extract_all(#{site_url})", Vug::Diagnostics.format_exception(ex, "Read timed out"))
         @config.debug("HTML fetch timeout: #{site_url}")
       rescue ex : IO::Error | Socket::Error
-      @config.error("extract_all(#{site_url})", Vug::Diagnostics.format_exception(ex))
+        @config.error("extract_all(#{site_url})", Vug::Diagnostics.format_exception(ex))
         @config.debug("Error extracting favicons: #{ex.message}")
       end
 
@@ -138,10 +138,10 @@ module Vug
               @config.debug("Found data URL favicon: #{data_url_id}")
               favicons << favicon_info
 
-                if saved_path = @config.save(data_url_id, data, media_type)
-                  @config.debug("Data URL favicon saved: #{saved_path}")
-                  @cache_coordinator.try(&.store_to_cache(data_url_id, saved_path)) || @cache_manager.try(&.set(data_url_id, saved_path))
-                end
+              if saved_path = @config.save(data_url_id, data, media_type)
+                @config.debug("Data URL favicon saved: #{saved_path}")
+                @cache_coordinator.try(&.store_to_cache(data_url_id, saved_path)) || @cache_manager.try(&.set(data_url_id, saved_path))
+              end
             else
               @config.debug("Invalid data URL favicon: #{href}")
             end

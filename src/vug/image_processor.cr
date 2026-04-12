@@ -15,6 +15,7 @@ module Vug
   class ImageProcessor::Default < ImageProcessor
     # declare typed instance var to avoid inference issues
     @cache_manager : CacheManager?
+
     def initialize(config : Config, cache_manager : CacheManager? = nil)
       super(config)
       @cache_manager = cache_manager

@@ -14,6 +14,9 @@ Favicon fetching library with pluggable storage callbacks.
 - In-memory caching with TTL and size limits
 - SSRF protection with DNS rebinding detection
 - Pluggable storage via callbacks (disk, S3, database, memory — your choice)
+ - Coordinated caching (in-memory + config-backed) to prefer existing on-disk stores
+ - Image processing abstraction with a default processor for validation and saving
+ - Safer redirect handling with stricter URL validation to prevent unsafe redirects
 
 ## Installation
 
@@ -103,6 +106,12 @@ config = Vug::Config.new(
 ```
 
 See [API.md](API.md) for the full configuration reference and advanced usage.
+
+What's new in v0.4.0
+
+- Coordinated caching that prefers your configured on-disk storage while keeping a small in-memory cache for speed.
+- Image processing is pluggable — you can provide a custom processor to validate or transform images before they are saved.
+- Improved redirect handling to prevent unsafe redirects.
 
 ## License
 

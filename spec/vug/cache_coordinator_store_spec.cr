@@ -4,11 +4,11 @@ require "../../src/vug/cache_manager"
 
 class TestCMStore1 < Vug::CacheManager
   def initialize(mem)
-    super(Vug::Config.new(on_load: ->(url : String) : String? { nil }), mem)
+    super(Vug::Config.new(on_load: ->(_url : String) : String? { nil }), mem)
     @called = false
   end
 
-  def set(url, path)
+  def set(_url, path)
     @called = true
     super
   end
@@ -20,11 +20,11 @@ end
 
 class TestCMStore2 < Vug::CacheManager
   def initialize(mem)
-    super(Vug::Config.new(on_load: ->(url : String) : String? { nil }), mem)
+    super(Vug::Config.new(on_load: ->(_url : String) : String? { nil }), mem)
     @called = false
   end
 
-  def set(url, path)
+  def set(_url, path)
     @called = true
     super
   end

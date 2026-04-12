@@ -25,6 +25,22 @@
 - **`FaviconResolver`**: Public class exposing the full fallback chain (HTML → manifest → standard paths → DuckDuckGo → Google → placeholder)
 - **`DnsCache`**: Public module with 30-second TTL DNS resolution cache
 
+## [0.4.0] - 2026-04-12
+
+### Highlights
+- Coordinated caching: prefer on-disk or config-backed storage but keep an in-memory fast-path cache for repeated lookups.
+- Image processing abstraction: you can now inject a custom ImageProcessor to validate or transform images before saving.
+- Safer redirect handling: redirects are validated more strictly to avoid unsafe cross-scheme or internal redirects.
+
+### User-facing changes
+- New: CacheCoordinator to bridge config-backed stores and in-memory cache (used by the fetcher by default).
+- New: ImageProcessor interface and a Default implementation used by the fetcher to validate and save image bytes.
+- New: RedirectHandler abstraction with a secure default implementation.
+
+### Notes
+- No breaking API changes. The public Vug module functions (`fetch`, `site`, `favicons`, `best`, `placeholder`) remain the same and work with existing Config callbacks.
+
+
 ### Fixed
 - **Nil crash in `by_preferred_size`**: Fixed crash when collection contains favicons with unknown sizes
 - **Discarded expression in `favicon_resolver.cr`**: `get || set` no-op replaced with proper `set` call

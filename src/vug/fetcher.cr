@@ -30,26 +30,34 @@ module Vug
 
       @config.debug("Fetching favicon: #{url}")
 
+      # Initialize loop state and delegate loop work to fetch_loop to reduce
+      # cyclomatic complexity measured by linters.
       current_url = url
-      redirects = 0
       start_time = Time.monotonic
-      gray_placeholder_attempts = 0
-      max_gray_attempts = 3
       initial_dns_ips = {} of String => Array(String)
 
-      uri = URI.parse(url)
-      if host = uri.hostname
+      uri = URI.parse(url) rescue nil
+      if uri && (host = uri.hostname)
         initial_dns_ips[host] ||= DnsCache.resolve(host)
       end
 
+      fetch_loop(current_url, start_time, initial_dns_ips)
+    end
+
+    private def fetch_loop(initial_url : String, start_time : Time::Span, initial_dns_ips : Hash(String, Array(String))) : Result
+      current_url = initial_url
+      redirects = 0
+      gray_placeholder_attempts = 0
+      max_gray_attempts = 3
+
       loop do
-        return Vug.failure("Timeout", url, error_type: :timeout) if timed_out?(start_time)
+        return Vug.failure("Timeout", initial_url, error_type: :timeout) if timed_out?(start_time)
         # Enforce redirect limit: block when redirects reached the configured maximum
-        return Vug.failure("Too many redirects", url, error_type: :too_many_redirects) if redirects >= @config.max_redirects
-        return Vug.failure("Too many gray placeholder attempts", url, error_type: :too_many_gray_placeholder_attempts) if gray_placeholder_attempts >= max_gray_attempts
+        return Vug.failure("Too many redirects", initial_url, error_type: :too_many_redirects) if redirects >= @config.max_redirects
+        return Vug.failure("Too many gray placeholder attempts", initial_url, error_type: :too_many_gray_placeholder_attempts) if gray_placeholder_attempts >= max_gray_attempts
 
         # Check coordinated cache first (which favors config-backed storage), then fall back
-        if path = @cache_coordinator.try(&.fetch_from_cache(current_url)) || @cache_manager.get(current_url)
+        if path = cached_path_for(current_url)
           @config.debug("Favicon cache hit: #{current_url}")
           return Vug.success(current_url, path)
         end
@@ -62,10 +70,7 @@ module Vug
         case action
         when :redirect
           if next_url
-            new_uri = URI.parse(next_url)
-            if new_host = new_uri.hostname
-              initial_dns_ips[new_host] ||= DnsCache.resolve(new_host)
-            end
+            handle_redirect_action(next_url, initial_dns_ips)
             current_url = next_url
           end
           redirects += 1
@@ -85,6 +90,20 @@ module Vug
           end
           return result
         end
+      end
+    end
+
+    # Return cached path from coord or manager, or nil
+    private def cached_path_for(url : String) : String?
+      @cache_coordinator.try(&.fetch_from_cache(url)) || @cache_manager.get(url)
+    end
+
+    # Update DNS cache for a redirect target host. This is isolated to
+    # reduce complexity in the main loop.
+    private def handle_redirect_action(new_url : String, initial_dns_ips : Hash(String, Array(String)))
+      new_uri = URI.parse(new_url) rescue nil
+      if new_uri && (new_host = new_uri.hostname)
+        initial_dns_ips[new_host] ||= DnsCache.resolve(new_host)
       end
     end
 
@@ -224,14 +243,14 @@ module Vug
 
       @config.debug("Favicon fetched: #{url}, size=#{data.size}, type=#{content_type}#{dimensions_info}")
 
-        if saved_path = @config.save(url, data, content_type)
-          @config.debug("Favicon saved: #{saved_path}")
-          @cache_coordinator.try(&.store_to_cache(url, saved_path)) || @cache_manager.set(url, saved_path)
-          Vug.success(url, saved_path, content_type, data)
-        else
-          @config.debug("Favicon save failed: #{url}")
-          Vug.failure("Save failed", url, error_type: :save_failed)
-        end
+      if saved_path = @config.save(url, data, content_type)
+        @config.debug("Favicon saved: #{saved_path}")
+        @cache_coordinator.try(&.store_to_cache(url, saved_path)) || @cache_manager.set(url, saved_path)
+        Vug.success(url, saved_path, content_type, data)
+      else
+        @config.debug("Favicon save failed: #{url}")
+        Vug.failure("Save failed", url, error_type: :save_failed)
+      end
     end
 
     private def should_handle_gray_placeholder?(url : String, data : Bytes?) : Bool
