@@ -60,6 +60,23 @@ module Vug
       data.size >= 12 && data[0..3] == WEBP_RIFF && data[8..11] == WEBP_WEBP
     end
 
+    # Returns the four-character chunk type found at the first WEBP chunk
+    # (offset 12..15) if available. This is a lightweight inspection used to
+    # detect VP8 (lossy) vs VP8L (lossless) vs VP8X (extended) WebP images.
+    private def self.webp_first_chunk_type(data : Bytes) : String?
+      return nil if data.size < 16
+      String.new(data[12..15])
+    end
+
+    # Returns true if the WEBP data appears to be the lossy VP8 variant.
+    def self.webp_lossy?(data : Bytes) : Bool
+      if t = webp_first_chunk_type(data)
+        t == "VP8 "
+      else
+        false
+      end
+    end
+
     def self.detect_content_type(data : Bytes, hard_validation : Bool = false) : String
       return "image/png" if png?(data)
       return "image/jpeg" if jpeg?(data)

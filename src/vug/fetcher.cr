@@ -6,19 +6,23 @@ require "./url_validator"
 require "./image_validator"
 require "./image_processor"
 require "./cache_coordinator"
+require "./dns_revalidator"
+require "./redirect_handler"
+require "./redirect_handler_default"
 require "./types"
 require "./redirect_validator"
 
 module Vug
   class Fetcher
-    def initialize(@config : Config = Config.default, cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectValidator? = nil, cache_coordinator : CacheCoordinator? = nil, image_processor : ImageProcessor? = nil)
+    def initialize(@config : Config = Config.default, cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectHandler? = nil, cache_coordinator : CacheCoordinator? = nil, image_processor : ImageProcessor? = nil, dns_revalidator : DNSRevalidator? = nil)
       @http_client_factory = http_client_factory || HttpClientFactory.new(@config)
       @cache_manager = cache_manager || CacheManager.new(@config, cache)
-      @redirect_validator = redirect_validator || RedirectValidator.new(@config)
+      @redirect_validator = redirect_validator || RedirectHandler::Default.new(@config)
       # Coordinator wraps config-backed cache manager and optional memory cache
       @cache_coordinator = cache_coordinator || CacheCoordinator.new(@config, cache, @cache_manager)
       # Image processor may use cache manager for storing saved paths
       @image_processor = image_processor || ImageProcessor::Default.new(@config, @cache_manager)
+      @dns_revalidator = dns_revalidator || DNSRevalidator.new(@config)
       @semaphore = Vug.shared_semaphore(@config.max_concurrent_requests)
     end
 
@@ -64,8 +68,8 @@ module Vug
 
         @config.debug("Fetching favicon from: #{current_url}")
 
-        result = fetch_single(current_url, initial_dns_ips)
-        action, next_url = handle_fetch_result(current_url, result, gray_placeholder_attempts)
+        result = fetch_single(current_url, initial_dns_ips, redirects)
+        action, next_url = handle_fetch_result(current_url, result)
 
         case action
         when :redirect
@@ -117,7 +121,7 @@ module Vug
       elapsed > @config.timeout
     end
 
-    private def handle_fetch_result(current_url : String, result : Result, gray_placeholder_attempts : Int32) : {Symbol, String?}
+    private def handle_fetch_result(current_url : String, result : Result) : {Symbol, String?}
       if result.redirect?
         return {:redirect, result.url}
       end
@@ -144,7 +148,7 @@ module Vug
       {:try_fallback, next_url}
     end
 
-    private def fetch_single(url : String, initial_dns_ips : Hash(String, Array(String))) : Result
+    private def fetch_single(url : String, initial_dns_ips : Hash(String, Array(String)), redirect_count : Int32) : Result
       @semaphore.acquire
       begin
         uri = URI.parse(url)
@@ -163,15 +167,14 @@ module Vug
         client.get(uri.request_target, headers: headers) do |response|
           if response.status.redirection? && (location = response.headers["Location"]?)
             new_url = uri.resolve(location).to_s
-            @config.debug("Favicon redirect: #{new_url}")
-
-            # Validate redirect URL for SSRF protection
-            unless @redirect_validator.validate_redirect_url(url, new_url)
-              @config.debug("Dangerous redirect blocked: #{new_url}")
+            case action = @redirect_validator.decide(url, new_url, redirect_count)
+            when FetchAction::Follow
+              @config.debug("Favicon redirect: #{action.location}")
+              return Vug.redirect(action.location)
+            when FetchAction::Deny
+              @config.debug("Dangerous redirect blocked: #{new_url} (#{action.reason})")
               return Vug.failure("Invalid redirect", url, error_type: :invalid_redirect)
             end
-
-            return Vug.redirect(new_url)
           end
 
           if response.status.success?
@@ -213,44 +216,14 @@ module Vug
         return false
       end
 
-      if initial_ips = initial_dns_ips[host]?
-        if initial_ips.to_set != current_ips.to_set
-          @config.error("revalidate_dns_for?(#{url})", "Blocked: DNS changed from #{initial_ips} to #{current_ips} (possible rebinding)")
-          return false
+        if initial_ips = initial_dns_ips[host]?
+          if @dns_revalidator.should_revalidate?(initial_ips, current_ips)
+            @config.error("revalidate_dns_for?(#{url})", "Blocked: DNS changed from #{initial_ips} to #{current_ips} (possible rebinding)")
+            return false
+          end
         end
-      end
 
       true
-    end
-
-    private def handle_success(url : String, data : Bytes, content_type : String) : Result
-      if data.empty?
-        @config.debug("Empty favicon response: #{url}")
-        return Vug.failure("Empty response", url, error_type: :empty_response)
-      end
-
-      unless ImageValidator.valid?(data, @config.image_validation_hard?)
-        @config.debug("Invalid favicon content (not an image): #{url}")
-        return Vug.failure("Invalid image", url, error_type: :invalid_image)
-      end
-
-      # Get actual image dimensions if available
-      dimensions_info = ""
-      if dims = ImageValidator.get_image_dimensions(data)
-        width, height = dims
-        dimensions_info = " (#{width}x#{height})"
-      end
-
-      @config.debug("Favicon fetched: #{url}, size=#{data.size}, type=#{content_type}#{dimensions_info}")
-
-      if saved_path = @config.save(url, data, content_type)
-        @config.debug("Favicon saved: #{saved_path}")
-        @cache_coordinator.try(&.store_to_cache(url, saved_path)) || @cache_manager.set(url, saved_path)
-        Vug.success(url, saved_path, content_type, data)
-      else
-        @config.debug("Favicon save failed: #{url}")
-        Vug.failure("Save failed", url, error_type: :save_failed)
-      end
     end
 
     private def should_handle_gray_placeholder?(url : String, data : Bytes?) : Bool
