@@ -38,8 +38,10 @@ module Vug
       end
     end
 
+    @@instance_mutex = Mutex.new
+
     def self.instance : Instance
-      @@instance ||= Instance.new
+      @@instance_mutex.synchronize { @@instance ||= Instance.new }
     end
 
     def self.resolve(host : String) : Array(String)

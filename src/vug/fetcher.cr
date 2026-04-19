@@ -149,7 +149,9 @@ module Vug
     end
 
     private def fetch_single(url : String, initial_dns_ips : Hash(String, Array(String)), redirect_count : Int32) : Result
+      acquired = false
       @semaphore.acquire
+      acquired = true
       begin
         uri = URI.parse(url)
         unless revalidate_dns_for?(url, uri.hostname, initial_dns_ips)
@@ -198,7 +200,7 @@ module Vug
         @config.error("fetch_single(#{url})", format_exception(ex))
         Vug.failure(ex.message || "Unknown error", url, error_type: :fetch_error)
       ensure
-        @semaphore.release
+        @semaphore.release if acquired
       end
     end
 

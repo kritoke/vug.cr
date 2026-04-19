@@ -63,7 +63,7 @@ module Vug
 
     # Sanitizes URL by removing /feed/ suffix
     def self.sanitize_feed_url(url : String) : String
-      url.gsub(/\/feed\/?$/, "")
+      url.sub(/\/feed\/?\z/, "")
     end
   end
 end

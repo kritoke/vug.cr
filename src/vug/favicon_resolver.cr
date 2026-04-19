@@ -49,10 +49,12 @@ module Vug
       best = collection.best
       return unless best
 
-      return fetch_data_url_favicon(best) if best.url.starts_with?("data:")
+      if best.url.starts_with?("data:")
+        return fetch_data_url_favicon(best)
+      end
 
       result = @fetcher.fetch(best.url)
-      return unless path = result.local_path
+      return unless (path = result.local_path)
 
       @cache_coordinator.try(&.store_to_cache(best.url, path)) || @cache_manager.set(best.url, path)
       result

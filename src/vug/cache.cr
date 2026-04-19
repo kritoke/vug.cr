@@ -5,16 +5,17 @@ require "deque"
 module Vug
   record CacheEntry, path : String, timestamp : Time::Span, size : Int32
 
-  class MemoryCache
-    def initialize(
-      @size_limit : Int32 = 10 * 1024 * 1024,
-      @entry_ttl : Time::Span = 7.days,
-    )
-      @cache = Hash(String, CacheEntry).new
-      @insertion_order = Deque(String).new
-      @current_size = 0
-      @mutex = Mutex.new
-    end
+    class MemoryCache
+      def initialize(
+        @size_limit : Int32 = 10 * 1024 * 1024,
+        @entry_ttl : Time::Span = 7.days,
+      )
+        @cache = Hash(String, CacheEntry).new
+        @insertion_order = Deque(String).new
+        @urls = Hash(String, Bool).new
+        @current_size = 0
+        @mutex = Mutex.new
+      end
 
     def get(url : String) : String?
       @mutex.synchronize do
@@ -23,6 +24,7 @@ module Vug
           if age < 0.seconds
             @current_size -= entry.size
             @cache.delete(url)
+            @urls.delete(url)
             remove_from_insertion_order(url)
             nil
           elsif age < @entry_ttl
@@ -30,6 +32,7 @@ module Vug
           else
             @current_size -= entry.size
             @cache.delete(url)
+            @urls.delete(url)
             remove_from_insertion_order(url)
             nil
           end
@@ -62,6 +65,7 @@ module Vug
           @current_size -= existing_entry.size
         else
           @insertion_order << url
+          @urls[url] = true
         end
 
         while @current_size + new_size > @size_limit && !@cache.empty?
@@ -71,6 +75,7 @@ module Vug
           if entry = @cache[oldest_key]?
             @current_size -= entry.size
             @cache.delete(oldest_key)
+            @urls.delete(oldest_key)
           end
         end
 
@@ -83,6 +88,7 @@ module Vug
       @mutex.synchronize do
         @cache.clear
         @insertion_order.clear
+        @urls.clear
         @current_size = 0
       end
     end

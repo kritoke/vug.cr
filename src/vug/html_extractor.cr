@@ -172,7 +172,7 @@ module Vug
     rescue ex : HTML5::HTMLException | URI::Error
       @config.debug("HTML sanitization failed: #{ex.message}")
       ""
-    rescue ex : Exception
+    rescue ex : IO::Error | Socket::Error
       @config.debug("HTML processing failed: #{ex.message}")
       raise ex
     end

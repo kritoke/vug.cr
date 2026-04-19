@@ -132,7 +132,7 @@ module Vug
       return unless data.size >= 24
       w = (data[16].to_u32 << 24) | (data[17].to_u32 << 16) | (data[18].to_u32 << 8) | data[19].to_u32
       h = (data[20].to_u32 << 24) | (data[21].to_u32 << 16) | (data[22].to_u32 << 8) | data[23].to_u32
-      {w.to_i32!, h.to_i32!}
+      {w.to_i32, h.to_i32}
     end
 
     private def self.scan_jpeg_dimensions(data : Bytes) : {Int32, Int32}?
