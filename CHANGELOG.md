@@ -1,6 +1,16 @@
 # Changelog
 
-## [0.3.1] - 2026-04-05
+## [0.4.2] - 2026-04-20
+
+### Fixed
+- **Missing `fetch_types` require in `vug.cr`**: `FetchAction::Base` was not resolvable because `fetch_types.cr` (which defines the `FetchAction` module) was not required before `redirect_handler.cr` in the load order. Now properly required.
+
+## [0.4.1] - 2026-04-20
+
+### Added
+- **GitHub Actions CI workflow**: Automated testing on push and pull requests.
+
+## [0.4.0] - 2026-04-12
 
 ### Security
 - **Fixed SSRF bypass via hostname misidentification**: `UrlValidator.private_ip?` used fragile string prefix matching that incorrectly flagged legitimate hostnames like `10thstreet.com`, `fcbayern.com`, and `192tv.com` as private IPs. Now uses `Socket::IPAddress` parsing with proper `loopback?`, `private?`, and `link_local?` predicates. Also handles IPv4-mapped addresses (`::ffff:X.X.X.X`) and `0.0.0.0`
