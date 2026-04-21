@@ -94,6 +94,9 @@ module Vug
       rescue ex : IO::TimeoutError
         @config.error("extract_all(#{site_url})", Vug::Diagnostics.format_exception(ex, "Read timed out"))
         @config.debug("HTML fetch timeout: #{site_url}")
+      rescue ex : OpenSSL::SSL::Error
+        @config.error("extract_all(#{site_url})", Vug::Diagnostics.format_exception(ex, "SSL error"))
+        @config.debug("SSL error for: #{site_url}")
       rescue ex : IO::Error | Socket::Error
         @config.error("extract_all(#{site_url})", Vug::Diagnostics.format_exception(ex))
         @config.debug("Error extracting favicons: #{ex.message}")

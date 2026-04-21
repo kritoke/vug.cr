@@ -196,6 +196,9 @@ module Vug
       rescue ex : Socket::Addrinfo::Error
         @config.error("fetch_single(#{url})", format_exception(ex, "DNS resolution failed"))
         Vug.failure("DNS resolution failed", url, error_type: :fetch_error)
+      rescue ex : OpenSSL::SSL::Error
+        @config.error("fetch_single(#{url})", format_exception(ex, "SSL error"))
+        Vug.failure("SSL error", url, error_type: :fetch_error)
       rescue ex : IO::Error | Socket::Error | URI::Error
         @config.error("fetch_single(#{url})", format_exception(ex))
         Vug.failure(ex.message || "Unknown error", url, error_type: :fetch_error)
