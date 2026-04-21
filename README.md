@@ -110,6 +110,10 @@ config = Vug::Config.new(
 
 See [API.md](API.md) for the full configuration reference and advanced usage.
 
+What's new in v0.5.1
+
+- Fixed crash on SSL errors (e.g., `SSL_read` failures) — `OpenSSL::SSL::Error` is now caught in all HTTP request handlers.
+
 What's new in v0.5.0
 
 - Feed URL auto-detection — pass `/atom.xml`, `/rss.xml`, `/feed/`, etc. directly and vug resolves to the site root for HTML extraction.
