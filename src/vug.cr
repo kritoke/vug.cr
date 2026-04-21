@@ -77,7 +77,9 @@ module Vug
   def self.favicons(site_url : String, config : Config = Config.default, http_client_factory : HttpClientFactory? = nil) : FaviconCollection?
     factory = http_client_factory || HttpClientFactory.new(config)
     html_extractor = HtmlExtractor.new(config, nil, factory, nil)
-    favicons = html_extractor.extract_all(UrlProcessor.sanitize_feed_url(site_url))
+    clean_url = UrlProcessor.sanitize_feed_url(site_url)
+    site_url = UrlProcessor.derive_site_url(clean_url)
+    favicons = html_extractor.extract_all(site_url)
 
     return if favicons.empty?
 

@@ -38,6 +38,9 @@ result = Vug.site("https://example.com")
 if result.success?
   puts result.local_path
 end
+
+# Feed URLs are auto-detected — works with /atom.xml, /rss.xml, /feed/, etc.
+result = Vug.site("https://jvns.ca/atom.xml")
 ```
 
 ## With Storage Callbacks
@@ -106,6 +109,11 @@ config = Vug::Config.new(
 ```
 
 See [API.md](API.md) for the full configuration reference and advanced usage.
+
+What's new in v0.5.0
+
+- Feed URL auto-detection — pass `/atom.xml`, `/rss.xml`, `/feed/`, etc. directly and vug resolves to the site root for HTML extraction.
+- `Vug.best` now uses the same fallback chain as `Vug.site` (standard paths, DuckDuckGo, Google).
 
 What's new in v0.4.0
 

@@ -9,41 +9,28 @@ module Vug
     end
 
     def site(url : String) : Result
-      clean_url = UrlProcessor.sanitize_feed_url(url)
-
-      if result = try_extracted_favicon(clean_url)
-        return result
-      end
-
-      if result = try_fallback_chain(clean_url)
-        return result
-      end
-
-      generate_placeholder_fallback(clean_url)
+      resolve_favicon(url) || generate_placeholder_fallback(UrlProcessor.sanitize_feed_url(url))
     end
 
     def best(url : String) : Result
-      clean_url = UrlProcessor.sanitize_feed_url(url)
-
-      if result = try_extracted_favicon(clean_url)
-        return result
-      end
-
-      Vug.failure("No favicon found", url, error_type: :no_favicon_found)
+      resolve_favicon(url) || Vug.failure("No favicon found", url, error_type: :no_favicon_found)
     end
 
     def extract_favicon_collection(url : String) : FaviconCollection?
       clean_url = UrlProcessor.sanitize_feed_url(url)
-      favicons = @html_fetcher.extract_all(clean_url)
-      return if favicons.empty?
-
-      collection = FaviconCollection.new
-      collection.add_all(favicons)
-      collection
+      site_url = UrlProcessor.derive_site_url(clean_url)
+      extract_favicons_from_site(site_url)
     end
 
-    private def try_extracted_favicon(site_url : String) : Result?
-      collection = extract_favicon_collection(site_url)
+    private def resolve_favicon(url : String) : Result?
+      clean_url = UrlProcessor.sanitize_feed_url(url)
+
+      try_extracted_favicon(clean_url) || try_fallback_chain(clean_url)
+    end
+
+    private def try_extracted_favicon(url : String) : Result?
+      site_url = UrlProcessor.derive_site_url(url)
+      collection = extract_favicons_from_site(site_url)
       return unless collection
 
       best = collection.best
@@ -64,15 +51,16 @@ module Vug
       host = extract_host(site_url)
       return unless host
 
-      if result = try_standard_paths(host)
-        return result
-      end
+      try_standard_paths(host) || try_duckduckgo(host) || try_google(host)
+    end
 
-      if result = try_duckduckgo(host)
-        return result
-      end
+    private def extract_favicons_from_site(site_url : String) : FaviconCollection?
+      favicons = @html_fetcher.extract_all(site_url)
+      return if favicons.empty?
 
-      try_google(host)
+      collection = FaviconCollection.new
+      collection.add_all(favicons)
+      collection
     end
 
     private def try_standard_paths(host : String) : Result?

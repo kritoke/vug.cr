@@ -65,5 +65,32 @@ module Vug
     def self.sanitize_feed_url(url : String) : String
       url.sub(/\/feed\/?\z/, "")
     end
+
+    # Matches common feed URL path suffixes
+    FEED_PATH_PATTERN = %r{
+      /(
+        (atom|rss|feed|index)\.(xml|rss|rdf)
+        | feeds?(/|\z)
+        | (rss|atom|feed)(/|\z)
+      )\z
+    }xi
+
+    # Returns true if the URL path looks like a feed endpoint
+    def self.feed_url?(url : String) : Bool
+      !!url.matches?(FEED_PATH_PATTERN)
+    end
+
+    # Derives the site root URL from a feed URL.
+    # For feed URLs, strips the feed-specific path and returns the origin.
+    # For non-feed URLs, returns the URL unchanged.
+    def self.derive_site_url(url : String) : String
+      return url unless feed_url?(url)
+      begin
+        uri = URI.parse(url)
+        "#{uri.scheme}://#{uri.host}"
+      rescue URI::Error
+        url
+      end
+    end
   end
 end

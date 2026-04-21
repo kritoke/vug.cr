@@ -200,4 +200,107 @@ describe Vug::UrlProcessor do
       result.should eq("sub.domain.example.com")
     end
   end
+
+  describe ".feed_url?" do
+    it "detects /atom.xml" do
+      Vug::UrlProcessor.feed_url?("https://jvns.ca/atom.xml").should be_true
+    end
+
+    it "detects /rss.xml" do
+      Vug::UrlProcessor.feed_url?("https://example.com/rss.xml").should be_true
+    end
+
+    it "detects /feed.xml" do
+      Vug::UrlProcessor.feed_url?("https://example.com/feed.xml").should be_true
+    end
+
+    it "detects /index.xml" do
+      Vug::UrlProcessor.feed_url?("https://example.com/index.xml").should be_true
+    end
+
+    it "detects /feed" do
+      Vug::UrlProcessor.feed_url?("https://example.com/feed").should be_true
+    end
+
+    it "detects /feed/" do
+      Vug::UrlProcessor.feed_url?("https://example.com/feed/").should be_true
+    end
+
+    it "detects /rss/" do
+      Vug::UrlProcessor.feed_url?("https://example.com/rss/").should be_true
+    end
+
+    it "detects /atom/" do
+      Vug::UrlProcessor.feed_url?("https://example.com/atom/").should be_true
+    end
+
+    it "detects /feeds/" do
+      Vug::UrlProcessor.feed_url?("https://example.com/feeds/").should be_true
+    end
+
+    it "detects /rss" do
+      Vug::UrlProcessor.feed_url?("https://example.com/rss").should be_true
+    end
+
+    it "detects /atom" do
+      Vug::UrlProcessor.feed_url?("https://example.com/atom").should be_true
+    end
+
+    it "detects case-insensitive /ATOM.xml" do
+      Vug::UrlProcessor.feed_url?("https://example.com/ATOM.xml").should be_true
+    end
+
+    it "rejects regular page URLs" do
+      Vug::UrlProcessor.feed_url?("https://example.com/page").should be_false
+    end
+
+    it "rejects URLs with feed-like substrings in path" do
+      Vug::UrlProcessor.feed_url?("https://example.com/my-feed-page").should be_false
+    end
+
+    it "rejects root URL" do
+      Vug::UrlProcessor.feed_url?("https://example.com/").should be_false
+    end
+
+    it "rejects URL with xml not at end" do
+      Vug::UrlProcessor.feed_url?("https://example.com/atom.xml/other").should be_false
+    end
+  end
+
+  describe ".derive_site_url" do
+    it "derives site root from atom.xml feed URL" do
+      result = Vug::UrlProcessor.derive_site_url("https://jvns.ca/atom.xml")
+      result.should eq("https://jvns.ca")
+    end
+
+    it "derives site root from rss.xml feed URL" do
+      result = Vug::UrlProcessor.derive_site_url("https://example.com/rss.xml")
+      result.should eq("https://example.com")
+    end
+
+    it "derives site root from /feed/ URL" do
+      result = Vug::UrlProcessor.derive_site_url("https://example.com/feed/")
+      result.should eq("https://example.com")
+    end
+
+    it "derives site root from /feed URL" do
+      result = Vug::UrlProcessor.derive_site_url("https://example.com/feed")
+      result.should eq("https://example.com")
+    end
+
+    it "returns non-feed URLs unchanged" do
+      result = Vug::UrlProcessor.derive_site_url("https://example.com/")
+      result.should eq("https://example.com/")
+    end
+
+    it "returns non-feed page URLs unchanged" do
+      result = Vug::UrlProcessor.derive_site_url("https://example.com/page")
+      result.should eq("https://example.com/page")
+    end
+
+    it "handles HTTP feed URLs" do
+      result = Vug::UrlProcessor.derive_site_url("http://example.com/atom.xml")
+      result.should eq("http://example.com")
+    end
+  end
 end

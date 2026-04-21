@@ -41,14 +41,15 @@ result = Vug.fetch("https://example.com/favicon.ico")
 
 Fetches a favicon for a website using a multi-strategy fallback chain:
 
-1. HTML extraction (`<link rel="icon">`, `<link rel="apple-touch-icon">`, etc.)
-2. Web App Manifest parsing
-3. Standard paths (`/favicon.ico`, `/favicon.png`, `/apple-touch-icon.png`)
-4. DuckDuckGo favicon service
-5. Google S2 favicon service
-6. SVG placeholder generation (first letter of domain)
+1. Feed URL detection — if the URL looks like a feed (`/atom.xml`, `/rss.xml`, `/feed/`, etc.), derives the site root and fetches HTML from there
+2. HTML extraction (`<link rel="icon">`, `<link rel="apple-touch-icon">`, etc.)
+3. Web App Manifest parsing
+4. Standard paths (`/favicon.ico`, `/favicon.png`, `/apple-touch-icon.png`)
+5. DuckDuckGo favicon service
+6. Google S2 favicon service
+7. SVG placeholder generation (first letter of domain)
 
-Always returns a result — either a real favicon or a generated placeholder.
+Always returns a result — either a real favicon or a generated placeholder. Feed URLs (e.g., `https://example.com/atom.xml`) are automatically detected and resolved to the site root for HTML extraction.
 
 ```crystal
 result = Vug.site("https://example.com")
@@ -81,7 +82,7 @@ end
 
 ### `Vug.best(site_url, config = Config.new, cache = nil)`
 
-Fetches only the best available favicon for a website. Returns failure if no favicon found (unlike `site`, which generates a placeholder).
+Fetches the best available favicon for a website. Uses the same fallback chain as `site` (HTML extraction, manifest, standard paths, DuckDuckGo, Google). Returns failure if no favicon found (unlike `site`, which generates a placeholder).
 
 ```crystal
 result = Vug.best("https://example.com")
@@ -384,6 +385,8 @@ URL normalization, resolution, and validation utilities.
 | Method | Signature | Description |
 |--------|-----------|-------------|
 | `sanitize_feed_url` | `(url : String) : String` | Remove `/feed/` suffix from URLs |
+| `feed_url?` | `(url : String) : Bool` | Check if URL path looks like a feed endpoint (`/atom.xml`, `/rss.xml`, `/feed/`, etc.) |
+| `derive_site_url` | `(url : String) : String` | Derive site root URL from a feed URL (e.g., `https://example.com/atom.xml` → `https://example.com`) |
 | `resolve_and_normalize` | `(href : String, base : String, base_scheme : String = "https") : String` | Resolve relative URLs and normalize protocol-relative URLs |
 | `resolve_url` | `(url : String, base : String) : String` | Resolve relative URL against base |
 | `normalize_url` | `(url : String, base_scheme : String = "https") : String` | Convert `//` protocol-relative URLs to absolute |
@@ -564,3 +567,19 @@ fetcher = Vug::Fetcher.new(config, nil, nil, nil, MyRedirectHandler.new)
 
 - `ImageValidator.valid?` no longer falls back to CrImage by default. Pass `hard_validation: true` if you need CrImage-based validation.
 - `sanitize_html` returns `""` on failure instead of raw HTML (security hardening).
+
+---
+
+## Migration from 0.4.x
+
+### Behavioral Changes (0.5.0)
+
+- **Feed URL detection**: `Vug.site`, `Vug.best`, and `Vug.favicons` now automatically detect feed URLs (e.g., `/atom.xml`, `/rss.xml`, `/feed/`) and derive the site root for HTML extraction. Previously, passing a feed URL would fetch XML content and find no favicon links.
+- **`Vug.best` fallback chain**: `Vug.best` now uses the same fallback chain as `Vug.site` (standard paths → DuckDuckGo → Google). Previously it only tried HTML extraction and returned failure immediately if nothing was found.
+
+### New Methods (0.5.0)
+
+| Method | Description |
+|--------|-------------|
+| `UrlProcessor.feed_url?` | Check if a URL path looks like a feed endpoint |
+| `UrlProcessor.derive_site_url` | Derive site root URL from a feed URL |

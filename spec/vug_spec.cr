@@ -80,4 +80,56 @@ describe Vug do
       placeholder_result.should be_a(Vug::Result)
     end
   end
+
+  describe "atom/xml feed URL handling" do
+    it "processes .atom.xml URLs through site without errors" do
+      config = Vug::Config.new(
+        on_save: ->(url : String, _data : Bytes, _content_type : String) : String? { "/tmp/favicons/#{url.hash}.ico" },
+        on_load: ->(_url : String) : String? { nil }
+      )
+
+      result = Vug.site("https://jvns.ca/atom.xml", config)
+      result.should be_a(Vug::Result)
+    end
+
+    it "processes .atom.xml URLs through best without errors" do
+      config = Vug::Config.new(
+        on_save: ->(url : String, _data : Bytes, _content_type : String) : String? { "/tmp/favicons/#{url.hash}.ico" },
+        on_load: ->(_url : String) : String? { nil }
+      )
+
+      result = Vug.best("https://jvns.ca/atom.xml", config)
+      result.should be_a(Vug::Result)
+    end
+
+    it "processes .rss.xml URLs through site without errors" do
+      config = Vug::Config.new(
+        on_save: ->(url : String, _data : Bytes, _content_type : String) : String? { "/tmp/favicons/#{url.hash}.ico" },
+        on_load: ->(_url : String) : String? { nil }
+      )
+
+      result = Vug.site("https://example.com/rss.xml", config)
+      result.should be_a(Vug::Result)
+    end
+
+    it "processes feed.xml URLs through best without errors" do
+      config = Vug::Config.new(
+        on_save: ->(url : String, _data : Bytes, _content_type : String) : String? { "/tmp/favicons/#{url.hash}.ico" },
+        on_load: ->(_url : String) : String? { nil }
+      )
+
+      result = Vug.best("https://example.com/feed.xml", config)
+      result.should be_a(Vug::Result)
+    end
+
+    it "processes .atom.xml URLs through favicons without errors" do
+      config = Vug::Config.new(
+        on_save: ->(url : String, _data : Bytes, _content_type : String) : String? { "/tmp/favicons/#{url.hash}.ico" },
+        on_load: ->(_url : String) : String? { nil }
+      )
+
+      result = Vug.favicons("https://jvns.ca/atom.xml", config)
+      result.should be_nil
+    end
+  end
 end
