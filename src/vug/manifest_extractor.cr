@@ -98,9 +98,5 @@ module Vug
 
       icons
     end
-
-    private def format_exception(ex : Exception, prefix : String? = nil) : String
-      Diagnostics.format_exception(ex, prefix)
-    end
   end
 end

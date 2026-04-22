@@ -24,8 +24,7 @@ module Vug
     def initialize(@config : Config = Config.default, manifest_extractor : ManifestExtractor? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, cache_coordinator : CacheCoordinator? = nil)
       @manifest_extractor = manifest_extractor || ManifestExtractor.new(@config)
       @http_client_factory = http_client_factory || HttpClientFactory.new(@config)
-      @cache_manager = cache_manager
-      @cache_coordinator = cache_coordinator || CacheCoordinator.new(@config, nil, @cache_manager)
+      @cache_coordinator = cache_coordinator || CacheCoordinator.new(@config, nil, cache_manager)
     end
 
     def extract_all(site_url : String) : Array(FaviconInfo)
@@ -143,7 +142,7 @@ module Vug
 
               if saved_path = @config.save(data_url_id, data, media_type)
                 @config.debug("Data URL favicon saved: #{saved_path}")
-                @cache_coordinator.try(&.store_to_cache(data_url_id, saved_path)) || @cache_manager.try(&.set(data_url_id, saved_path))
+                @cache_coordinator.try(&.store(data_url_id, saved_path))
               end
             else
               @config.debug("Invalid data URL favicon: #{href}")
@@ -178,10 +177,6 @@ module Vug
     rescue ex : IO::Error | Socket::Error
       @config.debug("HTML processing failed: #{ex.message}")
       raise ex
-    end
-
-    private def format_exception(ex : Exception, prefix : String? = nil) : String
-      Diagnostics.format_exception(ex, prefix)
     end
   end
 end

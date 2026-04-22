@@ -34,19 +34,15 @@ module Vug
     end
 
     # Validates that a URL has a safe scheme (http/https only)
-    ALLOWED_SCHEMES = {"http", "https"}
-
     def self.valid_scheme?(url : String) : Bool
       scheme = url.split("://").first?.try(&.downcase)
-      ALLOWED_SCHEMES.includes?(scheme)
-    rescue URI::Error
-      false
+      UrlValidator.valid_scheme?(scheme)
     end
 
     # Extracts host from URL, handling feed URLs and HTTP/HTTPS schemes
     # Sanitizes by removing /feed/ suffix and extracts hostname from URI
     def self.extract_host_from_url(url : String) : String?
-      sanitized = url.gsub(/\/feed\/?$/, "")
+      sanitized = url.sub(/\/feed\/?\z/, "")
 
       if sanitized.starts_with?("http")
         begin

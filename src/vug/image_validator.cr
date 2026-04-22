@@ -77,18 +77,6 @@ module Vug
       end
     end
 
-    def self.detect_content_type(data : Bytes, hard_validation : Bool = false) : String
-      return "image/png" if png?(data)
-      return "image/jpeg" if jpeg?(data)
-      return "image/x-icon" if ico?(data)
-      return "image/svg+xml" if svg?(data)
-      return "image/webp" if webp?(data)
-
-      return "application/octet-stream" unless hard_validation
-
-      detect_via_crimage(data)
-    end
-
     private def self.with_crimage_result(data : Bytes, default, & : CrImage::Image -> _)
       return default if data.empty?
       io = IO::Memory.new(data)
@@ -232,18 +220,6 @@ module Vug
     private def self.valid_via_crimage?(data : Bytes) : Bool
       with_crimage_result(data, false) do |image|
         !image.nil?
-      end
-    end
-
-    private def self.detect_via_crimage(data : Bytes) : String
-      with_crimage_result(data, "application/octet-stream") do |image|
-        if image.is_a?(CrImage::RGBA) || image.is_a?(CrImage::NRGBA)
-          "image/png"
-        elsif image.is_a?(CrImage::Gray)
-          "image/jpeg"
-        else
-          "application/octet-stream"
-        end
       end
     end
   end

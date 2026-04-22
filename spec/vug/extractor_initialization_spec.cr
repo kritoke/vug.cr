@@ -77,8 +77,8 @@ describe Vug::Fetcher do
       cache = Vug::MemoryCache.new
       factory = Vug::HttpClientFactory.new(config)
       cache_manager = Vug::CacheManager.new(config, cache)
-      redirect_validator = Vug::RedirectValidator.new(config)
-      fetcher = Vug::Fetcher.new(config, cache, factory, cache_manager, redirect_validator)
+      redirect_handler = Vug::RedirectHandler::Default.new(config)
+      fetcher = Vug::Fetcher.new(config, cache, factory, cache_manager, redirect_handler)
       fetcher.should_not be_nil
     end
   end

@@ -102,7 +102,7 @@ module Vug
       ips.any? { |ip| private_ip?(ip) }
     end
 
-    private def self.valid_scheme?(scheme : String?) : Bool
+    def self.valid_scheme?(scheme : String?) : Bool
       return false if scheme.nil?
       ["http", "https"].includes?(scheme.downcase)
     end

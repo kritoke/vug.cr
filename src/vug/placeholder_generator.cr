@@ -49,12 +49,5 @@ module Vug
 
       {svg_content.to_slice, "image/svg+xml"}
     end
-
-    def self.generate_favicon_url(domain : String) : String
-      # Create a data URL for the generated SVG
-      data, _ = generate_for_domain(domain)
-      encoded_data = Base64.encode(data)
-      "data:image/svg+xml;base64,#{encoded_data}"
-    end
   end
 end

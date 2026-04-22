@@ -10,7 +10,7 @@ require "./dns_revalidator"
 require "./redirect_handler"
 require "./redirect_handler_default"
 require "./types"
-require "./redirect_validator"
+require "./diagnostics"
 
 module Vug
   class Fetcher
@@ -97,9 +97,8 @@ module Vug
       end
     end
 
-    # Return cached path from coord or manager, or nil
     private def cached_path_for(url : String) : String?
-      @cache_coordinator.try(&.fetch_from_cache(url)) || @cache_manager.get(url)
+      @cache_coordinator.try(&.fetch(url))
     end
 
     # Update DNS cache for a redirect target host. This is isolated to
@@ -138,8 +137,8 @@ module Vug
 
       if current_url.includes?("google.com/s2/favicons")
         larger_url = google_larger_url(current_url)
-        if cached = @cache_coordinator.try(&.fetch_from_cache(larger_url)) || @cache_manager.get(larger_url)
-          @cache_coordinator.try(&.store_to_cache(current_url, cached)) || @cache_manager.set(current_url, cached)
+        if cached = @cache_coordinator.try(&.fetch(larger_url))
+          @cache_coordinator.try(&.store(current_url, cached))
           return {:use_cached, cached}
         end
       end
@@ -274,9 +273,7 @@ module Vug
     end
 
     private def format_exception(ex : Exception, prefix : String? = nil) : String
-      message = prefix || ex.message || "Unknown error"
-      stack = ex.backtrace.join("\n")
-      "#{message} | exception=#{ex.class} | backtrace=\n#{stack}"
+      Diagnostics.format_exception(ex, prefix)
     end
   end
 end

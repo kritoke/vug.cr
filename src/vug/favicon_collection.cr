@@ -43,24 +43,5 @@ module Vug
 
       sorted.first?
     end
-
-    # Returns the largest favicon by pixel area
-    def largest : FaviconInfo?
-      return if @favicons.empty?
-
-      @favicons.find(&.has_any_size?) ||
-        @favicons.max_by? { |favicon| favicon.size_pixels || 0 } ||
-        @favicons.first?
-    end
-
-    # Get favicon closest to preferred size (e.g., "32x32")
-    def by_preferred_size(preferred_width : Int32, preferred_height : Int32) : FaviconInfo?
-      return if @favicons.empty?
-
-      target_area = preferred_width * preferred_height
-      @favicons.find(&.has_any_size?) ||
-        @favicons.min_by? { |favicon| ((favicon.size_pixels || 0) - target_area).abs } ||
-        best
-    end
   end
 end

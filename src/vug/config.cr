@@ -125,8 +125,8 @@ module Vug
       @on_load.try(&.call(url))
     end
 
-    def has_storage? : Bool
-      !@on_save.nil?
+    # Sentinel used by copy_with to distinguish "not provided" from "explicitly nil"
+    private module Unset
     end
 
     # ameba:disable Metrics/CyclomaticComplexity
@@ -141,11 +141,11 @@ module Vug
       cache_entry_ttl : Time::Span? = nil,
       gray_placeholder_size : Int32? = nil,
       max_concurrent_requests : Int32? = nil,
-      on_save : Proc(String, Bytes, String, String?)? = nil,
-      on_load : Proc(String, String?)? = nil,
-      on_debug : Proc(String, Nil)? = nil,
-      on_error : Proc(String, String, Nil)? = nil,
-      on_warning : Proc(String, Nil)? = nil,
+      on_save : Proc(String, Bytes, String, String?)? | Unset = Unset.instance,
+      on_load : Proc(String, String?)? | Unset = Unset.instance,
+      on_debug : Proc(String, Nil)? | Unset = Unset.instance,
+      on_error : Proc(String, String, Nil)? | Unset = Unset.instance,
+      on_warning : Proc(String, Nil)? | Unset = Unset.instance,
     ) : Config
       Config.new(
         timeout: timeout || @timeout,
@@ -158,11 +158,11 @@ module Vug
         cache_entry_ttl: cache_entry_ttl || @cache_entry_ttl,
         gray_placeholder_size: gray_placeholder_size || @gray_placeholder_size,
         max_concurrent_requests: max_concurrent_requests || @max_concurrent_requests,
-        on_save: on_save || @on_save,
-        on_load: on_load || @on_load,
-        on_debug: on_debug || @on_debug,
-        on_error: on_error || @on_error,
-        on_warning: on_warning || @on_warning,
+        on_save: on_save.is_a?(Unset) ? @on_save : on_save.as(Proc(String, Bytes, String, String?)?),
+        on_load: on_load.is_a?(Unset) ? @on_load : on_load.as(Proc(String, String?)?),
+        on_debug: on_debug.is_a?(Unset) ? @on_debug : on_debug.as(Proc(String, Nil)?),
+        on_error: on_error.is_a?(Unset) ? @on_error : on_error.as(Proc(String, String, Nil)?),
+        on_warning: on_warning.is_a?(Unset) ? @on_warning : on_warning.as(Proc(String, Nil)?),
       )
     end
   end

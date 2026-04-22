@@ -43,7 +43,7 @@ module Vug
       result = @fetcher.fetch(best.url)
       return unless path = result.local_path
 
-      @cache_coordinator.try(&.store_to_cache(best.url, path)) || @cache_manager.set(best.url, path)
+      @cache_coordinator.try(&.store(best.url, path))
       result
     end
 
@@ -86,23 +86,23 @@ module Vug
     end
 
     private def fetch_with_cache(url : String) : Result?
-      cached = @cache_coordinator.try(&.fetch_from_cache(url)) || @cache_manager.get(url)
+      cached = @cache_coordinator.try(&.fetch(url))
       return Vug.success(url, cached) if cached
 
       result = @fetcher.fetch(url)
       return unless path = result.local_path
 
-      @cache_coordinator.try(&.store_to_cache(url, path)) || @cache_manager.set(url, path)
+      @cache_coordinator.try(&.store(url, path))
       result
     end
 
     private def fetch_data_url_favicon(favicon : FaviconInfo) : Result?
-      if cached = @cache_coordinator.try(&.fetch_from_cache(favicon.url)) || @cache_manager.get(favicon.url)
+      if cached = @cache_coordinator.try(&.fetch(favicon.url))
         return Vug.success(favicon.url, cached)
       end
 
       if path = @config.load(favicon.url)
-        @cache_coordinator.try(&.store_to_cache(favicon.url, path)) || @cache_manager.set(favicon.url, path)
+        @cache_coordinator.try(&.store(favicon.url, path))
         return Vug.success(favicon.url, path)
       end
 
@@ -117,7 +117,7 @@ module Vug
       placeholder_data, content_type = PlaceholderGenerator.generate_for_domain(host)
 
       if saved_path = @config.save("placeholder:#{host}", placeholder_data, content_type)
-        @cache_manager.set("placeholder:#{host}", saved_path)
+        @cache_coordinator.try(&.store("placeholder:#{host}", saved_path))
         return Vug.success("placeholder:#{host}", saved_path, content_type, placeholder_data)
       end
 

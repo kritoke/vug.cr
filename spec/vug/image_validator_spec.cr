@@ -41,35 +41,6 @@ describe Vug::ImageValidator do
     end
   end
 
-  describe ".detect_content_type" do
-    it "detects PNG" do
-      png_header = Bytes[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00]
-      Vug::ImageValidator.detect_content_type(png_header).should eq("image/png")
-    end
-
-    it "detects JPEG" do
-      jpeg_header = Bytes[0xFF, 0xD8, 0xFF, 0x00, 0x00]
-      Vug::ImageValidator.detect_content_type(jpeg_header).should eq("image/jpeg")
-    end
-
-    it "detects content type via crimage for valid images" do
-      # Create a valid PNG via crimage
-      rect = CrImage.rect(0, 0, 1, 1)
-      rgba = CrImage::RGBA.new(rect)
-      io = IO::Memory.new
-      CrImage::PNG.write(io, rgba)
-      png_data = io.to_slice
-
-      # Should detect as PNG (signature match) not fall through to crimage
-      Vug::ImageValidator.detect_content_type(png_data).should eq("image/png")
-    end
-
-    it "returns octet-stream for unrecognizable data" do
-      random_data = Bytes[0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08]
-      Vug::ImageValidator.detect_content_type(random_data).should eq("application/octet-stream")
-    end
-  end
-
   describe ".get_image_dimensions" do
     it "returns nil for empty data" do
       Vug::ImageValidator.get_image_dimensions(Bytes.empty).should be_nil

@@ -26,14 +26,4 @@ describe Vug::FaviconCollection do
     best.should_not be_nil
     best.as(Vug::FaviconInfo).sizes.should eq("any")
   end
-
-  it "returns largest favicon by pixel area" do
-    collection = Vug::FaviconCollection.new
-    collection.add(Vug::FaviconInfo.new(url: "https://example.com/small.png", sizes: "16x16", type: "image/png", purpose: nil))
-    collection.add(Vug::FaviconInfo.new(url: "https://example.com/large.png", sizes: "256x256", type: "image/png", purpose: nil))
-
-    largest = collection.largest
-    largest.should_not be_nil
-    largest.as(Vug::FaviconInfo).url.should eq("https://example.com/large.png")
-  end
 end
