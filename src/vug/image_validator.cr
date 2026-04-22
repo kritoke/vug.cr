@@ -64,7 +64,7 @@ module Vug
     # (offset 12..15) if available. This is a lightweight inspection used to
     # detect VP8 (lossy) vs VP8L (lossless) vs VP8X (extended) WebP images.
     private def self.webp_first_chunk_type(data : Bytes) : String?
-      return nil if data.size < 16
+      return if data.size < 16
       String.new(data[12..15])
     end
 

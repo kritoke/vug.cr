@@ -5,17 +5,17 @@ require "deque"
 module Vug
   record CacheEntry, path : String, timestamp : Time::Span, size : Int32
 
-    class MemoryCache
-      def initialize(
-        @size_limit : Int32 = 10 * 1024 * 1024,
-        @entry_ttl : Time::Span = 7.days,
-      )
-        @cache = Hash(String, CacheEntry).new
-        @insertion_order = Deque(String).new
-        @urls = Hash(String, Bool).new
-        @current_size = 0
-        @mutex = Mutex.new
-      end
+  class MemoryCache
+    def initialize(
+      @size_limit : Int32 = 10 * 1024 * 1024,
+      @entry_ttl : Time::Span = 7.days,
+    )
+      @cache = Hash(String, CacheEntry).new
+      @insertion_order = Deque(String).new
+      @urls = Hash(String, Bool).new
+      @current_size = 0
+      @mutex = Mutex.new
+    end
 
     def get(url : String) : String?
       @mutex.synchronize do

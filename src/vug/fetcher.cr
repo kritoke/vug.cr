@@ -149,9 +149,7 @@ module Vug
     end
 
     private def fetch_single(url : String, initial_dns_ips : Hash(String, Array(String)), redirect_count : Int32) : Result
-      acquired = false
       @semaphore.acquire
-      acquired = true
       begin
         uri = URI.parse(url)
         unless revalidate_dns_for?(url, uri.hostname, initial_dns_ips)
@@ -167,16 +165,8 @@ module Vug
         }
 
         client.get(uri.request_target, headers: headers) do |response|
-          if response.status.redirection? && (location = response.headers["Location"]?)
-            new_url = uri.resolve(location).to_s
-            case action = @redirect_validator.decide(url, new_url, redirect_count)
-            when FetchAction::Follow
-              @config.debug("Favicon redirect: #{action.location}")
-              return Vug.redirect(action.location)
-            when FetchAction::Deny
-              @config.debug("Dangerous redirect blocked: #{new_url} (#{action.reason})")
-              return Vug.failure("Invalid redirect", url, error_type: :invalid_redirect)
-            end
+          if result = handle_redirect(url, uri, response, redirect_count)
+            return result
           end
 
           if response.status.success?
@@ -184,7 +174,6 @@ module Vug
             memory = IO::Memory.new
             IO.copy(response.body_io, memory, limit: @config.max_size)
 
-            # Use injected ImageProcessor to validate and save image bytes
             return @image_processor.process_bytes(url, memory.to_slice, content_type)
           else
             return handle_error(url, response.status_code)
@@ -203,7 +192,21 @@ module Vug
         @config.error("fetch_single(#{url})", format_exception(ex))
         Vug.failure(ex.message || "Unknown error", url, error_type: :fetch_error)
       ensure
-        @semaphore.release if acquired
+        @semaphore.release
+      end
+    end
+
+    private def handle_redirect(url : String, uri : URI, response : HTTP::Client::Response, redirect_count : Int32) : Result?
+      return unless response.status.redirection? && (location = response.headers["Location"]?)
+
+      new_url = uri.resolve(location).to_s
+      case action = @redirect_validator.decide(url, new_url, redirect_count)
+      when FetchAction::Follow
+        @config.debug("Favicon redirect: #{action.location}")
+        Vug.redirect(action.location)
+      when FetchAction::Deny
+        @config.debug("Dangerous redirect blocked: #{new_url} (#{action.reason})")
+        Vug.failure("Invalid redirect", url, error_type: :invalid_redirect)
       end
     end
 
@@ -221,12 +224,12 @@ module Vug
         return false
       end
 
-        if initial_ips = initial_dns_ips[host]?
-          if @dns_revalidator.should_revalidate?(initial_ips, current_ips)
-            @config.error("revalidate_dns_for?(#{url})", "Blocked: DNS changed from #{initial_ips} to #{current_ips} (possible rebinding)")
-            return false
-          end
+      if initial_ips = initial_dns_ips[host]?
+        if @dns_revalidator.should_revalidate?(initial_ips, current_ips)
+          @config.error("revalidate_dns_for?(#{url})", "Blocked: DNS changed from #{initial_ips} to #{current_ips} (possible rebinding)")
+          return false
         end
+      end
 
       true
     end

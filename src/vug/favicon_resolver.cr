@@ -41,7 +41,7 @@ module Vug
       end
 
       result = @fetcher.fetch(best.url)
-      return unless (path = result.local_path)
+      return unless path = result.local_path
 
       @cache_coordinator.try(&.store_to_cache(best.url, path)) || @cache_manager.set(best.url, path)
       result
