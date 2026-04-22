@@ -20,16 +20,11 @@ module Vug
     end
 
     def fetch(url : String) : String?
-      if path = fetch_from_cache(url)
-        return path
-      end
-
-      @cache_manager.try(&.get(url))
+      fetch_from_cache(url)
     end
 
     def store(url : String, path : String) : Nil
       store_to_cache(url, path)
-      @cache_manager.try(&.set(url, path))
     end
   end
 end
