@@ -11,6 +11,7 @@ module Vug
         client.compress = true
         client.read_timeout = @config.timeout
         client.connect_timeout = @config.connect_timeout
+        client.write_timeout = @config.write_timeout
       end
     end
   end

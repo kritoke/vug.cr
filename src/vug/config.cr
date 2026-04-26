@@ -13,6 +13,7 @@ module Vug
 
     getter timeout : Time::Span = 30.seconds
     getter connect_timeout : Time::Span = 10.seconds
+    getter write_timeout : Time::Span = 10.seconds
     getter max_redirects : Int32 = 10
     getter max_size : Int32 = 100 * 1024
     getter user_agent : String = DEFAULT_USER_AGENT
@@ -46,6 +47,7 @@ module Vug
     def initialize(
       timeout : Time::Span? = nil,
       connect_timeout : Time::Span? = nil,
+      write_timeout : Time::Span? = nil,
       max_redirects : Int32? = nil,
       max_size : Int32? = nil,
       user_agent : String? = nil,
@@ -62,6 +64,7 @@ module Vug
     )
       @timeout = validate_positive_timespan(timeout, "timeout", 30.seconds)
       @connect_timeout = validate_positive_timespan(connect_timeout, "connect_timeout", 10.seconds)
+      @write_timeout = validate_positive_timespan(write_timeout, "write_timeout", 10.seconds)
       @max_redirects = validate_non_negative_int(max_redirects, "max_redirects", 10)
       @max_size = validate_positive_int(max_size, "max_size", 100 * 1024)
       @cache_size_limit = validate_positive_int(cache_size_limit, "cache_size_limit", 10 * 1024 * 1024)
@@ -133,6 +136,7 @@ module Vug
     def copy_with(
       timeout : Time::Span? = nil,
       connect_timeout : Time::Span? = nil,
+      write_timeout : Time::Span? = nil,
       max_redirects : Int32? = nil,
       max_size : Int32? = nil,
       user_agent : String? = nil,
@@ -150,6 +154,7 @@ module Vug
       Config.new(
         timeout: timeout || @timeout,
         connect_timeout: connect_timeout || @connect_timeout,
+        write_timeout: write_timeout || @write_timeout,
         max_redirects: max_redirects || @max_redirects,
         max_size: max_size || @max_size,
         user_agent: user_agent || @user_agent,

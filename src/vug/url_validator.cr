@@ -164,7 +164,7 @@ module Vug
     end
 
     private def self.ip_in_private_range?(host : String) : Bool
-      return false unless host.includes?(".") || host.includes?(":")
+      return false unless literal_ip_string?(host)
       private_ip?(host)
     end
   end

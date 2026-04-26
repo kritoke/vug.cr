@@ -2,7 +2,7 @@ require "socket"
 
 module Vug
   module DnsCache
-    DNS_CACHE_TTL = 30.seconds
+    DNS_CACHE_TTL = 5.minutes
 
     record DnsEntry, ips : Array(String), timestamp : Time::Span
 
@@ -31,10 +31,14 @@ module Vug
       end
 
       private def resolve_uncached(host : String) : Array(String)
-        addrinfos = Socket::Addrinfo.resolve(host, "80", type: Socket::Type::STREAM)
-        addrinfos.compact_map { |addrinfo| addrinfo.ip_address.try(&.address) }
-      rescue Socket::Addrinfo::Error
-        [] of String
+        result = [] of String
+        begin
+          addrinfos = Socket::Addrinfo.resolve(host, "80", type: Socket::Type::STREAM)
+          result = addrinfos.compact_map { |addrinfo| addrinfo.ip_address.try(&.address) }
+        rescue Socket::Addrinfo::Error
+          result = [] of String
+        end
+        result
       end
     end
 
