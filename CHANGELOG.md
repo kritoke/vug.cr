@@ -1,6 +1,22 @@
 # Changelog
 
-## [0.4.2] - 2026-04-20
+## [0.5.4] - 2026-05-22
+
+### Security
+- **Per-host rate limiting**: Added `RateLimiter` class with sliding window algorithm (60 req/min per host) to prevent abuse from one domain overwhelming resources
+
+### Added
+- **Configurable DNS cache TTL**: `DnsCache.ttl = 10.minutes` (default 30s) allows tuning DNS revalidation performance
+
+### Fixed
+- **URI parse error handling**: Added explicit rescue for `URI::Error` in `fetch_single` for defensive error handling
+- **Time::Span comparison**: Fixed `> 0` to `> Time::Span.zero` in http_client_factory.cr
+- **Same-origin redirect validation**: Enhanced redirect handler to validate same-origin redirects
+
+### Internal
+- Made `RateLimiter` injectable for testability
+
+## [0.5.3] - 2026-05-05
 
 ### Fixed
 - **Missing `fetch_types` require in `vug.cr`**: `FetchAction::Base` was not resolvable because `fetch_types.cr` (which defines the `FetchAction` module) was not required before `redirect_handler.cr` in the load order. Now properly required.
