@@ -11,9 +11,9 @@ module Vug
         client.compress = true
         # Ensure explicit timeout values to prevent Slowloris DoS attacks.
         # Fall back to sensible defaults if config values are unset or zero.
-        client.read_timeout = @config.timeout > 0 ? @config.timeout : 30.seconds
-        client.connect_timeout = @config.connect_timeout > 0 ? @config.connect_timeout : 10.seconds
-        client.write_timeout = @config.write_timeout > 0 ? @config.write_timeout : 10.seconds
+        client.read_timeout = @config.timeout > Time::Span.zero ? @config.timeout : 30.seconds
+        client.connect_timeout = @config.connect_timeout > Time::Span.zero ? @config.connect_timeout : 10.seconds
+        client.write_timeout = @config.write_timeout > Time::Span.zero ? @config.write_timeout : 10.seconds
       end
     end
   end

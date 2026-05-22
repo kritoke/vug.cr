@@ -1,13 +1,18 @@
 require "socket"
 
 module Vug
+  # DNS cache singleton with configurable TTL.
+  # TTL can be set via DnsCache.ttl= before first use.
   module DnsCache
-    DNS_CACHE_TTL = 5.minutes
+    DEFAULT_TTL = 5.minutes
+
+    @ttl : Time::Span = DEFAULT_TTL
+    class_property ttl : Time::Span = DEFAULT_TTL
 
     record DnsEntry, ips : Array(String), timestamp : Time::Span
 
     class Instance
-      def initialize
+      def initialize(@ttl : Time::Span)
         @mutex = Mutex.new
         @cache = Hash(String, DnsEntry).new
       end
@@ -15,7 +20,7 @@ module Vug
       def resolve(host : String) : Array(String)
         @mutex.synchronize do
           if entry = @cache[host]?
-            if Time.monotonic - entry.timestamp < DNS_CACHE_TTL
+            if Time.monotonic - entry.timestamp < @ttl
               return entry.ips
             end
           end
@@ -43,9 +48,10 @@ module Vug
     end
 
     @@instance_mutex = Mutex.new
+    @@instance : Instance? = nil
 
     def self.instance : Instance
-      @@instance_mutex.synchronize { @@instance ||= Instance.new }
+      @@instance_mutex.synchronize { @@instance ||= Instance.new(DnsCache.ttl) }
     end
 
     def self.resolve(host : String) : Array(String)

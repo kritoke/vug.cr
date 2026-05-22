@@ -11,6 +11,7 @@ module Vug
     SaveFailed
     HttpError
     FetchError
+    RateLimited
     NoFaviconFound
     PlaceholderGenerationFailed
     Unknown

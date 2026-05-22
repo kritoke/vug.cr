@@ -1,0 +1,71 @@
+require "time"
+
+module Vug
+  # Per-host rate limiter using a sliding window algorithm.
+  # Tracks request timestamps per host and enforces a max requests per minute limit.
+  class RateLimiter
+    # Sliding window duration for rate limiting
+    WINDOW = 1.minute
+
+    # Default max requests per host per minute
+    DEFAULT_MAX_PER_MINUTE = 60
+
+    # Request record with timestamp for sliding window
+    private record Request, timestamp : Time::Span
+
+    def initialize(@max_per_minute : Int32 = DEFAULT_MAX_PER_MINUTE)
+      @windows = {} of String => Array(Request)
+      @mutex = Mutex.new
+    end
+
+    getter max_per_minute : Int32
+
+    # Check if a request to the given host is allowed.
+    # Returns true if under the limit, false if rate limited.
+    def allow?(host : String) : Bool
+      @mutex.synchronize do
+        now = Time.monotonic
+        cutoff = now - WINDOW
+
+        # Get or initialize the host's request window
+        requests = @windows[host] ||= [] of Request
+
+        # Remove expired requests (outside the sliding window)
+        requests.reject! { |req| req.timestamp < cutoff }
+
+        # Check if we're under the limit
+        if requests.size >= @max_per_minute
+          return false
+        end
+
+        # Record this request
+        requests << Request.new(now)
+        true
+      end
+    end
+
+    # Get remaining requests for a host in the current window.
+    def remaining(host : String) : Int32
+      @mutex.synchronize do
+        now = Time.monotonic
+        cutoff = now - WINDOW
+
+        requests = @windows[host]?
+        return @max_per_minute unless requests
+
+        active = requests.count { |req| req.timestamp >= cutoff }
+        (@max_per_minute - active).clamp(0, @max_per_minute)
+      end
+    end
+
+    # Clear rate limit state for all hosts.
+    def clear : Nil
+      @mutex.synchronize { @windows.clear }
+    end
+
+    # Clear rate limit state for a specific host.
+    def clear(host : String) : Nil
+      @mutex.synchronize { @windows.delete(host) }
+    end
+  end
+end

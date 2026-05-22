@@ -11,10 +11,11 @@ require "./redirect_handler"
 require "./redirect_handler_default"
 require "./types"
 require "./diagnostics"
+require "./rate_limiter"
 
 module Vug
   class Fetcher
-    def initialize(@config : Config = Config.default, cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectHandler? = nil, cache_coordinator : CacheCoordinator? = nil, image_processor : ImageProcessor? = nil, dns_revalidator : DNSRevalidator? = nil)
+    def initialize(@config : Config = Config.default, cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectHandler? = nil, cache_coordinator : CacheCoordinator? = nil, image_processor : ImageProcessor? = nil, dns_revalidator : DNSRevalidator? = nil, rate_limiter : RateLimiter? = nil)
       @http_client_factory = http_client_factory || HttpClientFactory.new(@config)
       @cache_manager = cache_manager || CacheManager.new(@config, cache)
       @redirect_validator = redirect_validator || RedirectHandler::Default.new(@config)
@@ -24,6 +25,7 @@ module Vug
       @image_processor = image_processor || ImageProcessor::Default.new(@config, @cache_manager)
       @dns_revalidator = dns_revalidator || DNSRevalidator.new(@config)
       @semaphore = Vug.shared_semaphore(@config.max_concurrent_requests)
+      @rate_limiter = rate_limiter || RateLimiter.new
     end
 
     def fetch(url : String) : Result
@@ -158,7 +160,26 @@ module Vug
       end
       begin
         uri = URI.parse(url)
-        unless revalidate_dns_for?(url, uri.hostname, initial_dns_ips)
+      rescue ex : URI::Error
+        @config.error("fetch_single(#{url})", "Invalid URL format: #{ex.message}")
+        return Vug.failure("Invalid URL", url, error_type: :invalid_url)
+      end
+      begin
+        uri = URI.parse(url)
+      rescue ex : URI::Error
+        @config.error("fetch_single(#{url})", "Invalid URL format: #{ex.message}")
+        return Vug.failure("Invalid URL", url, error_type: :invalid_url)
+      end
+      begin
+        host = uri.hostname
+
+        # Per-host rate limiting to prevent abuse
+        if host && !@rate_limiter.allow?(host)
+          @config.debug("Rate limited: #{host} exceeded #{@rate_limiter.max_per_minute} requests/minute")
+          return Vug.failure("Rate limited", url, error_type: :rate_limited)
+        end
+
+        unless revalidate_dns_for?(url, host, initial_dns_ips)
           return Vug.failure("DNS revalidation failed", url, error_type: :dns_revalidation_failed)
         end
 
