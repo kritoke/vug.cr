@@ -9,9 +9,11 @@ module Vug
     def create_client(uri : URI) : HTTP::Client
       HTTP::Client.new(uri).tap do |client|
         client.compress = true
-        client.read_timeout = @config.timeout
-        client.connect_timeout = @config.connect_timeout
-        client.write_timeout = @config.write_timeout
+        # Ensure explicit timeout values to prevent Slowloris DoS attacks.
+        # Fall back to sensible defaults if config values are unset or zero.
+        client.read_timeout = @config.timeout > 0 ? @config.timeout : 30.seconds
+        client.connect_timeout = @config.connect_timeout > 0 ? @config.connect_timeout : 10.seconds
+        client.write_timeout = @config.write_timeout > 0 ? @config.write_timeout : 10.seconds
       end
     end
   end
