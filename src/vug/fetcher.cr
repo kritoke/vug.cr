@@ -149,8 +149,13 @@ module Vug
 
     private def fetch_single(url : String, initial_dns_ips : Hash(String, Array(String)), redirect_count : Int32) : Result
       acquired = false
-      @semaphore.acquire
-      acquired = true
+      begin
+        @semaphore.acquire
+        acquired = true
+      rescue ex
+        @config.error("fetch_single(#{url})", "Semaphore acquire failed: #{ex.message}")
+        return Vug.failure("Semaphore acquire failed", url, error_type: :fetch_error)
+      end
       begin
         uri = URI.parse(url)
         unless revalidate_dns_for?(url, uri.hostname, initial_dns_ips)
