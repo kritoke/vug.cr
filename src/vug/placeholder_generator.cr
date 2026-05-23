@@ -6,6 +6,16 @@ module Vug
   # Generates default SVG favicons when no real favicon is found
   # Creates a simple colored circle with the first letter of the domain
   module PlaceholderGenerator
+    # DJB2 hash seed constant (Daniel J. Bernstein)
+    HASH_SEED = 5381_u64
+
+    # SVG placeholder dimensions
+    SVG_SIZE = 256
+    CORNER_RADIUS = 20
+    CIRCLE_RADIUS = 90
+    FONT_SIZE = 120
+    TEXT_Y_OFFSET = 156
+
     # Color palette for different domains (consistent based on domain hash)
     COLORS = [
       "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FECA57",
@@ -29,8 +39,8 @@ module Vug
       raw_char = clean_domain.chars.first?.try(&.upcase.to_s) || "?"
       first_char = HTML.escape(raw_char)
 
-      # Generate consistent color based on domain using DJB2 hash (Daniel J. Bernstein)
-      hash_value = 5381_u64
+      # Generate consistent color based on domain using DJB2 hash
+      hash_value = HASH_SEED
       clean_domain.each_char do |char|
         hash_value = ((hash_value << 5) &+ hash_value) &+ char.ord.to_u64
       end
@@ -40,10 +50,10 @@ module Vug
       # Create SVG content
       svg_content = <<-SVG
         <?xml version="1.0" encoding="UTF-8"?>
-        <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-          <rect width="256" height="256" fill="#ffffff" rx="20"/>
-          <circle cx="128" cy="128" r="90" fill="#{background_color}"/>
-          <text x="128" y="156" font-family="Arial, sans-serif" font-size="120" font-weight="bold" text-anchor="middle" fill="white" dominant-baseline="middle">#{first_char}</text>
+        <svg xmlns="http://www.w3.org/2000/svg" width="#{SVG_SIZE}" height="#{SVG_SIZE}" viewBox="0 0 #{SVG_SIZE} #{SVG_SIZE}">
+          <rect width="#{SVG_SIZE}" height="#{SVG_SIZE}" fill="#ffffff" rx="#{CORNER_RADIUS}"/>
+          <circle cx="#{SVG_SIZE // 2}" cy="#{SVG_SIZE // 2}" r="#{CIRCLE_RADIUS}" fill="#{background_color}"/>
+          <text x="#{SVG_SIZE // 2}" y="#{TEXT_Y_OFFSET}" font-family="Arial, sans-serif" font-size="#{FONT_SIZE}" font-weight="bold" text-anchor="middle" fill="white" dominant-baseline="middle">#{first_char}</text>
         </svg>
         SVG
 

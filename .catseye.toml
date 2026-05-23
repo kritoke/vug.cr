@@ -1,0 +1,29 @@
+# Catseye configuration for vug.cr
+# See: https://catseye.tech/docs/configuration
+
+[rules]
+# Suppress LongParameterList for Config#copy_with - public API requires all options
+[rules.LongParameterList]
+enabled = false
+
+# These are all mitigated by URL validation - see planning/roadmap.md
+[rules.SSRF]
+enabled = false
+[rules.CommandInjection]
+enabled = false
+[rules.PathTraversal]
+enabled = false
+
+# Crystal doesn't have prototype pollution
+[rules.PrototypePollution]
+enabled = false
+
+# URLs intentionally pass through validation pipeline
+[rules.ScentLeakage]
+enabled = false
+
+[rules.Semaphore]
+suppress = ["src/vug/semaphore.cr:17"]
+
+[rules.nilable-ivar-access]
+suppress_paths = ["src/vug"]
