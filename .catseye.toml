@@ -27,3 +27,10 @@ suppress = ["src/vug/semaphore.cr:17"]
 
 [rules.nilable-ivar-access]
 suppress_paths = ["src/vug"]
+
+# Image format signatures are legitimate format definitions, not problematic magic numbers
+[rules.MagicNumber]
+suppress_paths = [
+  "src/vug/image_validator.cr",
+  "src/vug/url_validator.cr",
+]
