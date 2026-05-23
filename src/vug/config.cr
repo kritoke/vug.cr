@@ -82,30 +82,21 @@ module Vug
     end
 
     private def validate_positive_timespan(value : Time::Span?, name : String, default : Time::Span) : Time::Span
-      if value
-        raise ArgumentError.new("#{name} must be positive") if value <= 0.seconds
-        value
-      else
-        default
-      end
+      return default unless value
+      raise ArgumentError.new("#{name} must be positive") if value <= 0.seconds
+      value
     end
 
     private def validate_positive_int(value : Int32?, name : String, default : Int32) : Int32
-      if value
-        raise ArgumentError.new("#{name} must be positive") if value <= 0
-        value
-      else
-        default
-      end
+      return default unless value
+      raise ArgumentError.new("#{name} must be positive") if value <= 0
+      value
     end
 
     private def validate_non_negative_int(value : Int32?, name : String, default : Int32) : Int32
-      if value
-        raise ArgumentError.new("#{name} must be non-negative") if value < 0
-        value
-      else
-        default
-      end
+      return default unless value
+      raise ArgumentError.new("#{name} must be non-negative") if value < 0
+      value
     end
 
     def debug(message : String) : Nil

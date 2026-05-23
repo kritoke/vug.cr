@@ -123,50 +123,48 @@ module Vug
           next if href_attr.nil?
           href = href_attr.val
           next if href.empty?
-
-          # Handle data URLs specially
-          if DataUrlHandler.data_url?(href)
-            if data_result = DataUrlHandler.extract_from_url(href, @config.max_size)
-              data, media_type = data_result
-              # Create a temporary URL identifier for data URLs
-              data_url_id = "data:#{Digest::SHA256.hexdigest(data.to_slice)}"
-              favicon_info = FaviconInfo.new(
-                url: data_url_id,
-                sizes: node["sizes"]?.try(&.val),
-                type: media_type,
-                purpose: nil
-              )
-              # Store the actual data in the favicon info for later use
-              @config.debug("Found data URL favicon: #{data_url_id}")
-              favicons << favicon_info
-
-              if saved_path = @config.save(data_url_id, data, media_type)
-                @config.debug("Data URL favicon saved: #{saved_path}")
-                @cache_coordinator.try(&.store(data_url_id, saved_path))
-              end
-            else
-              @config.debug("Invalid data URL favicon: #{href}")
-            end
-          else
-            # Handle relative URLs by resolving against base_url first
-            normalized = UrlProcessor.resolve_and_normalize(href, base_url)
-            next unless UrlProcessor.valid_scheme?(normalized)
-
-            sizes = node["sizes"]?.try(&.val)
-            type = node["type"]?.try(&.val)
-
-            favicon_info = FaviconInfo.new(
-              url: normalized,
-              sizes: sizes,
-              type: type,
-              purpose: nil
-            )
-            favicons << favicon_info
-          end
+          process_favicon_link(href, node, base_url, favicons)
         end
       end
 
       favicons
+    end
+
+    private def process_favicon_link(href : String, node : HTML5::Node, base_url : String, favicons : Array(FaviconInfo))
+      if DataUrlHandler.data_url?(href)
+        process_data_url_favicon(href, favicons)
+      else
+        process_normal_favicon(node, href, base_url, favicons)
+      end
+    end
+
+    private def process_data_url_favicon(href : String, favicons : Array(FaviconInfo))
+      data_result = DataUrlHandler.extract_from_url(href, @config.max_size)
+      return unless data_result
+
+      data, media_type = data_result
+      data_url_id = "data:#{Digest::SHA256.hexdigest(data.to_slice)}"
+      favicon_info = FaviconInfo.new(url: data_url_id, sizes: nil, type: media_type, purpose: nil)
+      @config.debug("Found data URL favicon: #{data_url_id}")
+      favicons << favicon_info
+
+      if saved_path = @config.save(data_url_id, data, media_type)
+        @config.debug("Data URL favicon saved: #{saved_path}")
+        @cache_coordinator.try(&.store(data_url_id, saved_path))
+      end
+    end
+
+    private def process_normal_favicon(node : HTML5::Node, href : String, base_url : String, favicons : Array(FaviconInfo))
+      normalized = UrlProcessor.resolve_and_normalize(href, base_url)
+      return unless UrlProcessor.valid_scheme?(normalized)
+
+      favicon_info = FaviconInfo.new(
+        url: normalized,
+        sizes: node["sizes"]?.try(&.val),
+        type: node["type"]?.try(&.val),
+        purpose: nil
+      )
+      favicons << favicon_info
     end
 
     private def sanitize_html(html : String) : String

@@ -19,16 +19,22 @@ module Vug
       nodes = doc.css("link[rel='manifest']")
 
       nodes.each do |node|
-        href_attr = node["href"]?
-        next if href_attr.nil?
-        href = href_attr.val
-        next if href.empty?
-
-        # Handle relative URLs by resolving against base_url first
-        normalized = UrlProcessor.resolve_and_normalize(href, base_url)
-        return normalized if UrlProcessor.valid_scheme?(normalized)
+        if href = extract_href(node, base_url)
+          return href
+        end
       end
 
+      nil
+    end
+
+    private def extract_href(node : HTML5::Node, base_url : String) : String?
+      href_attr = node["href"]?
+      return nil if href_attr.nil?
+      href = href_attr.val
+      return nil if href.empty?
+      # Handle relative URLs by resolving against base_url first
+      normalized = UrlProcessor.resolve_and_normalize(href, base_url)
+      return normalized if UrlProcessor.valid_scheme?(normalized)
       nil
     end
 

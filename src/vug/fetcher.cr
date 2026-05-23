@@ -165,47 +165,8 @@ module Vug
         return Vug.failure("Invalid URL", url, error_type: :invalid_url)
       end
       begin
-        uri = URI.parse(url)
-      rescue ex : URI::Error
-        @config.error("fetch_single(#{url})", "Invalid URL format: #{ex.message}")
-        return Vug.failure("Invalid URL", url, error_type: :invalid_url)
-      end
-      begin
         host = uri.hostname
-
-        # Per-host rate limiting to prevent abuse
-        if host && !@rate_limiter.allow?(host)
-          @config.debug("Rate limited: #{host} exceeded #{@rate_limiter.max_per_minute} requests/minute")
-          return Vug.failure("Rate limited", url, error_type: :rate_limited)
-        end
-
-        unless revalidate_dns_for?(url, host, initial_dns_ips)
-          return Vug.failure("DNS revalidation failed", url, error_type: :dns_revalidation_failed)
-        end
-
-        client = @http_client_factory.create_client(uri)
-
-        headers = HTTP::Headers{
-          "User-Agent"      => @config.user_agent,
-          "Accept-Language" => @config.accept_language,
-          "Connection"      => "keep-alive",
-        }
-
-        client.get(uri.request_target, headers: headers) do |response|
-          if result = handle_redirect(url, uri, response, redirect_count)
-            return result
-          end
-
-          if response.status.success?
-            content_type = response.content_type || "image/png"
-            memory = IO::Memory.new
-            IO.copy(response.body_io, memory, limit: @config.max_size)
-
-            return @image_processor.process_bytes(url, memory.to_slice, content_type)
-          else
-            return handle_error(url, response.status_code)
-          end
-        end
+        return rate_limit_or_revalidate(url, host, initial_dns_ips, redirect_count, uri)
       rescue ex : IO::TimeoutError
         @config.error("fetch_single(#{url})", format_exception(ex, "Request timed out"))
         Vug.failure("Request timed out", url, error_type: :fetch_error)
@@ -302,6 +263,44 @@ module Vug
 
     private def format_exception(ex : Exception, prefix : String? = nil) : String
       Diagnostics.format_exception(ex, prefix)
+    end
+
+    private def rate_limit_or_revalidate(url : String, host : String?, initial_dns_ips : Hash(String, Array(String)), redirect_count : Int32, uri : URI) : Result
+      if host && !@rate_limiter.allow?(host)
+        @config.debug("Rate limited: #{host} exceeded #{@rate_limiter.max_per_minute} requests/minute")
+        return Vug.failure("Rate limited", url, error_type: :rate_limited)
+      end
+
+      unless revalidate_dns_for?(url, host, initial_dns_ips)
+        return Vug.failure("DNS revalidation failed", url, error_type: :dns_revalidation_failed)
+      end
+
+      perform_http_request(url, uri, redirect_count)
+    end
+
+    private def perform_http_request(url : String, uri : URI, redirect_count : Int32) : Result
+      client = @http_client_factory.create_client(uri)
+
+      headers = HTTP::Headers{
+        "User-Agent"      => @config.user_agent,
+        "Accept-Language" => @config.accept_language,
+        "Connection"      => "keep-alive",
+      }
+
+      result : Result? = nil
+      client.get(uri.request_target, headers: headers) do |response|
+        result = handle_redirect(url, uri, response, redirect_count) if response.status.redirection?
+        result ||= process_successful_response(url, response) if response.status.success?
+        result ||= handle_error(url, response.status_code)
+      end
+      result || Vug.failure("Unexpected HTTP error", url.to_s)
+    end
+
+    private def process_successful_response(url : String, response : HTTP::Client::Response) : Result
+      content_type = response.content_type || "image/png"
+      memory = IO::Memory.new
+      IO.copy(response.body_io, memory, limit: @config.max_size)
+      @image_processor.process_bytes(url, memory.to_slice, content_type)
     end
   end
 end
