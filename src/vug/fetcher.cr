@@ -175,22 +175,14 @@ module Vug
     private def fetch_single(url : String, initial_dns_ips : Hash(String, Array(String)), redirect_count : Int32) : Result
       acquired = false
       begin
-        @semaphore.acquire
-        acquired = true
-      rescue ex
-        @config.error("fetch_single(#{url})", "Semaphore acquire failed: #{ex.message}")
-        return Vug.failure("Semaphore acquire failed", url, error_type: :fetch_error)
-      end
-      begin
-        uri = URI.parse(url)
-      rescue ex : URI::Error
-        @config.error("fetch_single(#{url})", "Invalid URL format: #{ex.message}")
-        return Vug.failure("Invalid URL", url, error_type: :invalid_url)
-      end
-      begin
+        acquired = acquire_semaphore(url)
+        return Vug.failure("Semaphore acquire failed", url, error_type: :fetch_error) unless acquired
+        uri = parse_uri(url)
         host = uri.hostname
         return rate_limit_or_revalidate(url, host, initial_dns_ips, redirect_count, uri)
-      rescue ex : IO::TimeoutError
+      rescue ex : URI::Error
+        @config.error("fetch_single(#{url})", "Invalid URL format: #{ex.message}")
+        Vug.failure("Invalid URL", url, error_type: :invalid_url)
         @config.error("fetch_single(#{url})", format_exception(ex, "Request timed out"))
         Vug.failure("Request timed out", url, error_type: :fetch_error)
       rescue ex : Socket::Addrinfo::Error
@@ -205,6 +197,21 @@ module Vug
       ensure
         @semaphore.release if acquired
       end
+    end
+
+    private def acquire_semaphore(url : String) : Bool
+      @semaphore.acquire
+      true
+    rescue ex
+      @config.error("fetch_single(#{url})", "Semaphore acquire failed: #{ex.message}")
+      false
+    end
+
+    private def parse_uri(url : String) : URI
+      URI.parse(url)
+    rescue ex : URI::Error
+      @config.error("fetch_single(#{url})", "Invalid URL format: #{ex.message}")
+      raise ex
     end
 
     private def handle_redirect(url : String, uri : URI, response : HTTP::Client::Response, redirect_count : Int32) : Result?
