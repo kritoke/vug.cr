@@ -28,80 +28,96 @@ module Vug
     end
 
     def extract_all(site_url : String) : Array(FaviconInfo)
-      clean_url = UrlProcessor.sanitize_feed_url(site_url)
-
-      uri = begin
-        unless UrlValidator.valid_url?(clean_url)
-          @config.debug("URL blocked by validator: #{clean_url}")
-          return [] of FaviconInfo
-        end
-
-        parsed = URI.parse(clean_url)
-        unless parsed.scheme
-          @config.debug("URL missing scheme: #{clean_url}")
-          return [] of FaviconInfo
-        end
-        parsed
-      rescue ex : URI::Error
-        @config.debug("Invalid URL for HTML extraction: #{clean_url} - #{ex.message}")
-        return [] of FaviconInfo
-      end
+      uri = validate_and_parse_url(site_url)
+      return [] of FaviconInfo unless uri
 
       favicons = [] of FaviconInfo
 
       begin
-        @config.debug("Fetching HTML from: #{clean_url}")
-
+        @config.debug("Fetching HTML from: #{site_url}")
         client = @http_client_factory.create_client(uri)
-
-        headers = HTTP::Headers{
-          "User-Agent" => @config.user_agent,
-          "Accept"     => "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        }
+        headers = build_html_headers
 
         client.get(uri.request_target, headers: headers) do |response|
-          if response.status.success?
-            memory = IO::Memory.new
-            IO.copy(response.body_io, memory, limit: @config.max_size)
-            html = memory.to_slice.to_s
-            @config.debug("HTML fetched: #{html.size} bytes")
-
-            html = sanitize_html(html)
-            @config.debug("HTML sanitized: #{html.size} bytes")
-
-            # Extract favicons from HTML
-            html_favicons = extract_favicons_from_html(html, clean_url)
-            favicons.concat(html_favicons)
-
-            # Extract manifest URL and parse manifest favicons
-            if manifest_url = @manifest_extractor.extract_manifest_url(html, clean_url)
-              @config.debug("Found manifest: #{manifest_url}")
-              if manifest_favicons = @manifest_extractor.extract_favicons_from_manifest(manifest_url)
-                favicons.concat(manifest_favicons)
-                @config.debug("Extracted #{manifest_favicons.size} favicons from manifest")
-              end
-            end
-          elsif response.status.not_found?
-            @config.debug("HTML fetch 404: #{clean_url}")
-          else
-            @config.debug("HTML fetch error #{response.status_code}: #{clean_url}")
-          end
+          favicons = process_html_response(response, site_url)
         end
       rescue ex : Socket::Addrinfo::Error
-        @config.error("extract_all(#{site_url})", Vug::Diagnostics.format_exception(ex, "DNS lookup failed"))
-        @config.debug("DNS lookup failed for: #{site_url}")
+        log_error("extract_all(#{site_url})", ex, "DNS lookup failed")
       rescue ex : IO::TimeoutError
-        @config.error("extract_all(#{site_url})", Vug::Diagnostics.format_exception(ex, "Read timed out"))
-        @config.debug("HTML fetch timeout: #{site_url}")
+        log_error("extract_all(#{site_url})", ex, "Read timed out")
       rescue ex : OpenSSL::SSL::Error
-        @config.error("extract_all(#{site_url})", Vug::Diagnostics.format_exception(ex, "SSL error"))
-        @config.debug("SSL error for: #{site_url}")
+        log_error("extract_all(#{site_url})", ex, "SSL error")
       rescue ex : IO::Error | Socket::Error
-        @config.error("extract_all(#{site_url})", Vug::Diagnostics.format_exception(ex))
-        @config.debug("Error extracting favicons: #{ex.message}")
+        log_error("extract_all(#{site_url})", ex)
       end
 
       favicons
+    end
+
+    private def validate_and_parse_url(site_url : String) : URI?
+      clean_url = UrlProcessor.sanitize_feed_url(site_url)
+      return debug_return("URL blocked by validator: #{clean_url}") unless UrlValidator.valid_url?(clean_url)
+
+      parsed = URI.parse(clean_url)
+      return debug_return("URL missing scheme: #{clean_url}") unless parsed.scheme
+      parsed
+    rescue ex : URI::Error
+      @config.debug("Invalid URL for HTML extraction: #{clean_url} - #{ex.message}")
+      nil
+    end
+
+    private def debug_return(msg : String)
+      @config.debug(msg)
+      nil
+    end
+
+    private def build_html_headers : HTTP::Headers
+      HTTP::Headers{
+        "User-Agent" => @config.user_agent,
+        "Accept"     => "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      }
+    end
+
+    private def process_html_response(response : HTTP::Client::Response, site_url : String) : Array(FaviconInfo)
+      return [] of FaviconInfo unless response.status.success?
+
+      favicons = [] of FaviconInfo
+      html = fetch_html(response.body_io)
+      return [] of FaviconInfo if html.empty?
+
+      html_favicons = extract_favicons_from_html(html, site_url)
+      favicons.concat(html_favicons)
+
+      add_manifest_favicons(html, site_url, favicons)
+      favicons
+    end
+
+    private def fetch_html(body_io : IO) : String
+      memory = IO::Memory.new
+      IO.copy(body_io, memory, limit: @config.max_size)
+      html = memory.to_slice.to_s
+      @config.debug("HTML fetched: #{html.size} bytes")
+      html = sanitize_html(html)
+      @config.debug("HTML sanitized: #{html.size} bytes")
+      html
+    rescue ex : IO::TimeoutError
+      @config.debug("HTML fetch timeout")
+      ""
+    end
+
+    private def add_manifest_favicons(html : String, site_url : String, favicons : Array(FaviconInfo))
+      return unless manifest_url = @manifest_extractor.extract_manifest_url(html, site_url)
+
+      @config.debug("Found manifest: #{manifest_url}")
+      if manifest_favicons = @manifest_extractor.extract_favicons_from_manifest(manifest_url)
+        favicons.concat(manifest_favicons)
+        @config.debug("Extracted #{manifest_favicons.size} favicons from manifest")
+      end
+    end
+
+    private def log_error(context : String, ex : Exception, prefix : String? = nil)
+      @config.error(context, Vug::Diagnostics.format_exception(ex, prefix))
+      @config.debug("#{prefix || "Error"}: #{ex.message}")
     end
 
     # Backward compatibility method - returns first favicon only
