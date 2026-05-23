@@ -61,8 +61,12 @@ module Vug
             IO.copy(response.body_io, memory, limit: @config.max_size)
             json_content = memory.to_slice.to_s
 
-            manifest = JSON.parse(json_content)
-            return parse_manifest_icons(manifest, manifest_url)
+            begin
+              manifest = JSON.parse(json_content)
+              return parse_manifest_icons(manifest, manifest_url)
+            rescue ex : JSON::ParseException
+              @config.debug("Manifest JSON parse failed: #{ex.message}")
+            end
           else
             @config.debug("Manifest fetch failed #{response.status_code}: #{manifest_url}")
             return
