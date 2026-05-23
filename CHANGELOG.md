@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.5.5] - 2026-05-23
+
+### Added
+- **Logo filtering for favicon selection**: Added `LOGO_INDICATORS` constant with terms (`logo`, `channel`, `brand`, `header`, `banner`, `profile`, `avatar`, `artwork`) to prevent channel/brand logos from being selected as favicons. Images larger than 128x128 are also deprioritized.
+
+### Security
+- **Catseye static analysis review**: Comprehensive review of codebase using Catseye v0.4.0. Confirmed SSRF, CommandInjection, PathTraversal, and OpenRedirect mitigations are properly in place via `UrlValidator` and `RedirectHandler`.
+
+### Fixed
+- **JSON parse errors in manifest_extractor**: Added explicit `JSON::ParseException` handling with debug logging instead of discarding the return value.
+- **Dead code in validation helpers**: Removed unreachable code after unconditional return/raise in `validate_positive_timespan`, `validate_positive_int`, and `validate_non_negative_int`.
+
+### Internal
+- **fetch_loop refactor**: Extracted termination conditions and action handling into smaller methods (`check_termination_conditions`, `handle_result_action`) to reduce complexity from 122 to ~50 AST nodes.
+- **fetch_single refactor**: Extracted semaphore and URI parsing into `acquire_semaphore` and `parse_uri` helper methods. Consolidated exception handling.
+- **html_extractor refactor**: Split `extract_all` into `validate_and_parse_url`, `process_html_response`, `fetch_html`, `add_manifest_favicons`, and `log_error` methods.
+- **Magic number extraction**: Extracted constants `HASH_SEED`, `SVG_SIZE`, `CORNER_RADIUS`, `CIRCLE_RADIUS`, `FONT_SIZE`, `TEXT_Y_OFFSET` in `PlaceholderGenerator`.
+- **Catseye configuration**: Added `.catseye.toml` with suppressions for acceptable trade-offs (Config#copy_with 16 params, image format signatures, URL validator IP masks).
+
 ## [0.5.4] - 2026-05-22
 
 ### Security
