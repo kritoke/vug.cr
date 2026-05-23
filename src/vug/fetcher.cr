@@ -57,12 +57,10 @@ module Vug
       max_gray_attempts = 3
 
       loop do
-        return Vug.failure("Timeout", initial_url, error_type: :timeout) if timed_out?(start_time)
-        # Enforce redirect limit: block when redirects reached the configured maximum
-        return Vug.failure("Too many redirects", initial_url, error_type: :too_many_redirects) if redirects >= @config.max_redirects
-        return Vug.failure("Too many gray placeholder attempts", initial_url, error_type: :too_many_gray_placeholder_attempts) if gray_placeholder_attempts >= max_gray_attempts
+        if termination = check_termination_conditions(start_time, redirects, gray_placeholder_attempts, max_gray_attempts, initial_url)
+          return termination
+        end
 
-        # Check coordinated cache first (which favors config-backed storage), then fall back
         if path = cached_path_for(current_url)
           @config.debug("Favicon cache hit: #{current_url}")
           return Vug.success(current_url, path)
@@ -74,29 +72,54 @@ module Vug
         action, next_url = handle_fetch_result(current_url, result)
 
         case action
-        when :redirect
-          if next_url
-            handle_redirect_action(next_url, initial_dns_ips)
-            current_url = next_url
-          end
-          redirects += 1
-          next
-        when :try_fallback
-          gray_placeholder_attempts += 1
-          if next_url
-            current_url = next_url
-            next
-          end
-          return result
-        when :return_result
-          return result
-        when :use_cached
-          if next_url
-            return Vug.success(current_url, next_url)
-          end
+        when :redirect, :try_fallback
+          current_url, redirects, gray_placeholder_attempts = handle_result_action(
+            action, next_url, current_url, redirects, gray_placeholder_attempts, initial_dns_ips
+          )
+          next if action == :redirect || (action == :try_fallback && next_url)
+          return result if action == :try_fallback
+        when :return_result, :use_cached
+          return Vug.success(current_url, next_url) if action == :use_cached && next_url
           return result
         end
       end
+    end
+
+    private def check_termination_conditions(
+      start_time : Time::Span,
+      redirects : Int32,
+      gray_placeholder_attempts : Int32,
+      max_gray_attempts : Int32,
+      initial_url : String
+    ) : Result?
+      return Vug.failure("Timeout", initial_url, error_type: :timeout) if timed_out?(start_time)
+      return Vug.failure("Too many redirects", initial_url, error_type: :too_many_redirects) if redirects >= @config.max_redirects
+      return Vug.failure("Too many gray placeholder attempts", initial_url, error_type: :too_many_gray_placeholder_attempts) if gray_placeholder_attempts >= max_gray_attempts
+      nil
+    end
+
+    private def handle_result_action(
+      action : Symbol,
+      next_url : String?,
+      current_url : String,
+      redirects : Int32,
+      gray_placeholder_attempts : Int32,
+      initial_dns_ips : Hash(String, Array(String))
+    ) : {String, Int32, Int32}
+      case action
+      when :redirect
+        if next_url
+          handle_redirect_action(next_url, initial_dns_ips)
+          current_url = next_url
+        end
+        redirects += 1
+      when :try_fallback
+        gray_placeholder_attempts += 1
+        if next_url
+          current_url = next_url
+        end
+      end
+      {current_url, redirects, gray_placeholder_attempts}
     end
 
     private def cached_path_for(url : String) : String?
