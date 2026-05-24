@@ -41,10 +41,8 @@ module Vug
         client.get(uri.request_target, headers: headers) do |response|
           favicons = process_html_response(response, site_url)
         end
-      rescue ex : Socket::Addrinfo::Error
-        log_error("extract_all(#{site_url})", ex, "DNS lookup failed")
       rescue ex : IO::TimeoutError
-        log_error("extract_all(#{site_url})", ex, "Read timed out")
+        log_error("extract_all(#{site_url})", ex)
       rescue ex : OpenSSL::SSL::Error
         log_error("extract_all(#{site_url})", ex, "SSL error")
       rescue ex : IO::Error | Socket::Error
@@ -100,7 +98,7 @@ module Vug
       html = sanitize_html(html)
       @config.debug("HTML sanitized: #{html.size} bytes")
       html
-    rescue ex : IO::TimeoutError
+    rescue IO::TimeoutError
       @config.debug("HTML fetch timeout")
       ""
     end

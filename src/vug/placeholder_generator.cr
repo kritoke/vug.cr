@@ -10,10 +10,10 @@ module Vug
     HASH_SEED = 5381_u64
 
     # SVG placeholder dimensions
-    SVG_SIZE = 256
-    CORNER_RADIUS = 20
-    CIRCLE_RADIUS = 90
-    FONT_SIZE = 120
+    SVG_SIZE      = 256
+    CORNER_RADIUS =  20
+    CIRCLE_RADIUS =  90
+    FONT_SIZE     = 120
     TEXT_Y_OFFSET = 156
 
     # Color palette for different domains (consistent based on domain hash)

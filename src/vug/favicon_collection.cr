@@ -45,7 +45,7 @@ module Vug
       return if @favicons.empty?
 
       # Filter out likely logos (URLs containing logo/channel/brand/etc)
-      non_logos = @favicons.reject { |f| likely_logo?(f.url) }
+      non_logos = @favicons.reject { |item| likely_logo?(item.url) }
 
       candidates = non_logos.empty? ? @favicons : non_logos
 

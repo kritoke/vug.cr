@@ -49,7 +49,7 @@ module Vug
 
       Vug::FetchAction::Follow.new(redirect_url)
     rescue URI::Error
-      return Vug::FetchAction::Deny.new("invalid_url")
+      Vug::FetchAction::Deny.new("invalid_url")
     end
   end
 end

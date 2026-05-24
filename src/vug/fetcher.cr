@@ -90,7 +90,7 @@ module Vug
       redirects : Int32,
       gray_placeholder_attempts : Int32,
       max_gray_attempts : Int32,
-      initial_url : String
+      initial_url : String,
     ) : Result?
       return Vug.failure("Timeout", initial_url, error_type: :timeout) if timed_out?(start_time)
       return Vug.failure("Too many redirects", initial_url, error_type: :too_many_redirects) if redirects >= @config.max_redirects
@@ -104,7 +104,7 @@ module Vug
       current_url : String,
       redirects : Int32,
       gray_placeholder_attempts : Int32,
-      initial_dns_ips : Hash(String, Array(String))
+      initial_dns_ips : Hash(String, Array(String)),
     ) : {String, Int32, Int32}
       case action
       when :redirect
@@ -173,25 +173,22 @@ module Vug
     end
 
     private def fetch_single(url : String, initial_dns_ips : Hash(String, Array(String)), redirect_count : Int32) : Result
-      acquired = false
+      acquired = acquire_semaphore(url)
+      return Vug.failure("Semaphore acquire failed", url, error_type: :fetch_error) unless acquired
       begin
-        acquired = acquire_semaphore(url)
-        return Vug.failure("Semaphore acquire failed", url, error_type: :fetch_error) unless acquired
         uri = parse_uri(url)
         host = uri.hostname
-        return rate_limit_or_revalidate(url, host, initial_dns_ips, redirect_count, uri)
+        rate_limit_or_revalidate(url, host, initial_dns_ips, redirect_count, uri)
       rescue ex : URI::Error
         @config.error("fetch_single(#{url})", "Invalid URL format: #{ex.message}")
         Vug.failure("Invalid URL", url, error_type: :invalid_url)
-        @config.error("fetch_single(#{url})", format_exception(ex, "Request timed out"))
-        Vug.failure("Request timed out", url, error_type: :fetch_error)
       rescue ex : Socket::Addrinfo::Error
         @config.error("fetch_single(#{url})", format_exception(ex, "DNS resolution failed"))
         Vug.failure("DNS resolution failed", url, error_type: :fetch_error)
       rescue ex : OpenSSL::SSL::Error
         @config.error("fetch_single(#{url})", format_exception(ex, "SSL error"))
         Vug.failure("SSL error", url, error_type: :fetch_error)
-      rescue ex : IO::Error | Socket::Error | URI::Error
+      rescue ex : IO::Error | Socket::Error
         @config.error("fetch_single(#{url})", format_exception(ex))
         Vug.failure(ex.message || "Unknown error", url, error_type: :fetch_error)
       ensure
