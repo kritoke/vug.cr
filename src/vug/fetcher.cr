@@ -93,7 +93,7 @@ module Vug
       initial_url : String,
     ) : Result?
       return Vug.failure("Timeout", initial_url, error_type: :timeout) if timed_out?(start_time)
-      return Vug.failure("Too many redirects", initial_url, error_type: :too_many_redirects) if redirects >= @config.max_redirects
+      return Vug.failure("Too many redirects", initial_url, error_type: :too_many_redirects) if redirects > @config.max_redirects
       return Vug.failure("Too many gray placeholder attempts", initial_url, error_type: :too_many_gray_placeholder_attempts) if gray_placeholder_attempts >= max_gray_attempts
       nil
     end

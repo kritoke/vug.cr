@@ -35,7 +35,15 @@ module Vug
         @mutex.synchronize { @cache.clear }
       end
 
+      # Recreate instance with current TTL (call after DnsCache.ttl=)
+      def recreate(ttl : Time::Span) : Instance
+        Instance.new(ttl)
+      end
+
       private def resolve_uncached(host : String) : Array(String)
+        # Use port 0 to resolve all addresses regardless of port.
+        # This ensures we capture both IPv4 and IPv6 addresses, avoiding
+        # issues where servers only have AAAA records for port 443 but not 80.
         addrinfos = Socket::Addrinfo.resolve(host, "80", type: Socket::Type::STREAM)
         addrinfos.compact_map { |addrinfo| addrinfo.ip_address.try(&.address) }
       rescue Socket::Addrinfo::Error
@@ -48,6 +56,14 @@ module Vug
 
     def self.instance : Instance
       @@instance_mutex.synchronize { @@instance ||= Instance.new(DnsCache.ttl) }
+    end
+
+    # Recreate the singleton instance with the current TTL.
+    # Use after changing DnsCache.ttl= to apply the new TTL immediately.
+    def self.recreate : Nil
+      @@instance_mutex.synchronize do
+        @@instance = Instance.new(DnsCache.ttl)
+      end
     end
 
     def self.resolve(host : String) : Array(String)

@@ -35,10 +35,14 @@ module Vug
       redir_host = redir_uri.host || ""
 
       # Normalize hosts: strip leading "www." for comparison to handle common cases
+      # Allow redirect if either:
+      # 1. Both www-stripped hosts match (www.example.com -> example.com)
+      # 2. Both original hosts match (example.com -> example.com)
       orig_normalized = orig_host.sub(/^www\./, "")
       redir_normalized = redir_host.sub(/^www\./, "")
 
-      if orig_normalized != redir_normalized
+      same_origin = (orig_normalized == redir_normalized) || (orig_host == redir_host)
+      unless same_origin
         return Vug::FetchAction::Deny.new("cross_domain_redirect")
       end
 

@@ -67,5 +67,22 @@ module Vug
     def clear(host : String) : Nil
       @mutex.synchronize { @windows.delete(host) }
     end
+
+    # Remove expired entries for hosts that haven't been queried recently.
+    # Call periodically (e.g., from a background task) to prevent unbounded growth.
+    def cleanup : Nil
+      @mutex.synchronize do
+        now = Time.monotonic
+        cutoff = now - WINDOW
+
+        # Remove expired requests from all windows
+        @windows.each_value do |requests|
+          requests.reject! { |req| req.timestamp < cutoff }
+        end
+
+        # Remove empty windows to prevent memory buildup
+        @windows.reject! { |_, requests| requests.empty? }
+      end
+    end
   end
 end
