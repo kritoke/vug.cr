@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.5.6] - 2026-05-24
+
+### Security
+- **Fixed off-by-one in redirect limit**: Changed `>=` to `>` to correctly enforce max_redirects
+- **Fixed asymmetric www-stripping**: Now allows redirects both directions (www → non-www and non-www → www)
+- **Fixed IPv6 ULA prefix check**: Changed from `starts_with?("fc")` to proper `/^fc00|^fd00/` regex for correct /7 prefix
+- **Fixed IPv6 loopback detection**: Added bracket stripping for URL format `[::1]`
+- **Fixed base64 memory exhaustion**: Check estimated decoded size before attempting decode
+- **Added explicit IPv6 private range detection**: Refactored `private_ip?` into `private_ipv4?`/`private_ipv6?` methods
+
+### Bug Fixes
+- **Fixed silent error in gray placeholder fallback**: Added explicit debug messages when fallback is skipped
+- **Fixed incomplete redirect loop detection**: Implemented visited URL tracking to detect chains like `a → b → c → b`
+- **Fixed inconsistent redirect count check**: Both fetcher and redirect handler now use `>` consistently
+
+### Internal
+- **Added RateLimiter.cleanup method**: For proactive cleanup to prevent unbounded memory growth
+- **Added DnsCache.recreate method**: To recreate singleton with new TTL after changes
+- **Added DNS port documentation**: Explained design decision for port 80 usage
+
 ## [0.5.5] - 2026-05-23
 
 ### Added
