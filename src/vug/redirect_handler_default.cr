@@ -10,7 +10,7 @@ module Vug
 
     def decide(original : String, redirect_url : String, redirect_count : Int32) : Vug::FetchAction::Base
       # Enforce max redirects deterministically
-      if redirect_count >= @config.max_redirects
+      if redirect_count > @config.max_redirects
         return Vug::FetchAction::Deny.new("too_many_redirects")
       end
 

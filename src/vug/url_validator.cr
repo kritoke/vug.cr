@@ -51,13 +51,17 @@ module Vug
 
     # Check if an IPv6 address is in a private/reserved range
     private def self.private_ipv6?(ip : String) : Bool
-      normalized = ip.downcase
+      # Strip brackets for IPv6 URL format (e.g., [::1] -> ::1)
+      normalized = ip.downcase.strip
+      if normalized.starts_with?("[") && normalized.ends_with?("]")
+        normalized = normalized[1...-1]
+      end
 
       # Loopback: ::1
       return true if normalized == "::1"
 
       # Unique Local Addresses (ULA): fc00::/7
-      return true if normalized.starts_with?("fc") || normalized.starts_with?("fd")
+      return true if normalized =~ /^fc00|^fd00/i
 
       # Link-local: fe80::/10
       return true if normalized.starts_with?("fe80")

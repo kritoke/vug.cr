@@ -42,7 +42,10 @@ module Vug
 
     private def self.exceeds_max_encoded_size?(encoded_data : String, max_size : Int32?) : Bool
       return false unless max_size
-      encoded_data.size > ((max_size * 4) / 3.0).ceil.to_i
+      # Base64 encoded data is ~4/3 the decoded size
+      # Check estimated decoded size before attempting decode to prevent memory exhaustion
+      estimated_decoded = (encoded_data.size * 3) / 4
+      estimated_decoded > max_size
     end
 
     private def self.try_decode_data(encoded_data : String, is_base64 : Bool, max_size : Int32?) : Bytes?

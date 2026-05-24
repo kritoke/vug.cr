@@ -70,6 +70,8 @@ module Vug
 
     # Remove expired entries for hosts that haven't been queried recently.
     # Call periodically (e.g., from a background task) to prevent unbounded growth.
+    # Note: Empty windows are automatically removed during each allow? call.
+    # This method is for proactive cleanup when the limiter is not frequently used.
     def cleanup : Nil
       @mutex.synchronize do
         now = Time.monotonic
