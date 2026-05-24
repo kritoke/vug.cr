@@ -41,16 +41,17 @@ module Vug
       current_url = url
       start_time = Time.monotonic
       initial_dns_ips = {} of String => Array(String)
+      visited_urls = Set(String).new # Track visited URLs to detect redirect loops
 
       uri = URI.parse(url) rescue nil
       if uri && (host = uri.hostname)
         initial_dns_ips[host] ||= DnsCache.resolve(host)
       end
 
-      fetch_loop(current_url, start_time, initial_dns_ips)
+      fetch_loop(current_url, start_time, initial_dns_ips, visited_urls)
     end
 
-    private def fetch_loop(initial_url : String, start_time : Time::Span, initial_dns_ips : Hash(String, Array(String))) : Result
+    private def fetch_loop(initial_url : String, start_time : Time::Span, initial_dns_ips : Hash(String, Array(String)), visited_urls : Set(String)) : Result
       current_url = initial_url
       redirects = 0
       gray_placeholder_attempts = 0
@@ -65,6 +66,13 @@ module Vug
           @config.debug("Favicon cache hit: #{current_url}")
           return Vug.success(current_url, path)
         end
+
+        # Check for redirect loop (visiting same URL twice in the chain)
+        if visited_urls.includes?(current_url)
+          @config.debug("Redirect loop detected: #{current_url} already visited")
+          return Vug.failure("Redirect loop detected", current_url, error_type: :too_many_redirects)
+        end
+        visited_urls.add(current_url)
 
         @config.debug("Fetching favicon from: #{current_url}")
 
@@ -264,11 +272,14 @@ module Vug
             encoded_host = URI.encode_www_form(host)
             google_url = "https://www.google.com/s2/favicons?domain=#{encoded_host}&sz=256"
             @config.debug("Google fallback URL: #{google_url}")
-            google_url
+            return google_url
           end
         rescue ex : URI::Error
           @config.error("gray placeholder fallback(#{current_url})", ex.message || "Unknown error")
+          @config.debug("Gray placeholder fallback skipped: host parsing failed")
         end
+        @config.debug("Gray placeholder fallback skipped: no valid host")
+        nil
       end
     end
 
