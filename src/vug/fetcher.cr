@@ -53,6 +53,7 @@ module Vug
 
     private def fetch_loop(initial_url : String, start_time : Time::Span, initial_dns_ips : Hash(String, Array(String)), visited_urls : Set(String)) : Result
       current_url = initial_url
+      current_uri = URI.parse(initial_url) rescue nil
       redirects = 0
       gray_placeholder_attempts = 0
       max_gray_attempts = 3
@@ -76,12 +77,14 @@ module Vug
 
         @config.debug("Fetching favicon from: #{current_url}")
 
-        result = fetch_single(current_url, initial_dns_ips, redirects)
-        action, next_url = handle_fetch_result(current_url, result)
+        # Reuse parsed URI if available, only parse if we have a redirect URL
+        uri = current_uri || (URI.parse(current_url) rescue nil)
+        result = fetch_single(current_url, uri, initial_dns_ips, redirects)
+        action, next_url, current_uri = handle_fetch_result_with_uri(current_url, result, current_uri)
 
         case action
         when :redirect, :try_fallback
-          current_url, redirects, gray_placeholder_attempts = handle_result_action(
+          current_url, redirects, gray_placeholder_attempts, current_uri = handle_result_action(
             action, next_url, current_url, redirects, gray_placeholder_attempts, initial_dns_ips
           )
           next if action == :redirect || (action == :try_fallback && next_url)
@@ -113,11 +116,12 @@ module Vug
       redirects : Int32,
       gray_placeholder_attempts : Int32,
       initial_dns_ips : Hash(String, Array(String)),
-    ) : {String, Int32, Int32}
+    ) : {String, Int32, Int32, URI?}
+      new_uri : URI? = nil
       case action
       when :redirect
         if next_url
-          handle_redirect_action(next_url, initial_dns_ips)
+          new_uri = handle_redirect_action(next_url, initial_dns_ips)
           current_url = next_url
         end
         redirects += 1
@@ -125,22 +129,23 @@ module Vug
         gray_placeholder_attempts += 1
         if next_url
           current_url = next_url
+          new_uri = nil # Will be parsed on next iteration
         end
       end
-      {current_url, redirects, gray_placeholder_attempts}
+      {current_url, redirects, gray_placeholder_attempts, new_uri}
     end
 
     private def cached_path_for(url : String) : String?
       @cache_coordinator.try(&.fetch(url))
     end
 
-    # Update DNS cache for a redirect target host. This is isolated to
-    # reduce complexity in the main loop.
-    private def handle_redirect_action(new_url : String, initial_dns_ips : Hash(String, Array(String)))
+    # Update DNS cache for a redirect target host. Returns the parsed URI.
+    private def handle_redirect_action(new_url : String, initial_dns_ips : Hash(String, Array(String))) : URI?
       new_uri = URI.parse(new_url) rescue nil
       if new_uri && (new_host = new_uri.hostname)
         initial_dns_ips[new_host] ||= DnsCache.resolve(new_host)
       end
+      new_uri
     end
 
     private def timed_out?(start_time : Time::Span) : Bool
@@ -165,6 +170,19 @@ module Vug
       {:return_result, nil}
     end
 
+    # Variant that also returns updated URI context
+    private def handle_fetch_result_with_uri(current_url : String, result : Result, current_uri : URI?) : {Symbol, String?, URI?}
+      if result.redirect?
+        return {:redirect, result.url, current_uri}
+      end
+
+      if result.success?
+        return handle_gray_placeholder_with_uri(current_url, result, current_uri)
+      end
+
+      {:return_result, nil, current_uri}
+    end
+
     private def handle_gray_placeholder(current_url : String, result : Result) : {Symbol, String?}
       return {:return_result, nil} unless should_handle_gray_placeholder?(current_url, result.bytes)
 
@@ -180,13 +198,28 @@ module Vug
       {:try_fallback, next_url}
     end
 
-    private def fetch_single(url : String, initial_dns_ips : Hash(String, Array(String)), redirect_count : Int32) : Result
+    private def handle_gray_placeholder_with_uri(current_url : String, result : Result, current_uri : URI?) : {Symbol, String?, URI?}
+      return {:return_result, nil, current_uri} unless should_handle_gray_placeholder?(current_url, result.bytes)
+
+      if current_url.includes?("google.com/s2/favicons")
+        larger_url = google_larger_url(current_url)
+        if cached = @cache_coordinator.try(&.fetch(larger_url))
+          @cache_coordinator.try(&.store(current_url, cached))
+          return {:use_cached, cached, current_uri}
+        end
+      end
+
+      next_url = get_gray_placeholder_fallback_url(current_url)
+      {:try_fallback, next_url, nil}
+    end
+
+    private def fetch_single(url : String, uri : URI?, initial_dns_ips : Hash(String, Array(String)), redirect_count : Int32) : Result
       acquired = acquire_semaphore(url)
       return Vug.failure("Semaphore acquire failed", url, error_type: :fetch_error) unless acquired
       begin
-        uri = parse_uri(url)
-        host = uri.hostname
-        rate_limit_or_revalidate(url, host, initial_dns_ips, redirect_count, uri)
+        parsed_uri = uri || parse_uri(url)
+        host = parsed_uri.hostname
+        rate_limit_or_revalidate(url, host, initial_dns_ips, redirect_count, parsed_uri)
       rescue ex : URI::Error
         @config.error("fetch_single(#{url})", "Invalid URL format: #{ex.message}")
         Vug.failure("Invalid URL", url, error_type: :invalid_url)
@@ -196,6 +229,9 @@ module Vug
       rescue ex : OpenSSL::SSL::Error
         @config.error("fetch_single(#{url})", format_exception(ex, "SSL error"))
         Vug.failure("SSL error", url, error_type: :fetch_error)
+      rescue ex : IO::TimeoutError
+        @config.warning("fetch_single(#{url}): #{ex.message}")
+        Vug.failure("Read timed out", url, error_type: :fetch_error)
       rescue ex : IO::Error | Socket::Error
         @config.error("fetch_single(#{url})", format_exception(ex))
         Vug.failure(ex.message || "Unknown error", url, error_type: :fetch_error)
@@ -326,10 +362,19 @@ module Vug
       }
 
       result : Result? = nil
-      client.get(uri.request_target, headers: headers) do |response|
-        result = handle_redirect(url, uri, response, redirect_count) if response.status.redirection?
-        result ||= process_successful_response(url, response) if response.status.success?
-        result ||= handle_error(url, response.status_code)
+      begin
+        client.get(uri.request_target, headers: headers) do |response|
+          result = handle_redirect(url, uri, response, redirect_count) if response.status.redirection?
+          result ||= process_successful_response(url, response) if response.status.success?
+          result ||= handle_error(url, response.status_code)
+        end
+      rescue ex : Exception
+        # Close the client on any exception to avoid reusing corrupted connections
+        @http_client_factory.release_client(uri, client, success: false)
+        raise ex
+      else
+        # Only pool successful requests
+        @http_client_factory.release_client(uri, client, success: true)
       end
       result || Vug.failure("Unexpected HTTP error", url.to_s)
     end

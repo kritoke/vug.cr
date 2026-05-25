@@ -3,6 +3,7 @@ require "time"
 module Vug
   # Per-host rate limiter using a sliding window algorithm.
   # Tracks request timestamps per host and enforces a max requests per minute limit.
+  # Uses sorted arrays with binary search for O(log n) operations.
   class RateLimiter
     # Sliding window duration for rate limiting
     WINDOW = 1.minute
@@ -10,11 +11,9 @@ module Vug
     # Default max requests per host per minute
     DEFAULT_MAX_PER_MINUTE = 60
 
-    # Request record with timestamp for sliding window
-    private record Request, timestamp : Time::Span
-
     def initialize(@max_per_minute : Int32 = DEFAULT_MAX_PER_MINUTE)
-      @windows = {} of String => Array(Request)
+      # Array of timestamps for each host, kept sorted for efficient pruning
+      @windows = {} of String => Array(Time::Span)
       @mutex = Mutex.new
     end
 
@@ -27,19 +26,27 @@ module Vug
         now = Time.monotonic
         cutoff = now - WINDOW
 
-        # Get or initialize the host's request window
-        requests = @windows[host] ||= [] of Request
+        # Get or initialize the host's timestamps array
+        timestamps = @windows[host] ||= [] of Time::Span
 
-        # Remove expired requests (outside the sliding window)
-        requests.reject! { |req| req.timestamp < cutoff }
+        # Binary search to find the first non-expired timestamp
+        # This is O(log n) instead of O(n) for reject!
+        idx = timestamps.bsearch_index { |ts| ts >= cutoff }
+        if idx && idx > 0
+          # Remove all expired entries (everything before idx)
+          timestamps.shift(idx)
+        elsif idx.nil?
+          # All entries are expired
+          timestamps.clear
+        end
 
         # Check if we're under the limit
-        if requests.size >= @max_per_minute
+        if timestamps.size >= @max_per_minute
           return false
         end
 
         # Record this request
-        requests << Request.new(now)
+        timestamps << now
         true
       end
     end
@@ -50,10 +57,12 @@ module Vug
         now = Time.monotonic
         cutoff = now - WINDOW
 
-        requests = @windows[host]?
-        return @max_per_minute unless requests
+        timestamps = @windows[host]?
+        return @max_per_minute unless timestamps
 
-        active = requests.count { |req| req.timestamp >= cutoff }
+        # Count active timestamps using binary search
+        idx = timestamps.bsearch_index { |ts| ts >= cutoff } || timestamps.size
+        active = timestamps.size - idx
         (@max_per_minute - active).clamp(0, @max_per_minute)
       end
     end
@@ -70,20 +79,18 @@ module Vug
 
     # Remove expired entries for hosts that haven't been queried recently.
     # Call periodically (e.g., from a background task) to prevent unbounded growth.
-    # Note: Empty windows are automatically removed during each allow? call.
-    # This method is for proactive cleanup when the limiter is not frequently used.
     def cleanup : Nil
       @mutex.synchronize do
         now = Time.monotonic
         cutoff = now - WINDOW
 
-        # Remove expired requests from all windows
-        @windows.each_value do |requests|
-          requests.reject! { |req| req.timestamp < cutoff }
+        @windows.each_value do |timestamps|
+          idx = timestamps.bsearch_index { |ts| ts >= cutoff } || timestamps.size
+          timestamps.shift(idx) if idx > 0
         end
 
         # Remove empty windows to prevent memory buildup
-        @windows.reject! { |_, requests| requests.empty? }
+        @windows.reject! { |_, timestamps| timestamps.empty? }
       end
     end
   end
