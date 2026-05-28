@@ -11,10 +11,14 @@ module Vug
     # Default max requests per host per minute
     DEFAULT_MAX_PER_MINUTE = 60
 
+    # Run cleanup after this many allow? calls to prevent unbounded growth
+    CLEANUP_INTERVAL = 1000
+
     def initialize(@max_per_minute : Int32 = DEFAULT_MAX_PER_MINUTE)
       # Array of timestamps for each host, kept sorted for efficient pruning
       @windows = {} of String => Array(Time::Span)
       @mutex = Mutex.new
+      @calls_since_cleanup = 0
     end
 
     getter max_per_minute : Int32
@@ -47,7 +51,17 @@ module Vug
 
         # Record this request
         timestamps << now
+        @calls_since_cleanup += 1
+        cleanup_if_needed
         true
+      end
+    end
+
+    private def cleanup_if_needed : Nil
+      if @calls_since_cleanup >= CLEANUP_INTERVAL
+        @calls_since_cleanup = 0
+        # Remove empty windows to prevent memory buildup
+        @windows.reject! { |_, timestamps| timestamps.empty? }
       end
     end
 

@@ -10,15 +10,25 @@ module Vug
 
     # Create a new HTTP client configured with the current settings.
     def create_client(uri : URI) : HTTP::Client
+      create_client(uri, @config.timeout, @config.connect_timeout, @config.write_timeout)
+    end
+
+    # Create a new HTTP client with custom timeout settings.
+    # Useful for requests that may need longer timeouts (e.g., slow servers).
+    def create_client(
+      uri : URI,
+      read_timeout : Time::Span,
+      connect_timeout : Time::Span? = nil,
+      write_timeout : Time::Span? = nil
+    ) : HTTP::Client
       HTTP::Client.new(uri).tap do |client|
         client.compress = true
-        # Ensure explicit timeout values to prevent Slowloris DoS attacks.
-        # Fall back to sensible defaults if config values are unset or zero.
-        client.read_timeout = @config.timeout > Time::Span.zero ? @config.timeout : 30.seconds
-        client.connect_timeout = @config.connect_timeout > Time::Span.zero ? @config.connect_timeout : 10.seconds
-        client.write_timeout = @config.write_timeout > Time::Span.zero ? @config.write_timeout : 10.seconds
+        client.read_timeout = read_timeout > Time::Span.zero ? read_timeout : 30.seconds
+        client.connect_timeout = (connect_timeout || @config.connect_timeout) > Time::Span.zero ? (connect_timeout || @config.connect_timeout) : 10.seconds
+        client.write_timeout = (write_timeout || @config.write_timeout) > Time::Span.zero ? (write_timeout || @config.write_timeout) : 10.seconds
       end
     end
+
 
     # Release/close a client after use.
     # In Crystal, HTTP::Client handles connection pooling internally,

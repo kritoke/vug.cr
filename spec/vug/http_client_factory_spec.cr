@@ -46,5 +46,15 @@ describe Vug::HttpClientFactory do
       client.host.should eq("example.com")
       client.port.should eq(443)
     end
+
+    it "creates client with custom read timeout override" do
+      config = Vug::Config.new(timeout: 30.seconds)
+      factory = Vug::HttpClientFactory.new(config)
+
+      uri = URI.parse("https://example.com")
+      client = factory.create_client(uri, 90.seconds)
+
+      client.should be_a(HTTP::Client)
+    end
   end
 end

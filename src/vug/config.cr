@@ -12,6 +12,7 @@ module Vug
     DEFAULT_ACCEPT_LANGUAGE = "en-US,en;q=0.9"
 
     getter timeout : Time::Span = 30.seconds
+    getter html_fetch_timeout : Time::Span = 60.seconds  # Longer timeout for HTML page fetches
     getter connect_timeout : Time::Span = 10.seconds
     getter write_timeout : Time::Span = 10.seconds
     getter max_redirects : Int32 = 10
@@ -32,6 +33,11 @@ module Vug
     getter max_concurrent_requests : Int32 = 8
     getter? image_validation_hard : Bool = false
 
+    # Retry settings for transient failures (timeouts, socket errors, etc.)
+    getter max_retries : Int32 = 2
+    getter retry_base_delay : Time::Span = 500.milliseconds
+    getter retry_max_delay : Time::Span = 5.seconds
+
     getter on_save : Proc(String, Bytes, String, String?)? = nil
     getter on_load : Proc(String, String?)? = nil
     getter on_debug : Proc(String, Nil)? = nil
@@ -46,6 +52,7 @@ module Vug
 
     def initialize(
       timeout : Time::Span? = nil,
+      html_fetch_timeout : Time::Span? = nil,
       connect_timeout : Time::Span? = nil,
       write_timeout : Time::Span? = nil,
       max_redirects : Int32? = nil,
@@ -56,6 +63,9 @@ module Vug
       cache_entry_ttl : Time::Span? = nil,
       gray_placeholder_size : Int32? = nil,
       max_concurrent_requests : Int32? = nil,
+      max_retries : Int32? = nil,
+      retry_base_delay : Time::Span? = nil,
+      retry_max_delay : Time::Span? = nil,
       on_save : Proc(String, Bytes, String, String?)? = nil,
       on_load : Proc(String, String?)? = nil,
       on_debug : Proc(String, Nil)? = nil,
@@ -63,6 +73,7 @@ module Vug
       on_warning : Proc(String, Nil)? = nil,
     )
       @timeout = validate_positive_timespan(timeout, "timeout", 30.seconds)
+      @html_fetch_timeout = validate_positive_timespan(html_fetch_timeout, "html_fetch_timeout", 60.seconds)
       @connect_timeout = validate_positive_timespan(connect_timeout, "connect_timeout", 10.seconds)
       @write_timeout = validate_positive_timespan(write_timeout, "write_timeout", 10.seconds)
       @max_redirects = validate_non_negative_int(max_redirects, "max_redirects", 10)
@@ -71,6 +82,9 @@ module Vug
       @cache_entry_ttl = validate_positive_timespan(cache_entry_ttl, "cache_entry_ttl", 7.days)
       @gray_placeholder_size = validate_non_negative_int(gray_placeholder_size, "gray_placeholder_size", 198)
       @max_concurrent_requests = validate_positive_int(max_concurrent_requests, "max_concurrent_requests", 8)
+      @max_retries = validate_non_negative_int(max_retries, "max_retries", 2)
+      @retry_base_delay = validate_positive_timespan(retry_base_delay, "retry_base_delay", 500.milliseconds)
+      @retry_max_delay = validate_positive_timespan(retry_max_delay, "retry_max_delay", 5.seconds)
 
       @user_agent = user_agent || DEFAULT_USER_AGENT
       @accept_language = accept_language || DEFAULT_ACCEPT_LANGUAGE
@@ -126,6 +140,7 @@ module Vug
     # ameba:disable Metrics/CyclomaticComplexity
     def copy_with(
       timeout : Time::Span? = nil,
+      html_fetch_timeout : Time::Span? = nil,
       connect_timeout : Time::Span? = nil,
       write_timeout : Time::Span? = nil,
       max_redirects : Int32? = nil,
@@ -136,6 +151,9 @@ module Vug
       cache_entry_ttl : Time::Span? = nil,
       gray_placeholder_size : Int32? = nil,
       max_concurrent_requests : Int32? = nil,
+      max_retries : Int32? = nil,
+      retry_base_delay : Time::Span? = nil,
+      retry_max_delay : Time::Span? = nil,
       on_save : Proc(String, Bytes, String, String?)? | Unset = Unset.instance,
       on_load : Proc(String, String?)? | Unset = Unset.instance,
       on_debug : Proc(String, Nil)? | Unset = Unset.instance,
@@ -144,6 +162,7 @@ module Vug
     ) : Config
       Config.new(
         timeout: timeout || @timeout,
+        html_fetch_timeout: html_fetch_timeout || @html_fetch_timeout,
         connect_timeout: connect_timeout || @connect_timeout,
         write_timeout: write_timeout || @write_timeout,
         max_redirects: max_redirects || @max_redirects,
@@ -154,6 +173,9 @@ module Vug
         cache_entry_ttl: cache_entry_ttl || @cache_entry_ttl,
         gray_placeholder_size: gray_placeholder_size || @gray_placeholder_size,
         max_concurrent_requests: max_concurrent_requests || @max_concurrent_requests,
+        max_retries: max_retries || @max_retries,
+        retry_base_delay: retry_base_delay || @retry_base_delay,
+        retry_max_delay: retry_max_delay || @retry_max_delay,
         on_save: on_save.is_a?(Unset) ? @on_save : on_save.as(Proc(String, Bytes, String, String?)?),
         on_load: on_load.is_a?(Unset) ? @on_load : on_load.as(Proc(String, String?)?),
         on_debug: on_debug.is_a?(Unset) ? @on_debug : on_debug.as(Proc(String, Nil)?),

@@ -27,29 +27,62 @@ module Vug
       @cache_coordinator = cache_coordinator || CacheCoordinator.new(@config, nil, cache_manager)
     end
 
-    def extract_all(site_url : String) : Array(FaviconInfo)
+    # Extract favicon information from a site's HTML.
+    # Optionally accepts a custom timeout for slow servers.
+    def extract_all(site_url : String, timeout : Time::Span? = nil) : Array(FaviconInfo)
       uri = validate_and_parse_url(site_url)
       return [] of FaviconInfo unless uri
 
+      read_timeout = timeout || @config.html_fetch_timeout
+      max_retries = @config.max_retries
+      base_delay = @config.retry_base_delay
+      max_delay = @config.retry_max_delay
+
       favicons = [] of FaviconInfo
+      attempt = 0
+      last_error : Exception? = nil
 
-      begin
-        @config.debug("Fetching HTML from: #{site_url}")
-        client = @http_client_factory.create_client(uri)
-        headers = build_html_headers
+      loop do
+        begin
+          @config.debug("Fetching HTML from: #{site_url} (attempt #{attempt + 1})")
+          client = @http_client_factory.create_client(uri, read_timeout)
+          headers = build_html_headers
 
-        client.get(uri.request_target, headers: headers) do |response|
-          favicons = process_html_response(response, site_url)
+          client.get(uri.request_target, headers: headers) do |response|
+            favicons = process_html_response(response, site_url)
+          end
+          return favicons
+        rescue ex : IO::TimeoutError | Socket::Error | IO::Error | OpenSSL::SSL::Error
+          last_error = ex
+          if attempt < max_retries
+            delay = calculate_backoff_delay(attempt, base_delay, max_delay)
+            @config.debug("Transient error on #{site_url}: #{ex.message}. Retrying in #{delay.total_milliseconds.round}ms...")
+            sleep(delay)
+            attempt += 1
+          else
+            @config.debug("Max retries (#{max_retries}) reached for #{site_url}, giving up")
+            log_error("extract_all(#{site_url})", ex)
+            return [] of FaviconInfo
+          end
+        rescue ex : Exception
+          # Non-transient error, don't retry
+          log_error("extract_all(#{site_url})", ex)
+          return [] of FaviconInfo
         end
-      rescue ex : IO::TimeoutError
-        log_error("extract_all(#{site_url})", ex)
-      rescue ex : OpenSSL::SSL::Error
-        log_error("extract_all(#{site_url})", ex, "SSL error")
-      rescue ex : IO::Error | Socket::Error
-        log_error("extract_all(#{site_url})", ex)
       end
 
       favicons
+    end
+
+    # Calculate exponential backoff delay with jitter.
+    private def calculate_backoff_delay(attempt : Int32, base_delay : Time::Span, max_delay : Time::Span) : Time::Span
+      # Exponential backoff: base_delay * 2^attempt
+      exponential = base_delay * (2 ** attempt)
+      # Cap at max_delay
+      capped = exponential > max_delay ? max_delay : exponential
+      # Add jitter (0-25% of delay)
+      jitter_ns = (rand * 0.25 * capped.total_nanoseconds).to_i64
+      Time::Span.new(nanoseconds: capped.total_nanoseconds.to_i64 + jitter_ns)
     end
 
     private def validate_and_parse_url(site_url : String) : URI?

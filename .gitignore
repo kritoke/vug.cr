@@ -44,3 +44,5 @@ tmp/
 # Planning
 planning/
 .catseye/
+# Local Pi runtime state
+.atl/
