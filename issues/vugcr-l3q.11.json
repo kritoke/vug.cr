@@ -2,14 +2,15 @@
   "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-05-30T20:34:59Z",
   "created": "2026-05-30T20:14:24Z",
   "description": "## Problem\n`acquire_semaphore` in `Fetcher` catches any exception (`rescue ex`) and returns `false`, giving a generic 'Semaphore acquire failed' message with no trace of the real exception. If the channel is closed or there's a programming error (NilAssertionError), it's silently swallowed.\n\n```crystal\nrescue ex\n  @config.error(\"fetch_single(#{url})\", \"Semaphore acquire failed: #{ex.message}\")\n  false\n```\n\n## File\n- `src/vug/fetcher.cr` (lines 203-210)\n\n## Fix\nCatch only expected exception types (e.g., `Channel::ClosedError`). Re-raise unexpected exceptions. At minimum, include the exception class in the error message.\n\n## Acceptance\n- Unexpected exceptions (NilAssertionError, etc.) propagate correctly\n- Expected exceptions (Channel::ClosedError) still return false gracefully\n- Existing tests pass",
   "id": "vugcr-l3q.11",
   "labels": [],
   "parent": "vugcr-l3q",
   "priority": 3,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Fix bare rescue in Semaphore#acquire_semaphore that swallows unexpected exceptions",
   "type": "task",
-  "updated_at": "2026-05-30T20:33:26Z"
+  "updated_at": "2026-05-30T20:34:59Z"
 }
