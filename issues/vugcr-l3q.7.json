@@ -4,14 +4,15 @@
     "vugcr-l3q.4"
   ],
   "blocks": [],
+  "closed_at": "2026-05-30T20:26:11Z",
   "created": "2026-05-30T20:13:49Z",
   "description": "## Problem\n`HtmlExtractor` has its own `log_error` method that calls both `@config.error` with `Diagnostics.format_exception` AND `@config.debug` with the exception message — producing duplicate log entries for the same error. `Fetcher` and `ManifestExtractor` use `Diagnostics.format_exception` directly without the duplication.\n\nAlso `Diagnostics` module and `DNSRevalidator` class are over-abstracted:\n- `DNSRevalidator` is a class wrapping a one-liner comparison and never uses its `@config` parameter. Should be a module function or inlined.\n- `Diagnostics.format_exception` should be the single source for error formatting.\n\n## Files\n- `src/vug/html_extractor.cr` (line 128)\n- `src/vug/diagnostics.cr`\n- `src/vug/dns_revalidator.cr`\n\n## Fix\n1. Remove the redundant `@config.debug` call from `HtmlExtractor#log_error`.\n2. Convert `DNSRevalidator` to a module function or inline it.\n3. Ensure all error logging goes through `Diagnostics.format_exception`.\n\n## Acceptance\n- No duplicate error log entries\n- `DNSRevalidator` simplified or removed\n- All tests pass",
   "id": "vugcr-l3q.7",
   "labels": [],
   "parent": "vugcr-l3q",
   "priority": 3,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Consolidate error logging patterns and remove duplicate logging",
   "type": "task",
-  "updated_at": "2026-05-30T20:24:03Z"
+  "updated_at": "2026-05-30T20:26:11Z"
 }
