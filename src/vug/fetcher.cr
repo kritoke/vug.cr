@@ -213,9 +213,12 @@ module Vug
     end
 
     private def acquire_semaphore(url : String) : Bool
-      @semaphore.acquire
-      true
-    rescue ex
+      acquired = @semaphore.acquire
+      unless acquired
+        @config.error("fetch_single(#{url})", "Semaphore acquire timed out")
+      end
+      acquired
+    rescue ex : Channel::ClosedError
       @config.error("fetch_single(#{url})", "Semaphore acquire failed: #{ex.message}")
       false
     end
