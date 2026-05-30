@@ -2,14 +2,15 @@
   "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-05-30T20:34:50Z",
   "created": "2026-05-30T20:14:08Z",
   "description": "## Problem\n`RedirectHandler::Default` compares normalized hosts (www-stripped) but does not compare ports. This allows `https://example.com` → `https://example.com:8080`, potentially redirecting to a different service on the same host running on a non-standard port.\n\n## File\n- `src/vug/redirect_handler_default.cr` (lines 22-40)\n\n## Fix\nInclude port in the origin comparison. At minimum, verify the target port is a standard HTTP (80) or HTTPS (443) port when the original request used a standard port.\n\n## Acceptance\n- Redirect from standard port to non-standard port on same host is rejected\n- Legitimate same-origin redirects still work\n- Existing redirect tests pass\n- New test for port-based redirect rejection",
   "id": "vugcr-l3q.9",
   "labels": [],
   "parent": "vugcr-l3q",
   "priority": 3,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Security: Harden redirect same-origin check to include port comparison",
   "type": "task",
-  "updated_at": "2026-05-30T20:33:27Z"
+  "updated_at": "2026-05-30T20:34:50Z"
 }
