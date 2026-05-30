@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-05-30T20:13:31Z",
+  "description": "## Problem\nThree concurrency primitives have no dedicated unit tests:\n\n1. **RateLimiter** — Complex sliding window with binary search, per-host isolation, and cleanup cycle. No spec file.\n2. **DnsCache** — Singleton with TTL, mutex, instance management. No spec file.\n3. **Semaphore** — Only tested indirectly via Fetcher integration. No isolated edge-case tests.\n\nThese are safety-critical components. Bugs here could cause deadlocks or memory leaks in production.\n\n## Files to create\n- `spec/vug/rate_limiter_spec.cr` — window expiry, cleanup, per-host isolation, binary search correctness\n- `spec/vug/dns_cache_spec.cr` — TTL expiry, instance recreation, resolution failure, mutex safety\n- `spec/vug/semaphore_spec.cr` — acquire/release cycle, edge cases (depleted semaphore, over-release)\n\n## Acceptance\n- Each spec file covers the module's public interface\n- Edge cases: cleanup trigger, TTL boundary, acquire when empty\n- All tests pass",
+  "id": "vugcr-l3q.5",
+  "labels": [],
+  "parent": "vugcr-l3q",
+  "priority": 2,
+  "status": "open",
+  "title": "Add missing unit tests for RateLimiter, DnsCache, and Semaphore",
+  "type": "task",
+  "updated_at": "2026-05-30T20:13:31Z"
+}
