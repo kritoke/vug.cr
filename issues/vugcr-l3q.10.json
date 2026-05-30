@@ -1,5 +1,5 @@
 {
-  "assignee": "",
+  "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [],
   "created": "2026-05-30T20:14:14Z",
@@ -8,8 +8,8 @@
   "labels": [],
   "parent": "vugcr-l3q",
   "priority": 3,
-  "status": "open",
+  "status": "in_progress",
   "title": "Defer eager DNS resolution in Fetcher#fetch to avoid wasted lookups on cache hits",
   "type": "task",
-  "updated_at": "2026-05-30T20:14:14Z"
+  "updated_at": "2026-05-30T20:33:26Z"
 }
