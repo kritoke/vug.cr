@@ -44,4 +44,36 @@ describe Vug::RedirectHandler::Default do
     res = h.decide("https://a", "https://a", 0)
     res.is_a?(Vug::FetchAction::Deny).should be_true
   end
+
+  it "denies redirect to different port on same host" do
+    config = Vug::Config.new
+    h = Vug::RedirectHandler::Default.new(config)
+    res = h.decide("https://example.com", "https://example.com:8080", 0)
+    res.is_a?(Vug::FetchAction::Deny).should be_true
+    deny = res.as(Vug::FetchAction::Deny)
+    deny.reason.should eq("port_mismatch")
+  end
+
+  it "allows redirect when both use default HTTPS port" do
+    config = Vug::Config.new
+    h = Vug::RedirectHandler::Default.new(config)
+    res = h.decide("https://example.com", "https://example.com:443/path", 0)
+    res.is_a?(Vug::FetchAction::Follow).should be_true
+  end
+
+  it "allows redirect when both use default HTTP port" do
+    config = Vug::Config.new
+    h = Vug::RedirectHandler::Default.new(config)
+    res = h.decide("http://example.com", "http://example.com:80/path", 0)
+    res.is_a?(Vug::FetchAction::Follow).should be_true
+  end
+
+  it "denies redirect from default port to non-standard port" do
+    config = Vug::Config.new
+    h = Vug::RedirectHandler::Default.new(config)
+    res = h.decide("http://example.com", "http://example.com:9090", 0)
+    res.is_a?(Vug::FetchAction::Deny).should be_true
+    deny = res.as(Vug::FetchAction::Deny)
+    deny.reason.should eq("port_mismatch")
+  end
 end

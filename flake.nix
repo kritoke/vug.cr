@@ -58,7 +58,7 @@
       pwLibs = [];
     in {
       devShells.${system}.default = pkgs.mkShell {
-        buildInputs = with pkgs; [ crystal_1_18 ] ++ [ ] ++ [] ++ pwLibs;
+        buildInputs = with pkgs; [ crystal_1_18 openspec.packages.${system}.default ] ++ pwLibs;
 
         shellHook = ''
           echo "vug.cr DevShell Active"

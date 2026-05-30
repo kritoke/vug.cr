@@ -46,6 +46,15 @@ module Vug
         return Vug::FetchAction::Deny.new("cross_domain_redirect")
       end
 
+      # Port comparison: block redirects to different ports on the same host.
+      # Default to standard ports (80 for http, 443 for https) when not specified.
+      orig_port = orig_uri.port || (orig_uri.scheme == "https" ? 443 : 80)
+      redir_port = redir_uri.port || (redir_uri.scheme == "https" ? 443 : 80)
+
+      if orig_port != redir_port
+        return Vug::FetchAction::Deny.new("port_mismatch")
+      end
+
       # Block schemes other than http/https to prevent data: or javascript: URIs
       if redir_uri.scheme && !["http", "https"].includes?(redir_uri.scheme)
         return Vug::FetchAction::Deny.new("invalid_scheme")
