@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-05-30T20:14:00Z",
+  "description": "## Problem\n`CacheManager#get` checks `@config.load` (the read path), but `CacheManager#set` does NOT call `@config.save` (the write path). Users who only look at CacheManager would expect symmetry. The actual save happens earlier in `ImageProcessor::Default#process_bytes`, making the data flow hard to follow.\n\n`CacheCoordinator#store_to_cache` calls both `@memory_cache.set` and `@cache_manager.set`, but neither triggers the user's `on_save` callback.\n\n## Files\n- `src/vug/cache_manager.cr` (lines 17-22)\n- `src/vug/cache_coordinator.cr` (lines 17-20)\n\n## Fix\nEither:\n1. Document the asymmetry clearly in CacheManager (the save happens in ImageProcessor), or\n2. Make CacheManager#set call @config.save for proper symmetry.\n\nOption 1 is safer — avoids double-save if ImageProcessor already called it.\n\n## Acceptance\n- Clear documentation on data flow for cache persistence\n- No double-save regression\n- Tests pass",
+  "id": "vugcr-l3q.8",
+  "labels": [],
+  "parent": "vugcr-l3q",
+  "priority": 3,
+  "status": "open",
+  "title": "CacheManager write-path asymmetry: set does not call on_save callback",
+  "type": "task",
+  "updated_at": "2026-05-30T20:14:00Z"
+}
