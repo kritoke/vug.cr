@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-05-30T20:13:15Z",
+  "description": "## Problem\nWhen `File.size(local_path)` raises `File::Error`, the rescue block sets `new_size = 1` and stores a useless cache entry pointing to an unreadable file. This pollutes the cache and corrupts eviction size accounting.\n\n```crystal\nrescue File::Error\n  1  # silently stores a broken entry\nend\n```\n\n## File\n- `src/vug/cache.cr` (lines 30-34)\n\n## Fix\nReturn early instead of caching:\n```crystal\nrescue File::Error\n  return  # don't cache entries whose file is inaccessible\nend\n```\n\n## Acceptance\n- Failed `File.size` does not create a cache entry\n- Existing tests pass\n- New test for unreadable-file edge case",
+  "id": "vugcr-l3q.3",
+  "labels": [],
+  "parent": "vugcr-l3q",
+  "priority": 2,
+  "status": "open",
+  "title": "MemoryCache.set should not store entries when File.size fails",
+  "type": "task",
+  "updated_at": "2026-05-30T20:13:15Z"
+}
