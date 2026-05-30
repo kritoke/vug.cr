@@ -1,6 +1,8 @@
 {
   "assignee": "",
-  "blocked_by": [],
+  "blocked_by": [
+    "vugcr-l3q.1"
+  ],
   "blocks": [],
   "created": "2026-05-30T20:13:39Z",
   "description": "## Problem\nThe channel-based `Semaphore` can lose permits if a fiber is cancelled after `acquire` but before `release`. Crystal fiber cancellation bypasses `ensure` blocks, so the permit is consumed but never returned. Over time this drains all permits, causing a deadlock.\n\nThe `Fetcher#fetch_single` `ensure` block handles normal exceptions (`@semaphore.release if acquired`), but fiber cancellation is a different mechanism.\n\n## File\n- `src/vug/semaphore.cr`\n- `src/vug/fetcher.cr` (lines 203-210)\n\n## Fix\n- Add a timeout to `acquire` using `select` so fibers don't block indefinitely\n- Consider a health-check mechanism or periodic permit audit\n- At minimum, document the limitation clearly\n\n## Acceptance\n- Semaphore does not deadlock under fiber cancellation scenarios\n- Acquire has a configurable timeout\n- Existing tests pass",
@@ -11,5 +13,5 @@
   "status": "open",
   "title": "Fix Semaphore permit leak on fiber cancellation",
   "type": "task",
-  "updated_at": "2026-05-30T20:13:39Z"
+  "updated_at": "2026-05-30T20:14:31Z"
 }

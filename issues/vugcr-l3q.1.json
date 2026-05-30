@@ -1,7 +1,9 @@
 {
   "assignee": "",
   "blocked_by": [],
-  "blocks": [],
+  "blocks": [
+    "vugcr-l3q.6"
+  ],
   "created": "2026-05-30T20:12:58Z",
   "description": "## Problem\nHTTP clients created in `HtmlExtractor#extract_all` and `ManifestExtractor#extract_favicons_from_manifest` are never closed. Under high concurrency and retry scenarios, this exhausts file descriptors.\n\n## Files\n- `src/vug/html_extractor.cr` (lines 45-65)\n- `src/vug/manifest_extractor.cr` (lines 68-95)\n\n## Fix\nWrap client usage in `begin...ensure` blocks and call `client.close` or `@http_client_factory.release_client` in the `ensure` clause.\n\n## Acceptance\n- Both extractors close HTTP clients in all code paths (success, error, retry)\n- Existing tests still pass\n- New test verifying client cleanup on exception",
   "id": "vugcr-l3q.1",
@@ -11,5 +13,5 @@
   "status": "open",
   "title": "Fix HTTP client resource leaks in HtmlExtractor and ManifestExtractor",
   "type": "task",
-  "updated_at": "2026-05-30T20:12:58Z"
+  "updated_at": "2026-05-30T20:14:31Z"
 }
