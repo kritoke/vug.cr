@@ -42,11 +42,6 @@ module Vug
       initial_dns_ips = {} of String => Array(String)
       visited_urls = Set(String).new # Track visited URLs to detect redirect loops
 
-      uri = URI.parse(url) rescue nil
-      if uri && (host = uri.hostname)
-        initial_dns_ips[host] ||= DnsCache.resolve(host)
-      end
-
       fetch_loop(current_url, start_time, initial_dns_ips, visited_urls)
     end
 
@@ -65,6 +60,13 @@ module Vug
         if path = cached_path_for(current_url)
           @config.debug("Favicon cache hit: #{current_url}")
           return Vug.success(current_url, path)
+        end
+
+        # Resolve DNS for the current host (deferred until after cache check
+        # to avoid wasted DNS lookups on cache hits)
+        current_uri = URI.parse(current_url) rescue nil
+        if current_uri && (host = current_uri.hostname)
+          initial_dns_ips[host] ||= DnsCache.resolve(host)
         end
 
         # Check for redirect loop (visiting same URL twice in the chain)
@@ -218,7 +220,7 @@ module Vug
       end
       acquired
     rescue ex : Channel::ClosedError
-      @config.error("fetch_single(#{url})", "Semaphore acquire failed: #{ex.message}")
+      @config.error("fetch_single(#{url})", "Semaphore channel closed: #{ex.message}")
       false
     end
 
