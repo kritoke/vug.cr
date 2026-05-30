@@ -46,6 +46,7 @@ module Vug
 
       @config.debug("Fetching manifest: #{manifest_url}")
 
+      client : HTTP::Client? = nil
       begin
         uri = URI.parse(manifest_url)
         client = @http_client_factory.create_client(uri)
@@ -78,6 +79,8 @@ module Vug
       rescue ex : JSON::ParseException | OpenSSL::SSL::Error | IO::Error | Socket::Error
         @config.error("extract_favicons_from_manifest(#{manifest_url})", Vug::Diagnostics.format_exception(ex))
         @config.debug("Error fetching manifest: #{ex.message}")
+      ensure
+        client.try(&.close)
       end
     end
 

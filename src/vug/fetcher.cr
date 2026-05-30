@@ -158,19 +158,6 @@ module Vug
       elapsed > @config.timeout
     end
 
-    private def handle_fetch_result(current_url : String, result : Result) : {Symbol, String?}
-      if result.redirect?
-        return {:redirect, result.url}
-      end
-
-      if result.success?
-        return handle_gray_placeholder(current_url, result)
-      end
-
-      {:return_result, nil}
-    end
-
-    # Variant that also returns updated URI context
     private def handle_fetch_result_with_uri(current_url : String, result : Result, current_uri : URI?) : {Symbol, String?, URI?}
       if result.redirect?
         return {:redirect, result.url, current_uri}
@@ -181,21 +168,6 @@ module Vug
       end
 
       {:return_result, nil, current_uri}
-    end
-
-    private def handle_gray_placeholder(current_url : String, result : Result) : {Symbol, String?}
-      return {:return_result, nil} unless should_handle_gray_placeholder?(current_url, result.bytes)
-
-      if current_url.includes?("google.com/s2/favicons")
-        larger_url = google_larger_url(current_url)
-        if cached = @cache_coordinator.try(&.fetch(larger_url))
-          @cache_coordinator.try(&.store(current_url, cached))
-          return {:use_cached, cached}
-        end
-      end
-
-      next_url = get_gray_placeholder_fallback_url(current_url)
-      {:try_fallback, next_url}
     end
 
     private def handle_gray_placeholder_with_uri(current_url : String, result : Result, current_uri : URI?) : {Symbol, String?, URI?}

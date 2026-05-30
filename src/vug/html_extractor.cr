@@ -43,6 +43,7 @@ module Vug
       last_error : Exception? = nil
 
       loop do
+        client : HTTP::Client? = nil
         begin
           @config.debug("Fetching HTML from: #{site_url} (attempt #{attempt + 1})")
           client = @http_client_factory.create_client(uri, read_timeout)
@@ -68,6 +69,8 @@ module Vug
           # Non-transient error, don't retry
           log_error("extract_all(#{site_url})", ex)
           return [] of FaviconInfo
+        ensure
+          client.try(&.close)
         end
       end
 

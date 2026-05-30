@@ -23,12 +23,14 @@ module Vug
           if age < 0.seconds
             @current_size -= entry.size
             @cache.delete(url)
+            @insertion_order.delete(url)
             nil
           elsif age < @entry_ttl
             entry.path
           else
             @current_size -= entry.size
             @cache.delete(url)
+            @insertion_order.delete(url)
             nil
           end
         end
@@ -49,6 +51,8 @@ module Vug
       @mutex.synchronize do
         if existing_entry = @cache[url]?
           @current_size -= existing_entry.size
+          @insertion_order.delete(url)
+          @insertion_order << url
         else
           @insertion_order << url
         end
