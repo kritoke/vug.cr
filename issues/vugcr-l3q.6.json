@@ -1,5 +1,5 @@
 {
-  "assignee": "",
+  "assignee": "kritoke",
   "blocked_by": [
     "vugcr-l3q.1",
     "vugcr-l3q.5"
@@ -11,8 +11,8 @@
   "labels": [],
   "parent": "vugcr-l3q",
   "priority": 2,
-  "status": "open",
+  "status": "in_progress",
   "title": "Fix Semaphore permit leak on fiber cancellation",
   "type": "task",
-  "updated_at": "2026-05-30T20:14:31Z"
+  "updated_at": "2026-05-30T20:24:04Z"
 }
