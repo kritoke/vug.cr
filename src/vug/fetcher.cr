@@ -15,7 +15,7 @@ require "./rate_limiter"
 
 module Vug
   class Fetcher
-    def initialize(@config : Config = Config.default, cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectHandler? = nil, cache_coordinator : CacheCoordinator? = nil, image_processor : ImageProcessor? = nil, dns_revalidator : DNSRevalidator? = nil, rate_limiter : RateLimiter? = nil)
+    def initialize(@config : Config = Config.default, cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectHandler? = nil, cache_coordinator : CacheCoordinator? = nil, image_processor : ImageProcessor? = nil, rate_limiter : RateLimiter? = nil)
       @http_client_factory = http_client_factory || HttpClientFactory.new(@config)
       @cache_manager = cache_manager || CacheManager.new(@config, cache)
       @redirect_validator = redirect_validator || RedirectHandler::Default.new(@config)
@@ -23,7 +23,6 @@ module Vug
       @cache_coordinator = cache_coordinator || CacheCoordinator.new(@config, cache, @cache_manager)
       # Image processor may use cache manager for storing saved paths
       @image_processor = image_processor || ImageProcessor::Default.new(@config, @cache_manager)
-      @dns_revalidator = dns_revalidator || DNSRevalidator.new(@config)
       @semaphore = Vug.shared_semaphore(@config.max_concurrent_requests)
       @rate_limiter = rate_limiter || RateLimiter.new
     end
@@ -259,7 +258,7 @@ module Vug
       end
 
       if initial_ips = initial_dns_ips[host]?
-        if @dns_revalidator.should_revalidate?(initial_ips, current_ips)
+        if DNSRevalidator.should_revalidate?(initial_ips, current_ips)
           @config.error("revalidate_dns_for?(#{url})", "Blocked: DNS changed from #{initial_ips} to #{current_ips} (possible rebinding)")
           return false
         end

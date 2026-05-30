@@ -151,7 +151,6 @@ module Vug
 
     private def log_error(context : String, ex : Exception, prefix : String? = nil)
       @config.error(context, Vug::Diagnostics.format_exception(ex, prefix))
-      @config.debug("#{prefix || "Error"}: #{ex.message}")
     end
 
     # Backward compatibility method - returns first favicon only
