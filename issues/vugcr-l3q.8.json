@@ -1,5 +1,5 @@
 {
-  "assignee": "",
+  "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [],
   "created": "2026-05-30T20:14:00Z",
@@ -8,8 +8,8 @@
   "labels": [],
   "parent": "vugcr-l3q",
   "priority": 3,
-  "status": "open",
+  "status": "in_progress",
   "title": "CacheManager write-path asymmetry: set does not call on_save callback",
   "type": "task",
-  "updated_at": "2026-05-30T20:14:00Z"
+  "updated_at": "2026-05-30T20:24:02Z"
 }
