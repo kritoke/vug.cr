@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-05-30T20:13:23Z",
+  "description": "## Problem\nTwo code quality issues in `Fetcher`:\n\n1. **Dead code**: `handle_fetch_result` (lines 213-226) is never called — `fetch_loop` uses only `handle_fetch_result_with_uri`.\n\n2. **DRY violation**: `handle_gray_placeholder` and `handle_gray_placeholder_with_uri` (lines 228-253) are near-duplicates differing only in return type (tuple with/without URI).\n\n## File\n- `src/vug/fetcher.cr`\n\n## Fix\n1. Remove `handle_fetch_result` entirely.\n2. Remove `handle_gray_placeholder` and keep only `handle_gray_placeholder_with_uri`. Update any callers.\n\n## Acceptance\n- No references to removed methods\n- All existing tests pass\n- No behavioral change",
+  "id": "vugcr-l3q.4",
+  "labels": [],
+  "parent": "vugcr-l3q",
+  "priority": 2,
+  "status": "open",
+  "title": "Remove dead code and deduplicate Fetcher methods",
+  "type": "task",
+  "updated_at": "2026-05-30T20:13:23Z"
+}
