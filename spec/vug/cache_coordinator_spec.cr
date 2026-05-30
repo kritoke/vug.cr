@@ -66,11 +66,20 @@ describe Vug::CacheCoordinator do
 
   it "falls back to memory cache" do
     # Use real CacheManager with nil on_load to force fallback
-    config = Vug::Config.new(on_load: ->(_url : String) : String? { nil })
-    cache_manager = Vug::CacheManager.new(config, nil)
-    mem_cache = Vug::MemoryCache.new
-    mem_cache.set("u", "/m/u")
-    coord = Vug::CacheCoordinator.new(Vug::Config.default, mem_cache, cache_manager)
-    coord.fetch_from_cache("u").should eq("/m/u")
+    dir = File.tempname("vug-cache-test")
+    Dir.mkdir_p(dir)
+    begin
+      path = File.join(dir, "u")
+      File.write(path, "data")
+
+      config = Vug::Config.new(on_load: ->(_url : String) : String? { nil })
+      cache_manager = Vug::CacheManager.new(config, nil)
+      mem_cache = Vug::MemoryCache.new
+      mem_cache.set("u", path)
+      coord = Vug::CacheCoordinator.new(Vug::Config.default, mem_cache, cache_manager)
+      coord.fetch_from_cache("u").should eq(path)
+    ensure
+      FileUtils.rm_rf(dir)
+    end
   end
 end

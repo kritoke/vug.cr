@@ -45,7 +45,7 @@ module Vug
         return if size > Int32::MAX || size > @size_limit
         size.to_i32
       rescue File::Error
-        1
+        return # don't cache entries whose file is inaccessible
       end
 
       @mutex.synchronize do

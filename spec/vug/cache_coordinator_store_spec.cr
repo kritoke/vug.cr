@@ -36,14 +36,23 @@ end
 
 describe Vug::CacheCoordinator do
   it "store_to_cache stores to memory cache and calls cache_manager.set" do
-    mem = Vug::MemoryCache.new
-    test_cm = TestCMStore1.new(mem)
+    dir = File.tempname("vug-cache-test")
+    Dir.mkdir_p(dir)
+    begin
+      path = File.join(dir, "example.png")
+      File.write(path, "png")
 
-    coord = Vug::CacheCoordinator.new(Vug::Config.default, mem, test_cm)
-    coord.store_to_cache("https://example.com/favicon.ico", "/favicons/example.png")
+      mem = Vug::MemoryCache.new
+      test_cm = TestCMStore1.new(mem)
 
-    test_cm.called?.should be_true
-    mem.get("https://example.com/favicon.ico").should eq("/favicons/example.png")
+      coord = Vug::CacheCoordinator.new(Vug::Config.default, mem, test_cm)
+      coord.store_to_cache("https://example.com/favicon.ico", path)
+
+      test_cm.called?.should be_true
+      mem.get("https://example.com/favicon.ico").should eq(path)
+    ensure
+      FileUtils.rm_rf(dir)
+    end
   end
 
   it "store_to_cache does not store relative paths in memory cache" do

@@ -15,13 +15,22 @@ describe Vug::CacheManager do
     end
 
     it "falls back to memory cache when config storage misses" do
-      config = Vug::Config.new(on_load: ->(_url : String) : String? { nil })
-      memory_cache = Vug::MemoryCache.new
-      memory_cache.set("https://example.com/favicon.ico", "/favicons/example.png")
-      cache_manager = Vug::CacheManager.new(config, memory_cache)
+      dir = File.tempname("vug-cache-test")
+      Dir.mkdir_p(dir)
+      begin
+        path = File.join(dir, "example.png")
+        File.write(path, "png")
 
-      result = cache_manager.get("https://example.com/favicon.ico")
-      result.should eq("/favicons/example.png")
+        config = Vug::Config.new(on_load: ->(_url : String) : String? { nil })
+        memory_cache = Vug::MemoryCache.new
+        memory_cache.set("https://example.com/favicon.ico", path)
+        cache_manager = Vug::CacheManager.new(config, memory_cache)
+
+        result = cache_manager.get("https://example.com/favicon.ico")
+        result.should eq(path)
+      ensure
+        FileUtils.rm_rf(dir)
+      end
     end
 
     it "returns nil when both storage types miss" do
@@ -46,13 +55,22 @@ describe Vug::CacheManager do
 
   describe "#set" do
     it "stores in memory cache for absolute paths" do
-      config = Vug::Config.new
-      memory_cache = Vug::MemoryCache.new
-      cache_manager = Vug::CacheManager.new(config, memory_cache)
+      dir = File.tempname("vug-cache-test")
+      Dir.mkdir_p(dir)
+      begin
+        path = File.join(dir, "example.png")
+        File.write(path, "png")
 
-      cache_manager.set("https://example.com/favicon.ico", "/favicons/example.png")
-      result = memory_cache.get("https://example.com/favicon.ico")
-      result.should eq("/favicons/example.png")
+        config = Vug::Config.new
+        memory_cache = Vug::MemoryCache.new
+        cache_manager = Vug::CacheManager.new(config, memory_cache)
+
+        cache_manager.set("https://example.com/favicon.ico", path)
+        result = memory_cache.get("https://example.com/favicon.ico")
+        result.should eq(path)
+      ensure
+        FileUtils.rm_rf(dir)
+      end
     end
 
     it "rejects relative paths" do
@@ -78,9 +96,18 @@ end
 describe Vug::MemoryCache do
   describe "#get with TTL" do
     it "returns value before TTL expires" do
-      cache = Vug::MemoryCache.new(size_limit: 1024 * 1024, entry_ttl: 60.seconds)
-      cache.set("url1", "/tmp/icon.png")
-      cache.get("url1").should eq("/tmp/icon.png")
+      dir = File.tempname("vug-cache-test")
+      Dir.mkdir_p(dir)
+      begin
+        path = File.join(dir, "icon.png")
+        File.write(path, "png")
+
+        cache = Vug::MemoryCache.new(size_limit: 1024 * 1024, entry_ttl: 60.seconds)
+        cache.set("url1", path)
+        cache.get("url1").should eq(path)
+      ensure
+        FileUtils.rm_rf(dir)
+      end
     end
 
     it "evicts expired entries on read" do
@@ -92,24 +119,46 @@ describe Vug::MemoryCache do
     end
 
     it "cleans up current_size on expired eviction" do
-      cache = Vug::MemoryCache.new(size_limit: 1024 * 1024, entry_ttl: 1.millisecond)
-      cache.set("url1", "/tmp/icon.png")
-      sleep 5.milliseconds
-      cache.get("url1")
-      # After eviction, adding a new entry shouldn't blow up
-      cache.set("url2", "/tmp/icon2.png")
-      cache.get("url2").should eq("/tmp/icon2.png")
+      dir = File.tempname("vug-cache-test")
+      Dir.mkdir_p(dir)
+      begin
+        path1 = File.join(dir, "icon.png")
+        path2 = File.join(dir, "icon2.png")
+        File.write(path1, "png")
+        File.write(path2, "png2")
+
+        cache = Vug::MemoryCache.new(size_limit: 1024 * 1024, entry_ttl: 1.millisecond)
+        cache.set("url1", path1)
+        sleep 5.milliseconds
+        cache.get("url1")
+        # After eviction, adding a new entry shouldn't blow up
+        cache.set("url2", path2)
+        cache.get("url2").should eq(path2)
+      ensure
+        FileUtils.rm_rf(dir)
+      end
     end
 
     it "removes expired entries from the insertion order queue" do
-      cache = Vug::MemoryCache.new(size_limit: 128, entry_ttl: 1.millisecond)
-      cache.set("url1", "/tmp/icon1.png")
-      sleep 5.milliseconds
-      cache.get("url1").should be_nil
+      dir = File.tempname("vug-cache-test")
+      Dir.mkdir_p(dir)
+      begin
+        path1 = File.join(dir, "icon1.png")
+        path2 = File.join(dir, "icon2.png")
+        File.write(path1, "a")
+        File.write(path2, "b")
 
-      cache.set("url2", "/tmp/icon2.png")
-      cache.get("url2").should eq("/tmp/icon2.png")
-      cache.size.should eq(1)
+        cache = Vug::MemoryCache.new(size_limit: 128, entry_ttl: 1.millisecond)
+        cache.set("url1", path1)
+        sleep 5.milliseconds
+        cache.get("url1").should be_nil
+
+        cache.set("url2", path2)
+        cache.get("url2").should eq(path2)
+        cache.size.should eq(1)
+      ensure
+        FileUtils.rm_rf(dir)
+      end
     end
   end
 
@@ -183,23 +232,43 @@ describe Vug::MemoryCache do
 
   describe "#clear" do
     it "removes all entries and resets size" do
-      cache = Vug::MemoryCache.new
-      cache.set("url1", "/tmp/a.png")
-      cache.set("url2", "/tmp/b.png")
-      cache.size.should eq(2)
+      dir = File.tempname("vug-cache-test")
+      Dir.mkdir_p(dir)
+      begin
+        path1 = File.join(dir, "a.png")
+        path2 = File.join(dir, "b.png")
+        File.write(path1, "a")
+        File.write(path2, "b")
 
-      cache.clear
-      cache.size.should eq(0)
-      cache.get("url1").should be_nil
-      cache.get("url2").should be_nil
+        cache = Vug::MemoryCache.new
+        cache.set("url1", path1)
+        cache.set("url2", path2)
+        cache.size.should eq(2)
+
+        cache.clear
+        cache.size.should eq(0)
+        cache.get("url1").should be_nil
+        cache.get("url2").should be_nil
+      ensure
+        FileUtils.rm_rf(dir)
+      end
     end
   end
 
   describe "basic operations" do
     it "stores and retrieves values" do
-      cache = Vug::MemoryCache.new
-      cache.set("https://example.com/favicon.ico", "/favicons/abc123.png")
-      cache.get("https://example.com/favicon.ico").should eq("/favicons/abc123.png")
+      dir = File.tempname("vug-cache-test")
+      Dir.mkdir_p(dir)
+      begin
+        path = File.join(dir, "abc123.png")
+        File.write(path, "png")
+
+        cache = Vug::MemoryCache.new
+        cache.set("https://example.com/favicon.ico", path)
+        cache.get("https://example.com/favicon.ico").should eq(path)
+      ensure
+        FileUtils.rm_rf(dir)
+      end
     end
 
     it "returns nil for missing keys" do
@@ -208,17 +277,37 @@ describe Vug::MemoryCache do
     end
 
     it "updates existing entry" do
-      cache = Vug::MemoryCache.new
-      cache.set("https://example.com/favicon.ico", "/favicons/old.png")
-      cache.set("https://example.com/favicon.ico", "/favicons/new.png")
-      cache.get("https://example.com/favicon.ico").should eq("/favicons/new.png")
+      dir = File.tempname("vug-cache-test")
+      Dir.mkdir_p(dir)
+      begin
+        old_path = File.join(dir, "old.png")
+        new_path = File.join(dir, "new.png")
+        File.write(old_path, "old")
+        File.write(new_path, "new")
+
+        cache = Vug::MemoryCache.new
+        cache.set("https://example.com/favicon.ico", old_path)
+        cache.set("https://example.com/favicon.ico", new_path)
+        cache.get("https://example.com/favicon.ico").should eq(new_path)
+      ensure
+        FileUtils.rm_rf(dir)
+      end
     end
 
     it "tracks size" do
-      cache = Vug::MemoryCache.new
-      cache.size.should eq(0)
-      cache.set("https://example.com/favicon.ico", "/favicons/abc.png")
-      cache.size.should eq(1)
+      dir = File.tempname("vug-cache-test")
+      Dir.mkdir_p(dir)
+      begin
+        path = File.join(dir, "abc.png")
+        File.write(path, "png")
+
+        cache = Vug::MemoryCache.new
+        cache.size.should eq(0)
+        cache.set("https://example.com/favicon.ico", path)
+        cache.size.should eq(1)
+      ensure
+        FileUtils.rm_rf(dir)
+      end
     end
 
     it "rejects non-absolute paths" do
@@ -228,9 +317,18 @@ describe Vug::MemoryCache do
     end
 
     it "keeps valid entries within TTL" do
-      cache = Vug::MemoryCache.new(entry_ttl: 1.second)
-      cache.set("https://example.com/favicon.ico", "/favicons/abc.png")
-      cache.get("https://example.com/favicon.ico").should eq("/favicons/abc.png")
+      dir = File.tempname("vug-cache-test")
+      Dir.mkdir_p(dir)
+      begin
+        path = File.join(dir, "abc.png")
+        File.write(path, "png")
+
+        cache = Vug::MemoryCache.new(entry_ttl: 1.second)
+        cache.set("https://example.com/favicon.ico", path)
+        cache.get("https://example.com/favicon.ico").should eq(path)
+      ensure
+        FileUtils.rm_rf(dir)
+      end
     end
   end
 
@@ -328,32 +426,42 @@ describe Vug::MemoryCache do
     end
 
     it "maintains consistency under concurrent set operations on same key" do
-      cache = Vug::MemoryCache.new(size_limit: 1000)
-      results = Channel(String).new(10)
-
-      10.times do |i|
-        spawn do
-          cache.set("https://example.com/favicon.ico", "/favicons/#{i}.png")
-          results.send("done")
+      dir = File.tempname("vug-cache-test")
+      Dir.mkdir_p(dir)
+      begin
+        10.times do |i|
+          File.write(File.join(dir, "#{i}.png"), "data#{i}")
         end
-      end
 
-      timeout = 5.seconds
-      deadline = Time.monotonic + timeout
-      completed = 0
+        cache = Vug::MemoryCache.new(size_limit: 1000)
+        results = Channel(String).new(10)
 
-      while completed < 10 && Time.monotonic < deadline
-        select
-        when results.receive
-          completed += 1
-        when timeout(100.milliseconds)
+        10.times do |i|
+          spawn do
+            cache.set("https://example.com/favicon.ico", File.join(dir, "#{i}.png"))
+            results.send("done")
+          end
         end
-      end
 
-      completed.should eq(10)
-      final_value = cache.get("https://example.com/favicon.ico")
-      final_value.should_not be_nil
-      final_value.as(String).should start_with("/favicons/")
+        timeout = 5.seconds
+        deadline = Time.monotonic + timeout
+        completed = 0
+
+        while completed < 10 && Time.monotonic < deadline
+          select
+          when results.receive
+            completed += 1
+          when timeout(100.milliseconds)
+          end
+        end
+
+        completed.should eq(10)
+        final_value = cache.get("https://example.com/favicon.ico")
+        final_value.should_not be_nil
+        final_value.as(String).should start_with(dir)
+      ensure
+        FileUtils.rm_rf(dir)
+      end
     end
   end
 end
