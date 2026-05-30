@@ -4,14 +4,15 @@
   "blocks": [
     "vugcr-l3q.3"
   ],
+  "closed_at": "2026-05-30T20:18:39Z",
   "created": "2026-05-30T20:13:08Z",
   "description": "## Problem\nTwo bugs in `MemoryCache`:\n\n1. **TTL expiry in `get` does not remove URL from `@insertion_order`** — `@insertion_order` grows unboundedly with stale URLs that have already been evicted from `@cache`. During eviction in `set`, the loop iterates over dead entries.\n\n2. **Overwrite in `set` does not move URL to end of `@insertion_order`** — Updated entries keep their original insertion position, breaking LRU semantics. Entries are evicted based on insertion time, not last access/update time.\n\n## Files\n- `src/vug/cache.cr` (lines 18-46)\n\n## Fix\n1. In `get`, delete the URL from `@insertion_order` when a TTL-expired entry is found.\n2. In `set`, when overwriting an existing entry, move the URL to the end of `@insertion_order`.\n\n## Acceptance\n- `@insertion_order` stays in sync with `@cache` keys\n- Updated entries get evicted last (LRU behavior)\n- Existing cache tests pass\n- New tests for TTL expiry cleanup and LRU ordering",
   "id": "vugcr-l3q.2",
   "labels": [],
   "parent": "vugcr-l3q",
   "priority": 1,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Fix MemoryCache insertion-order bugs: TTL expiry cleanup, LRU on overwrite",
   "type": "task",
-  "updated_at": "2026-05-30T20:16:50Z"
+  "updated_at": "2026-05-30T20:18:39Z"
 }
