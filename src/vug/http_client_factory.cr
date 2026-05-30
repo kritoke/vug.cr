@@ -19,7 +19,7 @@ module Vug
       uri : URI,
       read_timeout : Time::Span,
       connect_timeout : Time::Span? = nil,
-      write_timeout : Time::Span? = nil
+      write_timeout : Time::Span? = nil,
     ) : HTTP::Client
       HTTP::Client.new(uri).tap do |client|
         client.compress = true
@@ -28,7 +28,6 @@ module Vug
         client.write_timeout = (write_timeout || @config.write_timeout) > Time::Span.zero ? (write_timeout || @config.write_timeout) : 10.seconds
       end
     end
-
 
     # Release/close a client after use.
     # In Crystal, HTTP::Client handles connection pooling internally,

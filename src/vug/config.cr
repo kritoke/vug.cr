@@ -12,7 +12,7 @@ module Vug
     DEFAULT_ACCEPT_LANGUAGE = "en-US,en;q=0.9"
 
     getter timeout : Time::Span = 30.seconds
-    getter html_fetch_timeout : Time::Span = 60.seconds  # Longer timeout for HTML page fetches
+    getter html_fetch_timeout : Time::Span = 60.seconds # Longer timeout for HTML page fetches
     getter connect_timeout : Time::Span = 10.seconds
     getter write_timeout : Time::Span = 10.seconds
     getter max_redirects : Int32 = 10

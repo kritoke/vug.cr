@@ -36,7 +36,7 @@ describe Vug::HtmlExtractor do
 
   describe "#extract_all with timeout parameter" do
     it "accepts custom timeout parameter" do
-      config = Vug::Config.new(max_retries: 0)  # Disable retries for faster test
+      config = Vug::Config.new(max_retries: 0) # Disable retries for faster test
       extractor = Vug::HtmlExtractor.new(config)
       # Just verify the method accepts the parameter - the result will be empty due to invalid URL
       result = extractor.extract_all("https://invalid.invalid", 1.millisecond)
