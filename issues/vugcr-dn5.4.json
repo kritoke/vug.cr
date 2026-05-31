@@ -1,5 +1,5 @@
 {
-  "assignee": "",
+  "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [],
   "created": "2026-05-31T14:15:03Z",
@@ -8,8 +8,8 @@
   "labels": [],
   "parent": "vugcr-dn5",
   "priority": 2,
-  "status": "open",
+  "status": "in_progress",
   "title": "Shorten private module methods in ImageValidator, UrlValidator, DataUrlHandler, Config",
   "type": "task",
-  "updated_at": "2026-05-31T14:15:03Z"
+  "updated_at": "2026-05-31T14:19:13Z"
 }
