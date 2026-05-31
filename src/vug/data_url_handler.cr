@@ -11,7 +11,7 @@ module Vug
       header, encoded_data = split_data_url(data_url)
       media_type, is_base64 = parse_data_header(header)
 
-      return if exceeds_max_encoded_size?(encoded_data, max_size)
+      return if exceeds_max_size?(encoded_data, max_size)
       return unless decoded_data = try_decode_data(encoded_data, is_base64, max_size)
       return unless ImageValidator.valid?(decoded_data)
 
@@ -40,7 +40,7 @@ module Vug
       end
     end
 
-    private def self.exceeds_max_encoded_size?(encoded_data : String, max_size : Int32?) : Bool
+    private def self.exceeds_max_size?(encoded_data : String, max_size : Int32?) : Bool
       return false unless max_size
       # Base64 encoded data is ~4/3 the decoded size
       # Check estimated decoded size before attempting decode to prevent memory exhaustion

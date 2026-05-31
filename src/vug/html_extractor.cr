@@ -30,7 +30,7 @@ module Vug
     # Extract favicon information from a site's HTML.
     # Optionally accepts a custom timeout for slow servers.
     def extract_all(site_url : String, timeout : Time::Span? = nil) : Array(FaviconInfo)
-      uri = validate_and_parse_url(site_url)
+      uri = parse_validated_url(site_url)
       return [] of FaviconInfo unless uri
 
       read_timeout = timeout || @config.html_fetch_timeout
@@ -88,7 +88,7 @@ module Vug
       Time::Span.new(nanoseconds: capped.total_nanoseconds.to_i64 + jitter_ns)
     end
 
-    private def validate_and_parse_url(site_url : String) : URI?
+    private def parse_validated_url(site_url : String) : URI?
       clean_url = UrlProcessor.sanitize_feed_url(site_url)
       return debug_return("URL blocked by validator: #{clean_url}") unless UrlValidator.valid_url?(clean_url)
 
@@ -119,7 +119,7 @@ module Vug
       html = fetch_html(response.body_io)
       return [] of FaviconInfo if html.empty?
 
-      html_favicons = extract_favicons_from_html(html, site_url)
+      html_favicons = extract_html_favicons(html, site_url)
       favicons.concat(html_favicons)
 
       add_manifest_favicons(html, site_url, favicons)
@@ -159,7 +159,7 @@ module Vug
       favicons.first?.try(&.url)
     end
 
-    private def extract_favicons_from_html(html : String, base_url : String) : Array(FaviconInfo)
+    private def extract_html_favicons(html : String, base_url : String) : Array(FaviconInfo)
       favicons = [] of FaviconInfo
       doc = HTML5.parse(html)
 
@@ -181,13 +181,13 @@ module Vug
 
     private def process_favicon_link(href : String, node : HTML5::Node, base_url : String, favicons : Array(FaviconInfo))
       if DataUrlHandler.data_url?(href)
-        process_data_url_favicon(href, favicons)
+        process_data_favicon(href, favicons)
       else
         process_normal_favicon(node, href, base_url, favicons)
       end
     end
 
-    private def process_data_url_favicon(href : String, favicons : Array(FaviconInfo))
+    private def process_data_favicon(href : String, favicons : Array(FaviconInfo))
       data_result = DataUrlHandler.extract_from_url(href, @config.max_size)
       return unless data_result
 

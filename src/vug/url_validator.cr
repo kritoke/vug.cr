@@ -136,7 +136,7 @@ module Vug
       host = normalize_host(host)
       return log_and_block(config, "dangerous_host?(#{host.inspect})", "Blocked: host is nil or empty") if host.nil? || host.empty?
       return log_and_block(config, "dangerous_host?(#{host})", "Blocked: localhost-like host") if localhost_like?(host)
-      return log_and_block(config, "dangerous_host?(#{host})", "Blocked: IP in private range") if ip_in_private_range?(host)
+      return log_and_block(config, "dangerous_host?(#{host})", "Blocked: IP in private range") if private_ip_range?(host)
       return log_and_block(config, "dangerous_host?(#{host})", "Blocked: .local domain") if host.ends_with?(".local")
       return log_and_block(config, "dangerous_host?(#{host})", "Blocked: resolves to private IP") if resolves_to_private_ip?(host)
       false
@@ -172,7 +172,7 @@ module Vug
         host == "::1"
     end
 
-    private def self.ip_in_private_range?(host : String) : Bool
+    private def self.private_ip_range?(host : String) : Bool
       return false unless literal_ip_string?(host)
       private_ip?(host)
     end

@@ -53,7 +53,7 @@ module Vug
       max_gray_attempts = 3
 
       loop do
-        if termination = check_termination_conditions(start_time, redirects, gray_placeholder_attempts, max_gray_attempts, initial_url)
+        if termination = check_termination(start_time, redirects, gray_placeholder_attempts, max_gray_attempts, initial_url)
           return termination
         end
 
@@ -81,7 +81,7 @@ module Vug
         # Reuse parsed URI if available, only parse if we have a redirect URL
         uri = current_uri || (URI.parse(current_url) rescue nil)
         result = fetch_single(current_url, uri, initial_dns_ips, redirects)
-        action, next_url, current_uri = handle_fetch_result_with_uri(current_url, result, current_uri)
+        action, next_url, current_uri = fetch_result_uri(current_url, result, current_uri)
 
         case action
         when :redirect, :try_fallback
@@ -97,7 +97,7 @@ module Vug
       end
     end
 
-    private def check_termination_conditions(
+    private def check_termination(
       start_time : Time::Span,
       redirects : Int32,
       gray_placeholder_attempts : Int32,
@@ -159,20 +159,20 @@ module Vug
       elapsed > @config.timeout
     end
 
-    private def handle_fetch_result_with_uri(current_url : String, result : Result, current_uri : URI?) : {Symbol, String?, URI?}
+    private def fetch_result_uri(current_url : String, result : Result, current_uri : URI?) : {Symbol, String?, URI?}
       if result.redirect?
         return {:redirect, result.url, current_uri}
       end
 
       if result.success?
-        return handle_gray_placeholder_with_uri(current_url, result, current_uri)
+        return gray_placeholder_uri(current_url, result, current_uri)
       end
 
       {:return_result, nil, current_uri}
     end
 
-    private def handle_gray_placeholder_with_uri(current_url : String, result : Result, current_uri : URI?) : {Symbol, String?, URI?}
-      return {:return_result, nil, current_uri} unless should_handle_gray_placeholder?(current_url, result.bytes)
+    private def gray_placeholder_uri(current_url : String, result : Result, current_uri : URI?) : {Symbol, String?, URI?}
+      return {:return_result, nil, current_uri} unless gray_placeholder?(current_url, result.bytes)
 
       if current_url.includes?("google.com/s2/favicons")
         larger_url = google_larger_url(current_url)
@@ -182,7 +182,7 @@ module Vug
         end
       end
 
-      next_url = get_gray_placeholder_fallback_url(current_url)
+      next_url = gray_fallback_url(current_url)
       {:try_fallback, next_url, nil}
     end
 
@@ -192,7 +192,7 @@ module Vug
       begin
         parsed_uri = uri || parse_uri(url)
         host = parsed_uri.hostname
-        rate_limit_or_revalidate(url, host, initial_dns_ips, redirect_count, parsed_uri)
+        check_rate_and_dns(url, host, initial_dns_ips, redirect_count, parsed_uri)
       rescue ex : URI::Error
         @config.error("fetch_single(#{url})", "Invalid URL format: #{ex.message}")
         Vug.failure("Invalid URL", url, error_type: :invalid_url)
@@ -269,12 +269,12 @@ module Vug
       true
     end
 
-    private def should_handle_gray_placeholder?(url : String, data : Bytes?) : Bool
+    private def gray_placeholder?(url : String, data : Bytes?) : Bool
       return false if data.nil?
       data.size == @config.gray_placeholder_size
     end
 
-    private def get_gray_placeholder_fallback_url(current_url : String) : String?
+    private def gray_fallback_url(current_url : String) : String?
       if current_url.includes?("google.com/s2/favicons")
         google_larger_url(current_url)
       else
@@ -315,7 +315,7 @@ module Vug
       Diagnostics.format_exception(ex, prefix)
     end
 
-    private def rate_limit_or_revalidate(url : String, host : String?, initial_dns_ips : Hash(String, Array(String)), redirect_count : Int32, uri : URI) : Result
+    private def check_rate_and_dns(url : String, host : String?, initial_dns_ips : Hash(String, Array(String)), redirect_count : Int32, uri : URI) : Result
       if host && !@rate_limiter.allow?(host)
         @config.debug("Rate limited: #{host} exceeded #{@rate_limiter.max_per_minute} requests/minute")
         return Vug.failure("Rate limited", url, error_type: :rate_limited)
@@ -341,7 +341,7 @@ module Vug
       begin
         client.get(uri.request_target, headers: headers) do |response|
           result = handle_redirect(url, uri, response, redirect_count) if response.status.redirection?
-          result ||= process_successful_response(url, response) if response.status.success?
+          result ||= process_response(url, response) if response.status.success?
           result ||= handle_error(url, response.status_code)
         end
       rescue ex : Exception
@@ -355,7 +355,7 @@ module Vug
       result || Vug.failure("Unexpected HTTP error", url.to_s)
     end
 
-    private def process_successful_response(url : String, response : HTTP::Client::Response) : Result
+    private def process_response(url : String, response : HTTP::Client::Response) : Result
       content_type = response.content_type || "image/png"
       memory = IO::Memory.new
       IO.copy(response.body_io, memory, limit: @config.max_size)

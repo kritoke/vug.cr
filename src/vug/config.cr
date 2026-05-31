@@ -76,13 +76,13 @@ module Vug
       @html_fetch_timeout = validate_positive_timespan(html_fetch_timeout, "html_fetch_timeout", 60.seconds)
       @connect_timeout = validate_positive_timespan(connect_timeout, "connect_timeout", 10.seconds)
       @write_timeout = validate_positive_timespan(write_timeout, "write_timeout", 10.seconds)
-      @max_redirects = validate_non_negative_int(max_redirects, "max_redirects", 10)
+      @max_redirects = validate_non_negative(max_redirects, "max_redirects", 10)
       @max_size = validate_positive_int(max_size, "max_size", 100 * 1024)
       @cache_size_limit = validate_positive_int(cache_size_limit, "cache_size_limit", 10 * 1024 * 1024)
       @cache_entry_ttl = validate_positive_timespan(cache_entry_ttl, "cache_entry_ttl", 7.days)
-      @gray_placeholder_size = validate_non_negative_int(gray_placeholder_size, "gray_placeholder_size", 198)
+      @gray_placeholder_size = validate_non_negative(gray_placeholder_size, "gray_placeholder_size", 198)
       @max_concurrent_requests = validate_positive_int(max_concurrent_requests, "max_concurrent_requests", 8)
-      @max_retries = validate_non_negative_int(max_retries, "max_retries", 2)
+      @max_retries = validate_non_negative(max_retries, "max_retries", 2)
       @retry_base_delay = validate_positive_timespan(retry_base_delay, "retry_base_delay", 500.milliseconds)
       @retry_max_delay = validate_positive_timespan(retry_max_delay, "retry_max_delay", 5.seconds)
 
@@ -107,7 +107,7 @@ module Vug
       value
     end
 
-    private def validate_non_negative_int(value : Int32?, name : String, default : Int32) : Int32
+    private def validate_non_negative(value : Int32?, name : String, default : Int32) : Int32
       return default unless value
       raise ArgumentError.new("#{name} must be non-negative") if value < 0
       value
