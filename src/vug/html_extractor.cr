@@ -143,7 +143,7 @@ module Vug
       return unless manifest_url = @manifest_extractor.extract_manifest_url(html, site_url)
 
       @config.debug("Found manifest: #{manifest_url}")
-      if manifest_favicons = @manifest_extractor.extract_favicons_from_manifest(manifest_url)
+      if manifest_favicons = @manifest_extractor.extract_manifest_favicons(manifest_url)
         favicons.concat(manifest_favicons)
         @config.debug("Extracted #{manifest_favicons.size} favicons from manifest")
       end

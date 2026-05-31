@@ -9,7 +9,7 @@ module Vug
     end
 
     def site(url : String) : Result
-      resolve_favicon(url) || generate_placeholder_fallback(UrlProcessor.sanitize_feed_url(url))
+      resolve_favicon(url) || placeholder_fallback(UrlProcessor.sanitize_feed_url(url))
     end
 
     def best(url : String) : Result
@@ -19,7 +19,7 @@ module Vug
     def extract_favicon_collection(url : String) : FaviconCollection?
       clean_url = UrlProcessor.sanitize_feed_url(url)
       site_url = UrlProcessor.derive_site_url(clean_url)
-      extract_favicons_from_site(site_url)
+      extract_site_favicons(site_url)
     end
 
     private def resolve_favicon(url : String) : Result?
@@ -30,7 +30,7 @@ module Vug
 
     private def try_extracted_favicon(url : String) : Result?
       site_url = UrlProcessor.derive_site_url(url)
-      collection = extract_favicons_from_site(site_url)
+      collection = extract_site_favicons(site_url)
       return unless collection
 
       best = collection.best
@@ -54,7 +54,7 @@ module Vug
       try_standard_paths(host) || try_duckduckgo(host) || try_google(host)
     end
 
-    private def extract_favicons_from_site(site_url : String) : FaviconCollection?
+    private def extract_site_favicons(site_url : String) : FaviconCollection?
       favicons = @html_fetcher.extract_all(site_url)
       return if favicons.empty?
 
@@ -109,7 +109,7 @@ module Vug
       nil
     end
 
-    private def generate_placeholder_fallback(site_url : String) : Result
+    private def placeholder_fallback(site_url : String) : Result
       host = extract_host(site_url)
       return Vug.failure("Invalid URL", site_url, error_type: :invalid_url) unless host
 
