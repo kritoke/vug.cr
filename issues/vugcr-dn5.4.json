@@ -2,14 +2,15 @@
   "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-05-31T14:21:16Z",
   "created": "2026-05-31T14:15:03Z",
   "description": "## Files and methods\n\n### src/vug/image_validator.cr\n| Current (4+ words) | Proposed |\n|---|---|\n| `self.webp_first_chunk_type` | `self.webp_chunk_type` |\n\n### src/vug/url_validator.cr\n| Current (4+ words) | Proposed |\n|---|---|\n| `self.ip_in_private_range?` | `self.private_ip_range?` |\n\n### src/vug/data_url_handler.cr\n| Current (4+ words) | Proposed |\n|---|---|\n| `self.exceeds_max_encoded_size?` | `self.exceeds_max_size?` |\n\n### src/vug/config.cr\n| Current (4+ words) | Proposed |\n|---|---|\n| `validate_non_negative_int` | `validate_non_negative` |\n\nThese are all private/internal. Update callers. Run `crystal spec` to verify.",
   "id": "vugcr-dn5.4",
   "labels": [],
   "parent": "vugcr-dn5",
   "priority": 2,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Shorten private module methods in ImageValidator, UrlValidator, DataUrlHandler, Config",
   "type": "task",
-  "updated_at": "2026-05-31T14:19:13Z"
+  "updated_at": "2026-05-31T14:21:16Z"
 }
