@@ -2,14 +2,15 @@
   "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-05-31T14:21:08Z",
   "created": "2026-05-31T14:14:33Z",
   "description": "## File: src/vug/fetcher.cr\n\nRename these private methods:\n\n| Current (4+ words) | Proposed |\n|---|---|\n| `handle_gray_placeholder_with_uri` | `gray_placeholder_uri` |\n| `handle_fetch_result_with_uri` | `fetch_result_uri` |\n| `get_gray_placeholder_fallback_url` | `gray_fallback_url` |\n| `should_handle_gray_placeholder?` | `gray_placeholder?` |\n| `rate_limit_or_revalidate` | `check_rate_and_dns` |\n| `process_successful_response` | `process_response` |\n| `check_termination_conditions` | `check_termination` |\n| `generate_placeholder_fallback` | `placeholder_fallback` |\n\nUpdate all internal callers. No public API change. Run `crystal spec` to verify.",
   "id": "vugcr-dn5.1",
   "labels": [],
   "parent": "vugcr-dn5",
   "priority": 2,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Shorten private methods in Fetcher (8 methods)",
   "type": "task",
-  "updated_at": "2026-05-31T14:19:11Z"
+  "updated_at": "2026-05-31T14:21:08Z"
 }
