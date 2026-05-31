@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-05-31T14:14:55Z",
+  "description": "## Files\n- src/vug/manifest_extractor.cr\n- src/vug/favicon_resolver.cr\n\n### ManifestExtractor\n| Current (4+ words) | Proposed |\n|---|---|\n| `extract_favicons_from_manifest` | `extract_manifest_favicons` |\n\nThis is a public method on ManifestExtractor. Check if it's used externally — if so, add an alias and deprecate the old name. If internal only, just rename.\n\n### FaviconResolver\n| Current (4+ words) | Proposed |\n|---|---|\n| `extract_favicons_from_site` | `extract_site_favicons` |\n| `try_extracted_favicon` (3 words, fine) | keep |\n\n### Also in FaviconResolver, check 3-word methods that could be clearer:\n| `try_standard_paths` | keep |\n| `try_fallback_chain` | keep |\n| `generate_placeholder_fallback` | `placeholder_fallback` |\n\nRun `crystal spec` to verify.",
+  "id": "vugcr-dn5.3",
+  "labels": [],
+  "parent": "vugcr-dn5",
+  "priority": 2,
+  "status": "open",
+  "title": "Shorten private methods in ManifestExtractor and FaviconResolver",
+  "type": "task",
+  "updated_at": "2026-05-31T14:14:55Z"
+}
