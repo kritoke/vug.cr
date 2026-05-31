@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-05-31T14:14:45Z",
+  "description": "## File: src/vug/html_extractor.cr\n\nRename these private methods:\n\n| Current (4+ words) | Proposed |\n|---|---|\n| `validate_and_parse_url` | `parse_validated_url` |\n| `process_data_url_favicon` | `process_data_favicon` |\n| `extract_favicons_from_html` | `extract_html_favicons` |\n\nAlso rename these private helper methods in the same file:\n| `process_favicon_link` (3 words, fine) | keep |\n| `process_normal_favicon` (3 words, fine) | keep |\n| `add_manifest_favicons` (3 words, fine) | keep |\n| `build_html_headers` (3 words, fine) | keep |\n\nUpdate all internal callers. No public API change. Run `crystal spec` to verify.",
+  "id": "vugcr-dn5.2",
+  "labels": [],
+  "parent": "vugcr-dn5",
+  "priority": 2,
+  "status": "open",
+  "title": "Shorten private methods in HtmlExtractor (3 methods)",
+  "type": "task",
+  "updated_at": "2026-05-31T14:14:45Z"
+}
