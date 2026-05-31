@@ -267,6 +267,32 @@ describe Vug::UrlProcessor do
     end
   end
 
+  describe ".feed_subdomain?" do
+    it "detects feeds. subdomain" do
+      Vug::UrlProcessor.feed_subdomain?("https://feeds.businessinsider.com/pull/bi/all").should be_true
+    end
+
+    it "detects feed. subdomain" do
+      Vug::UrlProcessor.feed_subdomain?("https://feed.example.com/entries").should be_true
+    end
+
+    it "is case-insensitive" do
+      Vug::UrlProcessor.feed_subdomain?("https://FEEDS.example.com/path").should be_true
+    end
+
+    it "rejects regular subdomain" do
+      Vug::UrlProcessor.feed_subdomain?("https://www.example.com/path").should be_false
+    end
+
+    it "rejects bare domain" do
+      Vug::UrlProcessor.feed_subdomain?("https://example.com/path").should be_false
+    end
+
+    it "rejects feeds in later labels" do
+      Vug::UrlProcessor.feed_subdomain?("https://www.feeds.example.com/path").should be_false
+    end
+  end
+
   describe ".derive_site_url" do
     it "derives site root from atom.xml feed URL" do
       result = Vug::UrlProcessor.derive_site_url("https://jvns.ca/atom.xml")
@@ -301,6 +327,26 @@ describe Vug::UrlProcessor do
     it "handles HTTP feed URLs" do
       result = Vug::UrlProcessor.derive_site_url("http://example.com/atom.xml")
       result.should eq("http://example.com")
+    end
+
+    it "strips feeds. subdomain to derive parent domain" do
+      result = Vug::UrlProcessor.derive_site_url("https://feeds.businessinsider.com/pull/bi/all")
+      result.should eq("https://businessinsider.com")
+    end
+
+    it "strips feed. subdomain to derive parent domain" do
+      result = Vug::UrlProcessor.derive_site_url("https://feed.example.com/entries")
+      result.should eq("https://example.com")
+    end
+
+    it "strips feeds. subdomain with query params" do
+      result = Vug::UrlProcessor.derive_site_url("https://feeds.businessinsider.com/pull/bi/all?after=20&limit=20")
+      result.should eq("https://businessinsider.com")
+    end
+
+    it "returns regular subdomain URLs unchanged" do
+      result = Vug::UrlProcessor.derive_site_url("https://cdn.example.com/images/icon.png")
+      result.should eq("https://cdn.example.com/images/icon.png")
     end
   end
 end

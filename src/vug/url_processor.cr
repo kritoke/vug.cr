@@ -71,18 +71,40 @@ module Vug
       )\z
     }xi
 
+    # Matches feed-like subdomains (e.g., feeds.example.com, feed.example.com)
+    FEED_SUBDOMAIN_PATTERN = /\Afeeds?\./i
+
     # Returns true if the URL path looks like a feed endpoint
     def self.feed_url?(url : String) : Bool
       !!url.matches?(FEED_PATH_PATTERN)
     end
 
+    # Returns true if the URL's host starts with a feed-like subdomain
+    # (e.g., feeds.example.com or feed.example.com).
+    def self.feed_subdomain?(url : String) : Bool
+      host = extract_host_from_url(url)
+      return false unless host
+      !!host.matches?(FEED_SUBDOMAIN_PATTERN)
+    end
+
     # Derives the site root URL from a feed URL.
-    # For feed URLs, strips the feed-specific path and returns the origin.
+    # For feed subdomains (e.g., feeds.example.com), strips the subdomain
+    # and returns the parent domain origin.
+    # For feed paths (e.g., example.com/atom.xml), strips the path and
+    # returns the origin.
     # For non-feed URLs, returns the URL unchanged.
     def self.derive_site_url(url : String) : String
-      return url unless feed_url?(url)
       begin
         uri = URI.parse(url)
+        host = uri.host
+
+        # Feed subdomain: strip feeds./feed. prefix to get parent domain
+        if host && host.matches?(FEED_SUBDOMAIN_PATTERN)
+          parent_host = host.sub(FEED_SUBDOMAIN_PATTERN, "")
+          return "#{uri.scheme}://#{parent_host}"
+        end
+
+        return url unless feed_url?(url)
         "#{uri.scheme}://#{uri.host}"
       rescue URI::Error
         url
