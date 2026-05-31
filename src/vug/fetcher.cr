@@ -270,14 +270,35 @@ module Vug
       true
     end
 
+    # DuckDuckGo's default icon returned when it has no real favicon
+    # for a domain. This is a 32x32 PNG always at exactly 2441 bytes.
+    DDG_DEFAULT_ICON_SIZE = 2441
+
     private def gray_placeholder?(url : String, data : Bytes?) : Bool
       return false if data.nil?
-      data.size == @config.gray_placeholder_size
+      return true if data.size == @config.gray_placeholder_size
+
+      # Detect DuckDuckGo default icon from its favicon API
+      if url.includes?("icons.duckduckgo.com") && data.size == DDG_DEFAULT_ICON_SIZE
+        return true
+      end
+
+      false
     end
 
     private def gray_fallback_url(current_url : String) : String?
       if current_url.includes?("google.com/s2/favicons")
         google_larger_url(current_url)
+      elsif current_url.includes?("icons.duckduckgo.com/ip3/")
+        # Extract domain from DDG URL path: /ip3/{domain}.ico
+        if domain = extract_domain_from_ddg_url(current_url)
+          encoded = URI.encode_www_form(domain)
+          google_url = "https://www.google.com/s2/favicons?domain=#{encoded}&sz=256"
+          @config.debug("DDG default icon, falling back to Google: #{google_url}")
+          return google_url
+        end
+        @config.debug("DDG default icon but could not extract domain")
+        nil
       else
         @config.debug("Gray placeholder from non-Google source, trying Google fallback")
         begin
@@ -294,6 +315,15 @@ module Vug
         @config.debug("Gray placeholder fallback skipped: no valid host")
         nil
       end
+    end
+
+    private def extract_domain_from_ddg_url(url : String) : String?
+      path = URI.parse(url).path
+      return unless path
+      match = path.match(%r{/ip3/(.+?)\.ico\z})
+      match.try(&.[1])
+    rescue URI::Error
+      nil
     end
 
     private def google_larger_url(url : String) : String

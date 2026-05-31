@@ -51,7 +51,7 @@ module Vug
       host = extract_host(site_url)
       return unless host
 
-      try_standard_paths(host) || try_duckduckgo(host) || try_google(host)
+      try_standard_paths(host) || try_google(host) || try_duckduckgo(host)
     end
 
     private def extract_site_favicons(site_url : String) : FaviconCollection?
