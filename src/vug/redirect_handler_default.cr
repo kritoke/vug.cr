@@ -4,6 +4,13 @@ require "./config"
 
 module Vug
   class RedirectHandler::Default < Vug::RedirectHandler
+    # Known safe cross-domain redirect pairs for favicon services.
+    # Maps a source host pattern to allowed redirect target host patterns.
+    TRUSTED_REDIRECT_DOMAINS = {
+      "google.com"    => ["gstatic.com"],
+      "www.google.com" => ["gstatic.com"],
+    }
+
     def initialize(@config : Config)
       super(@config)
     end
@@ -42,7 +49,7 @@ module Vug
       redir_normalized = redir_host.sub(/^www\./, "")
 
       same_origin = (orig_normalized == redir_normalized) || (orig_host == redir_host)
-      unless same_origin
+      unless same_origin || trusted_redirect?(orig_host, redir_host)
         return Vug::FetchAction::Deny.new("cross_domain_redirect")
       end
 
@@ -63,6 +70,19 @@ module Vug
       Vug::FetchAction::Follow.new(redirect_url)
     rescue URI::Error
       Vug::FetchAction::Deny.new("invalid_url")
+    end
+
+    private def trusted_redirect?(orig_host : String, redir_host : String) : Bool
+      TRUSTED_REDIRECT_DOMAINS.each do |source, targets|
+        next unless host_matches?(orig_host, source)
+        return true if targets.any? { |t| host_matches?(redir_host, t) }
+      end
+      false
+    end
+
+    # Matches exact host or any subdomain (e.g. "gstatic.com" matches "t1.gstatic.com")
+    private def host_matches?(host : String, pattern : String) : Bool
+      host == pattern || host.ends_with?(".#{pattern}")
     end
   end
 end

@@ -76,4 +76,54 @@ describe Vug::RedirectHandler::Default do
     deny = res.as(Vug::FetchAction::Deny)
     deny.reason.should eq("port_mismatch")
   end
+
+  describe "trusted cross-domain redirects" do
+    it "allows google.com -> gstatic.com redirect" do
+      config = Vug::Config.new
+      h = Vug::RedirectHandler::Default.new(config)
+      res = h.decide(
+        "https://www.google.com/s2/favicons?domain=example.com&sz=256",
+        "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://example.com&size=256",
+        0
+      )
+      res.is_a?(Vug::FetchAction::Follow).should be_true
+    end
+
+    it "allows google.com (no www) -> gstatic.com redirect" do
+      config = Vug::Config.new
+      h = Vug::RedirectHandler::Default.new(config)
+      res = h.decide(
+        "https://google.com/s2/favicons?domain=example.com",
+        "https://t2.gstatic.com/faviconV2?url=https://example.com",
+        0
+      )
+      res.is_a?(Vug::FetchAction::Follow).should be_true
+    end
+
+    it "denies gstatic.com -> other.com redirect" do
+      config = Vug::Config.new
+      h = Vug::RedirectHandler::Default.new(config)
+      res = h.decide(
+        "https://t1.gstatic.com/faviconV2?url=example.com",
+        "https://evil.com/steal",
+        0
+      )
+      res.is_a?(Vug::FetchAction::Deny).should be_true
+      deny = res.as(Vug::FetchAction::Deny)
+      deny.reason.should eq("cross_domain_redirect")
+    end
+
+    it "denies untrusted cross-domain redirect" do
+      config = Vug::Config.new
+      h = Vug::RedirectHandler::Default.new(config)
+      res = h.decide(
+        "https://example.com/favicon.ico",
+        "https://cdn.example.org/favicon.ico",
+        0
+      )
+      res.is_a?(Vug::FetchAction::Deny).should be_true
+      deny = res.as(Vug::FetchAction::Deny)
+      deny.reason.should eq("cross_domain_redirect")
+    end
+  end
 end

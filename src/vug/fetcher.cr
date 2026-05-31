@@ -12,6 +12,7 @@ require "./redirect_handler_default"
 require "./types"
 require "./diagnostics"
 require "./rate_limiter"
+require "./semaphore"
 
 module Vug
   class Fetcher

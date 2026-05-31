@@ -1,3 +1,5 @@
+require "./fetch_types"
+
 module Vug
   abstract class RedirectHandler
     def initialize(@config : Config); end

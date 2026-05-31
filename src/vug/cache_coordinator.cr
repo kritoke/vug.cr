@@ -1,3 +1,5 @@
+require "./cache_manager"
+
 module Vug
   class CacheCoordinator
     def initialize(config : Config, memory_cache : MemoryCache? = nil, cache_manager : CacheManager? = nil)

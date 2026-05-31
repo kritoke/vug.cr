@@ -1,3 +1,4 @@
+require "file_utils"
 require "../spec_helper"
 require "../../src/vug/cache_coordinator"
 require "../../src/vug/cache_manager"

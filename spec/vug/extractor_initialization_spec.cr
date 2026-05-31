@@ -4,6 +4,7 @@ require "../../src/vug/manifest_extractor"
 require "../../src/vug/http_client_factory"
 require "../../src/vug/fetcher"
 require "../../src/vug/cache_manager"
+require "../../src/vug/url_processor"
 
 describe Vug::HtmlExtractor do
   describe "#initialize" do

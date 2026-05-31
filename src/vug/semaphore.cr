@@ -1,25 +1,14 @@
+require "mutex"
+
 module Vug
-  # Semaphore implementation using a buffered channel. Each `acquire` consumes
-  # a token from the channel, and each `release` returns a token. The channel
-  # is pre-filled with @limit tokens so concurrent callers can immediately
-  # acquire up to @limit permits.
-  #
-  # `acquire` accepts an optional timeout (default 30 seconds). When the timeout
-  # expires, `acquire` returns `false` instead of blocking indefinitely. This
-  # prevents permit loss from fiber cancellation: if a fiber is cancelled after
-  # consuming a token but before `release`, the timeout ensures other callers
-  # don't deadlock waiting for a permit that will never be returned.
   class Semaphore
     DEFAULT_ACQUIRE_TIMEOUT = 30.seconds
 
     def initialize(@limit : Int32)
       @channel = Channel(Nil).new(@limit)
-      # Pre-fill channel with tokens - each acquire/receive consumes one token
       @limit.times { @channel.send(nil) }
     end
 
-    # Attempt to acquire a permit. Returns `true` on success, `false` if the
-    # timeout expires before a permit is available.
     def acquire(timeout : Time::Span = DEFAULT_ACQUIRE_TIMEOUT) : Bool
       select
       when @channel.receive
@@ -32,5 +21,39 @@ module Vug
     def release : Nil
       @channel.send(nil)
     end
+  end
+
+  class SharedState
+    def self.instance : self
+      @@instance_mutex.synchronize do
+        @@instance ||= new
+      end
+    end
+
+    def self.instance=(value : self)
+      @@instance = value
+    end
+
+    def initialize
+      @semaphore_mutex = Mutex.new
+    end
+
+    # NOTE: The semaphore is process-wide and only the first-initialized limit
+    # is used. Subsequent calls to semaphore() with different limits are ignored.
+    # This is intentional to avoid the overhead of Atomic or additional Mutex.
+    def semaphore(limit : Int32) : Semaphore
+      @semaphore_mutex.synchronize do
+        @semaphore ||= Semaphore.new(limit)
+      end
+    end
+
+    private getter semaphore_mutex : Mutex
+    private property semaphore : Semaphore? = nil
+
+    @@instance_mutex = Mutex.new
+  end
+
+  def self.shared_semaphore(limit : Int32) : Semaphore
+    SharedState.instance.semaphore(limit)
   end
 end
