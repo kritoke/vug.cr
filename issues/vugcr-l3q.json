@@ -2,13 +2,14 @@
   "assignee": "",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-05-31T15:04:57Z",
   "created": "2026-05-30T20:12:51Z",
   "description": "Addresses 21 findings from code review: HTTP client leaks in extractors, MemoryCache insertion-order bugs, dead code in Fetcher, missing unit tests for concurrency primitives, and minor API/security improvements. All changes are internal — no public API breakage.",
   "id": "vugcr-l3q",
   "labels": [],
   "priority": 1,
-  "status": "open",
+  "status": "closed",
   "title": "Production Hardening: Resource Leaks, Cache Bugs, and Dead Code Cleanup",
   "type": "epic",
-  "updated_at": "2026-05-30T20:12:51Z"
+  "updated_at": "2026-05-31T15:04:57Z"
 }
