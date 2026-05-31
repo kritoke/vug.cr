@@ -2,13 +2,14 @@
   "assignee": "",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-05-31T15:04:57Z",
   "created": "2026-05-31T14:14:25Z",
   "description": "## Goal\nEnforce a 3-word-max naming convention on all internal (non-public) methods. Public API stays unchanged.\n\n## Naming Convention\n- Method names: max 3 underscore-separated words\n- File names: already compliant (max 3 words)\n- Public API: no changes (google_favicon_url, duckduckgo_favicon_url, extract_host_from_url, etc. stay as-is)\n\n## Scope\nPrivate methods with 4+ words across 7 files. All are internal implementation details with no public consumers.\n\n## In Scope (4+ word private methods)\n- `handle_gray_placeholder_with_uri` → `handle_gray_placeholder_uri` or `gray_placeholder_uri`\n- `handle_fetch_result_with_uri` → `handle_fetch_result_uri` or `fetch_result_uri`\n- `get_gray_placeholder_fallback_url` → `gray_fallback_url`\n- `validate_and_parse_url` → `parse_validated_url` or `validate_url`\n- `should_handle_gray_placeholder?` → `gray_placeholder?`\n- `rate_limit_or_revalidate` → `check_rate_and_dns`\n- `process_data_url_favicon` → `process_data_favicon`\n- `fetch_data_url_favicon` → `fetch_data_favicon`\n- `extract_favicons_from_site` → `extract_site_favicons`\n- `extract_favicons_from_html` → `extract_html_favicons`\n- `validate_non_negative_int` → `validate_non_negative`\n- `webp_first_chunk_type` → `webp_chunk_type`\n- `ip_in_private_range?` → `private_ip_range?`\n- `exceeds_max_encoded_size?` → `exceeds_max_size?`\n\n## Out of Scope\n- Public API methods (google_favicon_url, duckduckgo_favicon_url, extract_host_from_url, etc.)\n- File names (all already 3 words or fewer)\n- 3-word methods (acceptable as-is)",
   "id": "vugcr-dn5",
   "labels": [],
   "priority": 2,
-  "status": "open",
+  "status": "closed",
   "title": "Shorten private method names to 3 words max",
   "type": "epic",
-  "updated_at": "2026-05-31T14:14:25Z"
+  "updated_at": "2026-05-31T15:04:57Z"
 }
