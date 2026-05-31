@@ -47,7 +47,8 @@ module Vug
       result
     end
 
-    private def try_fallback_chain(site_url : String) : Result?
+    private def try_fallback_chain(url : String) : Result?
+      site_url = UrlProcessor.derive_site_url(url)
       host = extract_host(site_url)
       return unless host
 
