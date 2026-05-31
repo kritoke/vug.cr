@@ -251,7 +251,7 @@ module Vug
 
       current_ips = DnsCache.resolve(host)
       if current_ips.empty?
-        @config.error("revalidate_dns_for?(#{url})", "Blocked: DNS resolution returned no result at connection time")
+        @config.debug("revalidate_dns_for?(#{url}): DNS resolution returned no result")
         return false
       end
 

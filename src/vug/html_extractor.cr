@@ -62,7 +62,7 @@ module Vug
             attempt += 1
           else
             @config.debug("Max retries (#{max_retries}) reached for #{site_url}, giving up")
-            log_error("extract_all(#{site_url})", ex)
+            @config.debug("extract_all(#{site_url}): #{Vug::Diagnostics.format_exception(ex)}")
             return [] of FaviconInfo
           end
         rescue ex : Exception
