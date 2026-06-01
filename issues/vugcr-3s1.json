@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-01T10:38:22Z",
+  "description": "The Fetcher#fetch method has a complex state machine (fetch_loop) that handles redirects, caching, DNS resolution, and gray placeholder fallbacks. While unit tests exist for individual components (RateLimiter, DnsCache, Semaphore), the main fetch_loop path lacks proper integration test coverage. Need to add tests covering:\\n\\n1. Full redirect chain with cache miss/hit\\n2. Gray placeholder detection and fallback\\n3. DNS revalidation during redirects\\n4. Timeout handling in the loop\\n5. Multiple gray_placeholder_attempts with :try_fallback action\\n6. The visit set loop detection logic\\n\\nThis will help catch regressions in the complex state machine logic (e.g., vugcr-l3q series fixes).",
+  "id": "vugcr-3s1",
+  "labels": [],
+  "priority": 1,
+  "status": "open",
+  "title": "Add comprehensive integration tests for Fetcher fetch_loop path",
+  "type": "task",
+  "updated_at": "2026-06-01T10:38:22Z"
+}
