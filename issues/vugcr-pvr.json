@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-01T10:38:34Z",
+  "description": "Fetcher.cr is 396 lines and handles multiple responsibilities:\\n1. Main entry point and loop orchestration (fetch, fetch_loop)\\n2. HTTP client creation and request execution (fetch_single)\\n3. Redirect handling and validation (handle_redirect, fetch_result_uri)\\n4. Rate limiting and DNS management (check_rate_and_dns)\\n\\nThis violates the single responsibility principle and makes testing difficult. The HTTP request logic (especially fetch_single and check_rate_and_dns) should be extracted into a separate class like  that handles:\\n- Semaphore acquisition\\n- HTTP client lifecycle  \\n- Response validation\\n- DNS/Rate limit checks\\n- Error handling with proper resource cleanup\\n\\nThis would also make it easier to test the request logic in isolation without mocking the entire Fetcher.",
+  "id": "vugcr-pvr",
+  "labels": [],
+  "priority": 2,
+  "status": "open",
+  "title": "Extract Fetcher HTTP request logic into separate Fetcher::SingleRequest class",
+  "type": "task",
+  "updated_at": "2026-06-01T10:38:34Z"
+}
