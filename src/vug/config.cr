@@ -1,4 +1,5 @@
 require "time"
+require "./log_entry"
 
 module Vug
   # Configuration for Vug favicon fetching.
@@ -7,35 +8,6 @@ module Vug
   # (on_save, on_load, on_debug, etc.) which are not comparable and cannot be used
   # in Crystal records. If callback support is ever removed, consider converting
   # to a record to gain automatic `copy_with` support.
-  # Log severity levels for structured logging.
-  enum LogLevel
-    Debug
-    Info
-    Warn
-    Error
-  end
-
-  # A structured log entry with level, message, optional context, and timestamp.
-  class LogEntry
-    getter level : LogLevel
-    getter message : String
-    getter context : String?
-    getter timestamp : Time
-
-    def initialize(@level : LogLevel, @message : String, @context : String? = nil, @timestamp : Time = Time.utc)
-    end
-
-    def to_json : String
-      String.build do |io|
-        io << "{\"timestamp\":\"" << timestamp.to_rfc3339 << "\",\"level\":\"" << level.to_s.downcase << "\",\"message\":\"" << message << "\""
-        if ctx = context
-          io << ",\"context\":\"" << ctx << "\""
-        end
-        io << "}"
-      end
-    end
-  end
-
   class Config
     DEFAULT_USER_AGENT      = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     DEFAULT_ACCEPT_LANGUAGE = "en-US,en;q=0.9"
