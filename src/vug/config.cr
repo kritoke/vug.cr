@@ -111,6 +111,8 @@ module Vug
       @on_log = on_log
     end
 
+    # Validation helpers - kept private as they are only used by Config.
+    # YAGNI: extract to shared module only if other classes need them.
     private def validate_positive_timespan(value : Time::Span?, name : String, default : Time::Span) : Time::Span
       return default unless value
       raise ArgumentError.new("#{name} must be positive") if value <= 0.seconds
