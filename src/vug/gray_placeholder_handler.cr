@@ -16,6 +16,12 @@ module Vug
     # Regex to extract domain from DuckDuckGo /ip3/{domain}.ico URLs.
     DDG_IP3_PATTERN = %r{/ip3/(.+?)\.ico\z}
 
+    # Upper bound on the number of fallback attempts the fetch loop will
+    # make when it keeps receiving gray placeholders. The loop terminates
+    # with a :too_many_gray_placeholder_attempts error once the counter
+    # reaches this value.
+    MAX_FALLBACK_ATTEMPTS = 3
+
     def initialize(@config : Config, @cache_coordinator : CacheCoordinator?)
     end
 
