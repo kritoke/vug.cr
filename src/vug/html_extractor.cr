@@ -34,8 +34,15 @@ module Vug
       uri = parse_validated_url(site_url)
       return [] of FaviconInfo unless uri
 
-      read_timeout = timeout || @config.html_fetch_timeout
+      html = fetch_html_with_retry(site_url, uri, timeout || @config.html_fetch_timeout)
+      return [] of FaviconInfo if html.empty?
 
+      extract_favicons_from_html(html, site_url)
+    end
+
+    # Fetch HTML content with retry logic for transient failures.
+    # Returns the sanitized HTML string, or "" on any error.
+    private def fetch_html_with_retry(site_url : String, uri : URI, timeout : Time::Span) : String
       RetryHelpers.with_retry(
         max_retries: @config.max_retries,
         base_delay: @config.retry_base_delay,
@@ -45,24 +52,26 @@ module Vug
           nil
         }
       ) do
-        fetch_html_from_url(site_url, uri, read_timeout)
+        perform_html_request(site_url, uri, timeout)
       end
     rescue ex : Exception
-      # Non-transient error (not retryable) or retries exhausted
-      log_error("extract_all(#{site_url})", ex)
-      [] of FaviconInfo
+      @config.debug("HTML fetch failed for #{site_url}: #{ex.message}")
+      ""
     end
 
-    private def fetch_html_from_url(site_url : String, uri : URI, read_timeout : Time::Span) : Array(FaviconInfo)
+    # Perform a single HTTP request and return the response body as HTML.
+    # Returns "" on non-success status or IO errors.
+    private def perform_html_request(site_url : String, uri : URI, timeout : Time::Span) : String
       client : HTTP::Client? = nil
       begin
         @config.debug("Fetching HTML from: #{site_url}")
-        client = @http_client_factory.create_client(uri, read_timeout)
-        result = [] of FaviconInfo
+        client = @http_client_factory.create_client(uri, timeout)
+        body = ""
         client.get(uri.request_target, headers: build_html_headers) do |response|
-          result = process_html_response(response, site_url)
+          return "" unless response.status.success?
+          body = fetch_html(response.body_io)
         end
-        result
+        body
       ensure
         client.try(&.close)
       end
@@ -84,16 +93,10 @@ module Vug
       }
     end
 
-    private def process_html_response(response : HTTP::Client::Response, site_url : String) : Array(FaviconInfo)
-      return [] of FaviconInfo unless response.status.success?
-
-      favicons = [] of FaviconInfo
-      html = fetch_html(response.body_io)
-      return [] of FaviconInfo if html.empty?
-
-      html_favicons = extract_html_favicons(html, site_url)
-      favicons.concat(html_favicons)
-
+    # Extract favicons from raw HTML content: parse DOM, find icon links,
+    # and merge any manifest-discovered favicons.
+    private def extract_favicons_from_html(html : String, site_url : String) : Array(FaviconInfo)
+      favicons = extract_html_favicons(html, site_url)
       add_manifest_favicons(html, site_url, favicons)
       favicons
     end
@@ -119,10 +122,6 @@ module Vug
         favicons.concat(manifest_favicons)
         @config.debug("Extracted #{manifest_favicons.size} favicons from manifest")
       end
-    end
-
-    private def log_error(context : String, ex : Exception, prefix : String? = nil)
-      @config.error(context, Vug::Diagnostics.format_exception(ex, prefix))
     end
 
     # Backward compatibility method - returns first favicon only
