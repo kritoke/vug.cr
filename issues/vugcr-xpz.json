@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-06T19:36:09Z",
+  "description": "## Problem\n\n`extract_all` (lines 38–71) mixes three responsibilities:\n\n1. **URL validation** — parse_validated_url\n2. **HTTP fetching with retries** — client creation, header building, retry loop\n3. **Response processing** — process_html_response\n\nAfter ticket vugcr-2sb replaces the retry loop with RetryHelpers, the method will be cleaner, but still has the HTTP lifecycle concern mixed with extraction logic. The Fetcher class already demonstrates the pattern of separating HTTP from processing.\n\n## Proposed Fix\n\nAfter vugcr-2sb is merged, extract an `HtmlFetchResult` or simple method:\n\n```crystal\nprivate def fetch_html_with_retry(site_url : String, uri : URI, timeout : Time::Span) : String\n  RetryHelpers.with_retry(...) do\n    client = @http_client_factory.create_client(uri, timeout)\n    begin\n      result = \"\"\n      client.get(uri.request_target, headers: build_html_headers) do |response|\n        if response.status.success?\n          result = fetch_html(response.body_io)\n        end\n      end\n      result\n    ensure\n      client.try(\u0026.close)\n    end\n  end\nend\n```\n\nThen `extract_all` becomes:\n```crystal\ndef extract_all(site_url : String, timeout : Time::Span? = nil) : Array(FaviconInfo)\n  uri = parse_validated_url(site_url)\n  return [] of FaviconInfo unless uri\n\n  html = fetch_html_with_retry(site_url, uri, timeout || @config.html_fetch_timeout)\n  return [] of FaviconInfo if html.empty?\n\n  favicons = extract_html_favicons(html, site_url)\n  add_manifest_favicons(html, site_url, favicons)\n  favicons\nend\n```\n\nThis cleanly separates HTTP concerns from HTML parsing.\n\n## Dependencies\n- Depends on: vugcr-2sb (retry DRY fix)\n\n## Files\n- src/vug/html_extractor.cr (refactor extract_all)\n- spec/vug/extractor_initialization_spec.cr (verify no regressions)",
+  "id": "vugcr-xpz",
+  "labels": [],
+  "priority": 2,
+  "status": "open",
+  "title": "Split extract_all: separate HTTP fetching from favicon extraction",
+  "type": "task",
+  "updated_at": "2026-06-06T19:36:09Z"
+}
