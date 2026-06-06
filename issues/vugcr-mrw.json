@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-06T15:22:28Z",
+  "description": "## Problem\nfetch_loop passes 4 parameters through multiple methods and uses a 4-element tuple {String, Int32, Int32, URI?} in handle_result_action. This is hard to read and error-prone — it's unclear which Int32 is redirects vs gray_attempts without reading the implementation.\n\n## Proposal\n1. Create a `Fetcher::LoopState` struct (or similar):\n   - `current_url : String`\n   - `redirects : Int32`\n   - `gray_placeholder_attempts : Int32`\n   - `current_uri : URI?`\n   - `visited_urls : Set(String)`\n   - `initial_dns_ips : Hash(String, Array(String))`\n   - `start_time : Time::Span`\n\n2. Pass LoopState through the loop instead of individual parameters\n3. handle_result_action mutates LoopState instead of returning a tuple\n\n## Benefits\n- Self-documenting: field names explain each value\n- Adding new loop state doesn't require changing every method signature\n- Eliminates the fragile positional tuple return",
+  "id": "vugcr-mrw",
+  "labels": [],
+  "priority": 2,
+  "status": "open",
+  "title": "Improve fetch_loop readability with named struct for loop state",
+  "type": "task",
+  "updated_at": "2026-06-06T15:22:28Z"
+}
