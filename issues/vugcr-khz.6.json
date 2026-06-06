@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-06T20:28:21Z",
+  "description": "## Goal\nReplace the `{LoopAction, String?, URI?}` 3-tuple returned by `fetch_result_uri` and `gray_placeholder_uri` in `src/vug/fetcher.cr` with a small typed record.\n\n## Why (reliability)\nThe current return type is `{Action, String?, URI?}` and the call site is:\n```crystal\naction, next_url, state.current_uri = fetch_result_uri(state.current_url, result, state.current_uri)\n```\n\nIssues with this signature:\n- The third element is just `current_uri` passed through in 3 of 4 branches, and `nil` in 1 branch (the `TryFallback` branch forces a re-parse). This is a hidden side-channel — the caller has to know which branch zeros it.\n- Tuple destructuring of 3 values is easy to get wrong (swap, drop, or misname), and the type system won't catch it.\n- The function name (`fetch_result_uri`) implies it returns a URI; the actual purpose is a *loop control decision* with an optional URL and an optional re-parse flag.\n\nA small record makes the contract self-documenting and removes the silent \"should I re-parse?\" coupling.\n\n## Approach\n1. Introduce a private record in `fetcher.cr` (or alongside the extracted `LoopAction`):\n   ```crystal\n   private record FetchDecision, action : LoopAction, next_url : String?, reparse : Bool\n   ```\n   - `reparse: true` for the `TryFallback` branch (force `state.current_uri = nil`).\n   - `reparse: false` for the other three branches.\n2. Change `fetch_result_uri` and `gray_placeholder_uri` to return `FetchDecision` instead of a 3-tuple.\n3. Update the call site:\n   ```crystal\n   decision = fetch_result_uri(state.current_url, result, state.current_uri)\n   state.current_uri = nil if decision.reparse\n   if outcome = apply_action(decision.action, decision.next_url, result, state)\n     return outcome\n   end\n   ```\n4. Drop the `current_uri` parameter from both methods (it is never used in the `TryFallback` branch, and in the other branches the value is the same as what the caller already has).\n\n## Acceptance\n- No 3-tuple return type remains in `fetcher.cr`.\n- `apply_action` and `handle_result_action` continue to work without behavior change.\n- All fetcher specs pass.\n- A targeted unit spec is added for the new decision logic if practical (covered today only via integration specs).\n\n## Notes\n- Naturally pairs with `vugcr-khz.2` (extract `Action` -\u003e `LoopAction`); do that one first so the record can hold `LoopAction` directly.",
+  "id": "vugcr-khz.6",
+  "labels": [],
+  "parent": "vugcr-khz",
+  "priority": 2,
+  "status": "open",
+  "title": "Replace 3-tuple returns from fetch_result_uri with a typed struct",
+  "type": "task",
+  "updated_at": "2026-06-06T20:28:21Z"
+}
