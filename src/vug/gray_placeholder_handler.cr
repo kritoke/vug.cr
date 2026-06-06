@@ -30,7 +30,7 @@ module Vug
     # Try to find a cached larger version of a gray placeholder.
     # Returns the cached path if found, nil otherwise.
     def cached_larger_version(url : String) : String?
-      return nil unless url.includes?("google.com/s2/favicons")
+      return unless url.includes?("google.com/s2/favicons")
       larger_url = google_larger_url(url)
       @cache_coordinator.try(&.fetch(larger_url))
     end

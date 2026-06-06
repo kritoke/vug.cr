@@ -18,6 +18,16 @@ require "./single_request"
 
 module Vug
   class Fetcher
+    # Raised by prepare_request on redirect loop detection.
+    # Caught by fetch_loop to return a clean failure result.
+    private class RedirectLoopError < Exception
+      getter url : String
+
+      def initialize(@url : String)
+        super("Redirect loop detected: #{@url}")
+      end
+    end
+
     # Backward-compatible alias — canonical value lives in GrayPlaceholderHandler.
     DDG_DEFAULT_ICON_SIZE = GrayPlaceholderHandler::DDG_DEFAULT_ICON_SIZE
 
@@ -50,6 +60,7 @@ module Vug
         @initial_dns_ips = {} of String => Array(String)
       end
     end
+
     def initialize(@config : Config = Config.default, cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectHandler? = nil, cache_coordinator : CacheCoordinator? = nil, image_processor : ImageProcessor? = nil, rate_limiter : RateLimiter? = nil)
       @http_client_factory = http_client_factory || HttpClientFactory.new(@config)
       @cache_manager = cache_manager || CacheManager.new(@config, cache)
@@ -85,38 +96,51 @@ module Vug
           return Vug.success(state.current_url, path)
         end
 
-        # Resolve DNS for the current host (deferred until after cache check
-        # to avoid wasted DNS lookups on cache hits)
-        state.current_uri = parse_uri_safe(state.current_url)
-        parsed = state.current_uri
-        if parsed && (host = parsed.hostname)
-          state.initial_dns_ips[host] ||= DnsCache.resolve(host)
-        end
-
-        # Check for redirect loop (visiting same URL twice in the chain)
-        if state.visited_urls.includes?(state.current_url)
-          @config.debug("Redirect loop detected: #{state.current_url} already visited")
-          return Vug.failure("Redirect loop detected", state.current_url, error_type: :too_many_redirects)
-        end
-        state.visited_urls.add(state.current_url)
+        prepare_request(state)
 
         @config.debug("Fetching favicon from: #{state.current_url}")
 
-        # Reuse parsed URI if available, only parse if we have a redirect URL
         uri = state.current_uri || parse_uri_safe(state.current_url)
         result = @single_request.execute(state.current_url, uri, state.initial_dns_ips, state.redirects)
         action, next_url, state.current_uri = fetch_result_uri(state.current_url, result, state.current_uri)
 
-        case action
-        when .redirect?, .try_fallback?
-          handle_result_action(action, next_url, state)
-          next if action.redirect? || (action.try_fallback? && next_url)
-          return result if action.try_fallback?
-        when .return_result?, .use_cached?
-          return Vug.success(state.current_url, next_url) if action.use_cached? && next_url
-          return result
+        if outcome = apply_action(action, next_url, result, state)
+          return outcome
         end
       end
+    rescue ex : RedirectLoopError
+      Vug.failure("Redirect loop detected", ex.url, error_type: :too_many_redirects)
+    end
+
+    # Apply the action from a fetch result. Returns a Result to return
+    # immediately, or nil to continue the loop.
+    private def apply_action(action : Action, next_url : String?, result : Result, state : LoopState) : Result?
+      case action
+      when .redirect?, .try_fallback?
+        handle_result_action(action, next_url, state)
+        return if action.redirect? || (action.try_fallback? && next_url)
+        return result if action.try_fallback?
+      when .return_result?
+        return result
+      when .use_cached?
+        return Vug.success(state.current_url, next_url) if next_url
+        return result
+      end
+      nil
+    end
+
+    # Resolve DNS and check for redirect loops before making a request.
+    private def prepare_request(state : LoopState) : Nil
+      state.current_uri = parse_uri_safe(state.current_url)
+      if host = state.current_uri.try(&.hostname)
+        state.initial_dns_ips[host] ||= DnsCache.resolve(host)
+      end
+
+      if state.visited_urls.includes?(state.current_url)
+        @config.debug("Redirect loop detected: #{state.current_url} already visited")
+        raise RedirectLoopError.new(state.current_url)
+      end
+      state.visited_urls.add(state.current_url)
     end
 
     private def check_termination(state : LoopState) : Result?
@@ -156,9 +180,9 @@ module Vug
       new_uri = parse_uri_safe(new_url)
       unless new_uri
         @config.warning("Redirect target could not be parsed: #{new_url}")
-        return nil
+        return
       end
-      if (new_host = new_uri.hostname)
+      if new_host = new_uri.hostname
         initial_dns_ips[new_host] ||= DnsCache.resolve(new_host)
       end
       new_uri

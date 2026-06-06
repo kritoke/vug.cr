@@ -83,12 +83,12 @@ module Vug
     # Bytes 0-2: "GIF", byte 3: "8", byte 4: "7" or "9", byte 5: "a"
     def self.gif?(data : Bytes) : Bool
       data.size >= 6 &&
-        data[0] == 0x47 && # G
-        data[1] == 0x49 && # I
-        data[2] == 0x46 && # F
-        data[3] == 0x38 && # 8
+        data[0] == 0x47 &&                      # G
+        data[1] == 0x49 &&                      # I
+        data[2] == 0x46 &&                      # F
+        data[3] == 0x38 &&                      # 8
         (data[4] == 0x37 || data[4] == 0x39) && # 7 or 9
-        data[5] == 0x61    # a
+        data[5] == 0x61                         # a
     end
 
     private def self.with_crimage_result(data : Bytes, default, & : CrImage::Image -> _)

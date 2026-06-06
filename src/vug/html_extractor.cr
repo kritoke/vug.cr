@@ -69,6 +69,7 @@ module Vug
     # Perform a single HTTP request and return the response body as HTML.
     # Returns "" on non-success status or IO errors.
     private def perform_html_request(site_url : String, uri : URI, timeout : Time::Span) : String
+      # ameba:disable Lint/UselessAssign — used in ensure block
       client : HTTP::Client? = nil
       begin
         @config.debug("Fetching HTML from: #{site_url}")

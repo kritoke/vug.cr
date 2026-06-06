@@ -34,7 +34,7 @@ module Vug
       max_delay : Time::Span,
       retryable : Proc(Exception, Bool)? = nil,
       on_retry : Proc(Int32, Exception, Time::Span, Nil)? = nil,
-      &block : -> T
+      & : -> T
     ) forall T
       attempt = 0
       last_error : Exception? = nil

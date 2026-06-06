@@ -44,9 +44,9 @@ module Vug
     # Returns nil if the URL is invalid, dangerous, or unparseable.
     def self.parse_and_validate(url : String) : URI?
       clean = sanitize_feed_url(url)
-      return nil unless UrlValidator.valid_url?(clean)
+      return unless UrlValidator.valid_url?(clean)
       parsed = URI.parse(clean)
-      return nil unless parsed.scheme
+      return unless parsed.scheme
       parsed
     rescue URI::Error
       nil
@@ -107,21 +107,19 @@ module Vug
     # returns the origin.
     # For non-feed URLs, returns the URL unchanged.
     def self.derive_site_url(url : String) : String
-      begin
-        uri = URI.parse(url)
-        host = uri.host
+      uri = URI.parse(url)
+      host = uri.host
 
-        # Feed subdomain: strip feeds./feed. prefix to get parent domain
-        if host && host.matches?(FEED_SUBDOMAIN_PATTERN)
-          parent_host = host.sub(FEED_SUBDOMAIN_PATTERN, "")
-          return "#{uri.scheme}://#{parent_host}"
-        end
-
-        return url unless feed_url?(url)
-        "#{uri.scheme}://#{uri.host}"
-      rescue URI::Error
-        url
+      # Feed subdomain: strip feeds./feed. prefix to get parent domain
+      if host && host.matches?(FEED_SUBDOMAIN_PATTERN)
+        parent_host = host.sub(FEED_SUBDOMAIN_PATTERN, "")
+        return "#{uri.scheme}://#{parent_host}"
       end
+
+      return url unless feed_url?(url)
+      "#{uri.scheme}://#{uri.host}"
+    rescue URI::Error
+      url
     end
   end
 end
