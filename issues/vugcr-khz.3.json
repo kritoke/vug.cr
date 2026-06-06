@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-06T20:27:45Z",
+  "description": "## Goal\nMove the private `Fetcher::RedirectLoopError` exception out of `src/vug/fetcher.cr` into a dedicated file.\n\n## Why (SRP)\n`RedirectLoopError` is a small but distinct concept: it signals that the fetch loop has detected an infinite redirect chain. It is raised in `prepare_request` and caught in `fetch_loop`. As a private constant in `fetcher.cr` it is hard to spot when reading the file top-to-bottom, and there is no obvious place to attach documentation or future fields.\n\n## Approach\n1. Create `src/vug/fetch_errors.cr` (a home for any future fetch-loop errors).\n2. Move the `private class RedirectLoopError \u003c Exception` block (lines 20-28 of `fetcher.cr`) into the new file as `Vug::RedirectLoopError` (no longer `private` to `Fetcher`; visibility is the only meaningful change).\n3. Add `require \"./fetch_errors\"` to `fetcher.cr`.\n4. Re-export from `src/vug.cr`.\n\n## Acceptance\n- `RedirectLoopError` is defined in `src/vug/fetch_errors.cr`.\n- The class is reachable as `Vug::RedirectLoopError`.\n- The existing rescue in `fetch_loop` still catches it (no behavior change).\n- All fetcher specs pass.\n\n## Notes\n- This is a low-risk move. The exception is only raised and caught inside `Fetcher`; no external code references `Fetcher::RedirectLoopError`.",
+  "id": "vugcr-khz.3",
+  "labels": [],
+  "parent": "vugcr-khz",
+  "priority": 2,
+  "status": "open",
+  "title": "Extract RedirectLoopError to its own file",
+  "type": "task",
+  "updated_at": "2026-06-06T20:27:45Z"
+}
