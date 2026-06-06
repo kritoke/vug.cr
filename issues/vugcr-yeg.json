@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-06T22:37:08Z",
+  "description": "## Problem\n`src/vug/fetcher.cr:58` uses a bare `rescue nil`:\n\n```crystal\n@current_uri = URI.parse(@initial_url) rescue nil\n```\n\nA bare `rescue` in Crystal catches `Exception` (everything, including `SystemExit`, `NoMemoryError`, programming bugs). The same file already exports a `parse_uri_safe` helper that does this correctly with `rescue URI::Error`. The constructor should use it.\n\n## Fix\nReplace the inline `URI.parse(...) rescue nil` with a call to the existing private helper:\n\n```crystal\n@current_uri = parse_uri_safe(@initial_url)\n```\n\n## Why\n- Correctness: avoid swallowing non-URI exceptions.\n- DRY: reuses the helper that already exists 160 lines below.\n- Style: ameba flags bare rescues.\n\n## Acceptance\n- [ ] `LoopState#initialize` calls `parse_uri_safe` instead of `URI.parse ... rescue nil`.\n- [ ] `ameba src/` reports 0 failures.\n- [ ] `crystal spec` (full suite) still passes.\n- [ ] Public API unchanged (internal state class).\n\n## Out of scope\n- Do not move `LoopState` out of `Fetcher`.",
+  "id": "vugcr-yeg",
+  "labels": [],
+  "priority": 2,
+  "status": "open",
+  "title": "fetcher: replace bare rescue in LoopState with parse_uri_safe",
+  "type": "task",
+  "updated_at": "2026-06-06T22:37:08Z"
+}
