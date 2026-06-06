@@ -1,5 +1,5 @@
 {
-  "assignee": "",
+  "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [
     "vugcr-2ry",
@@ -11,8 +11,8 @@
   "labels": [],
   "parent": "vugcr-gp8",
   "priority": 1,
-  "status": "open",
+  "status": "in_progress",
   "title": "Extract LogLevel and LogEntry from config.cr into separate logging module",
   "type": "task",
-  "updated_at": "2026-06-06T19:09:39Z"
+  "updated_at": "2026-06-06T19:10:56Z"
 }
