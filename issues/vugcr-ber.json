@@ -1,7 +1,9 @@
 {
   "assignee": "",
   "blocked_by": [],
-  "blocks": [],
+  "blocks": [
+    "vugcr-jot"
+  ],
   "created": "2026-06-06T15:20:57Z",
   "description": "## Problem\\nFetcher.cr (396 lines) contains ~100 lines of gray placeholder detection and fallback URL construction logic that is a distinct concern mixed into the fetch orchestration class.\\n\\n## Affected Methods\\n-  (DDG default icon detection)\\n-  (Google/DDG fallback URL construction)\\n-  (orchestration of detection + fallback)\\n- \\n- \\n-  constant\\n\\n## Proposal\\nExtract into a  class (or similar) under :\\n- Takes  as dependency\\n- Owns all gray placeholder detection logic\\n- Owns fallback URL construction for Google and DDG sources\\n- Exposes a simple API:  and  and \\n\\n## Benefits\\n- Fetcher focuses on fetch orchestration only (SRP)\\n- Gray placeholder logic becomes independently testable\\n- Easier to add new placeholder sources without touching Fetcher",
   "id": "vugcr-ber",
@@ -10,5 +12,5 @@
   "status": "open",
   "title": "Extract gray placeholder detection and fallback logic from Fetcher",
   "type": "task",
-  "updated_at": "2026-06-06T15:20:57Z"
+  "updated_at": "2026-06-06T15:22:58Z"
 }
