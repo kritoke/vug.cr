@@ -2,13 +2,14 @@
   "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-06-06T19:51:47Z",
   "created": "2026-06-06T19:35:56Z",
   "description": "## Problem\n\nThe HtmlExtractor constructor (lines 27–32) takes 5 optional parameters with nil defaults and manual fallback:\n\n```crystal\ndef initialize(\n  @config : Config = Config.default,\n  manifest_extractor : ManifestExtractor? = nil,\n  http_client_factory : HttpClientFactory? = nil,\n  cache_manager : CacheManager? = nil,\n  cache_coordinator : CacheCoordinator? = nil\n)\n  @manifest_extractor = manifest_extractor || ManifestExtractor.new(@config)\n  @http_client_factory = http_client_factory || HttpClientFactory.new(@config)\n  @cache_coordinator = cache_coordinator || CacheCoordinator.new(@config, nil, cache_manager)\nend\n```\n\nThis pattern is fragile — every new dependency requires adding another nil-checking parameter. It also hides the default wiring logic.\n\n## Proposed Fix\n\nExtract a `Dependencies` struct or use keyword arguments with clear defaults:\n\nOption A — Dependencies struct:\n```crystal\nrecord Dependencies,\n  manifest_extractor : ManifestExtractor? = nil,\n  http_client_factory : HttpClientFactory? = nil,\n  cache_coordinator : CacheCoordinator? = nil\n\ndef initialize(@config : Config = Config.default, deps : Dependencies = Dependencies.new)\n  @manifest_extractor = deps.manifest_extractor || ManifestExtractor.new(@config)\n  @http_client_factory = deps.http_client_factory || HttpClientFactory.new(@config)\n  @cache_coordinator = deps.cache_coordinator || CacheCoordinator.new(@config)\nend\n```\n\nOption B — Keep keyword args but extract wiring into a private method for clarity.\n\nThe Dependencies struct approach is preferred as it documents the dependency graph explicitly and makes test injection cleaner.\n\n## Files\n- src/vug/html_extractor.cr (refactor constructor)\n- spec/vug/extractor_initialization_spec.cr (update tests)",
   "id": "vugcr-7lr",
   "labels": [],
   "priority": 3,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Simplify HtmlExtractor constructor with parameter object or builder",
   "type": "task",
-  "updated_at": "2026-06-06T19:48:08Z"
+  "updated_at": "2026-06-06T19:51:47Z"
 }
