@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-06T22:37:47Z",
+  "description": "## Problem\n`src/vug/fetcher.cr:147-159` (`handle_result_action`) has a `case` over the `Action` enum with an explicit `else` branch and a comment \"ReturnResult / UseCached are handled by the caller\":\n\n```crystal\ncase action\nwhen .redirect?\n  ...\nwhen .try_fallback?\n  ...\nelse\n  # ReturnResult / UseCached are handled by the caller\nend\n```\n\nThis `else` is dead — the only caller (`apply_action`) already filters on `action.redirect? || action.try_fallback?` before calling. The `else` masks the fact that the case is exhaustive for the intended inputs and prevents Crystal's exhaustiveness check from warning if a new enum value is added.\n\n## Fix\nRemove the `else` branch. If Crystal warns about non-exhaustive `case` on the enum, let the warning surface (it's the intended safety net) and either:\n- Add explicit `when .return_result?, .use_cached?` no-op cases with a brief comment, or\n- Convert to `case ... in ... end` pattern matching that fails loudly on unhandled variants.\n\n## Why\n- Readability: code reflects the actual control contract.\n- Safety: future enum additions cause compile-time feedback.\n\n## Acceptance\n- [ ] `else` branch removed (or replaced with explicit no-op cases for `ReturnResult` and `UseCached`).\n- [ ] All existing tests pass.\n- [ ] `ameba src/` reports 0 failures.\n- [ ] Public API unchanged.\n\n## Out of scope\n- Do not change `Action` enum values.\n- Do not refactor `apply_action` (covered by a separate ticket).",
+  "id": "vugcr-g9i",
+  "labels": [],
+  "priority": 3,
+  "status": "open",
+  "title": "fetcher: remove dead else branch in handle_result_action",
+  "type": "task",
+  "updated_at": "2026-06-06T22:37:47Z"
+}
