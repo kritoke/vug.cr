@@ -132,7 +132,13 @@ module Vug
     private def handle_redirect(url : String, uri : URI, response : HTTP::Client::Response, redirect_count : Int32) : Result?
       return unless response.status.redirection? && (location = response.headers["Location"]?)
 
-      new_url = uri.resolve(location).to_s
+      begin
+        new_url = uri.resolve(location).to_s
+      rescue ex : URI::Error
+        @config.error("handle_redirect(#{url})", "Failed to resolve redirect location: #{ex.message}")
+        return Vug.failure("Invalid redirect location", url, error_type: :invalid_redirect)
+      end
+
       case action = @redirect_validator.decide(url, new_url, redirect_count)
       when FetchAction::Follow
         @config.debug("Favicon redirect: #{action.location}")

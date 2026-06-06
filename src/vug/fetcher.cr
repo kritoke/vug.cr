@@ -150,9 +150,15 @@ module Vug
     end
 
     # Update DNS cache for a redirect target host. Returns the parsed URI.
+    # Returns nil if the redirect URL cannot be parsed — the caller must
+    # handle this gracefully (e.g. by letting the next iteration fail).
     private def handle_redirect_action(new_url : String, initial_dns_ips : Hash(String, Array(String))) : URI?
       new_uri = parse_uri_safe(new_url)
-      if new_uri && (new_host = new_uri.hostname)
+      unless new_uri
+        @config.warning("Redirect target could not be parsed: #{new_url}")
+        return nil
+      end
+      if (new_host = new_uri.hostname)
         initial_dns_ips[new_host] ||= DnsCache.resolve(new_host)
       end
       new_uri
