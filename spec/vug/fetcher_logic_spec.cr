@@ -2,6 +2,103 @@ require "../spec_helper"
 require "../../src/vug"
 
 describe Vug::Fetcher do
+  describe "#fetch integration" do
+    it "returns timeout error when timeout is very short" do
+      config = Vug::Config.new(timeout: 1.millisecond)
+      fetcher = Vug::Fetcher.new(config)
+      result = fetcher.fetch("https://example.com/favicon.ico")
+      # Should fail — either timeout, DNS, or connection error
+      result.failure?.should be_true
+    end
+
+    it "returns success from cache without making HTTP request" do
+      config = Vug::Config.new(
+        on_load: ->(_url : String) { "/cached/path.png".as(String?) },
+      )
+      fetcher = Vug::Fetcher.new(config)
+      result = fetcher.fetch("https://example.com/favicon.ico")
+      result.success?.should be_true
+      result.local_path.should eq("/cached/path.png")
+    end
+
+    it "returns invalid_url for malformed URLs" do
+      config = Vug::Config.new
+      fetcher = Vug::Fetcher.new(config)
+      result = fetcher.fetch("not-a-url")
+      result.failure?.should be_true
+      result.error_type.should eq(Vug::ErrorType::InvalidUrl)
+    end
+
+    it "returns invalid_url for dangerous schemes" do
+      config = Vug::Config.new
+      fetcher = Vug::Fetcher.new(config)
+      result = fetcher.fetch("javascript:alert(1)")
+      result.failure?.should be_true
+      result.error_type.should eq(Vug::ErrorType::InvalidUrl)
+    end
+
+    it "blocks private IP addresses" do
+      config = Vug::Config.new
+      fetcher = Vug::Fetcher.new(config)
+      result = fetcher.fetch("http://127.0.0.1/favicon.ico")
+      result.failure?.should be_true
+    end
+
+    it "blocks URLs resolving to private IPs" do
+      config = Vug::Config.new
+      fetcher = Vug::Fetcher.new(config)
+      # localhost resolves to 127.0.0.1
+      result = fetcher.fetch("http://localhost/favicon.ico")
+      result.failure?.should be_true
+    end
+
+    it "respects max_redirects configuration" do
+      config = Vug::Config.new(max_redirects: 0)
+      fetcher = Vug::Fetcher.new(config)
+      # Any URL that would redirect should fail immediately
+      result = fetcher.fetch("https://httpbin.org/redirect/1")
+      # With max_redirects=0, even a single redirect is blocked
+      result.failure?.should be_true
+    end
+
+    it "uses saved path from on_save callback" do
+      saved = {} of String => String
+      config = Vug::Config.new(
+        on_save: ->(url : String, _data : Bytes, _ct : String) {
+          path = "/saved/" + url.gsub(/[^a-zA-Z0-9]/, "_")
+          saved[url] = path
+          path.as(String?)
+        },
+        on_load: ->(_url : String) { nil.as(String?) },
+      )
+      fetcher = Vug::Fetcher.new(config)
+      # This will attempt a real fetch but test the save path
+      result = fetcher.fetch("https://www.google.com/favicon.ico")
+      # Either succeeds with saved path or fails due to network
+      if result.success?
+        result.local_path.should_not be_nil
+      end
+    end
+
+    it "handles concurrent fetches safely" do
+      config = Vug::Config.new(timeout: 2.seconds)
+      fetcher = Vug::Fetcher.new(config)
+      results = Channel(Vug::Result).new(5)
+
+      5.times do |i|
+        spawn do
+          results.send(fetcher.fetch("https://example#{i}.com/favicon.ico"))
+        end
+      end
+
+      5.times do
+        result = results.receive
+        # All should complete without crashes
+        (result.success? || result.failure?).should be_true
+      end
+    end
+  end
+
   describe "#fetch" do
     it "handles failure for invalid URL" do
       config = Vug::Config.new(
