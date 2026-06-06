@@ -4,14 +4,15 @@
     "vugcr-4xz"
   ],
   "blocks": [],
+  "closed_at": "2026-06-06T19:12:57Z",
   "created": "2026-06-06T19:07:27Z",
   "description": "## Problem\\n\\nLogEntry#to_json in src/vug/config.cr manually builds JSON:\\n\\n\\n\\nThis is fragile: it does not escape special characters in  or  fields. If a message contains quotes, newlines, or backslashes, the output will be malformed JSON.\\n\\n## What to do\\n\\n1. Add  to the file containing LogEntry\\n2. Add  to LogEntry class\\n3. Remove the manual  method (the mixin provides it)\\n4. Verify all timestamp/level serialization matches the existing format\\n5. Run specs to confirm no behavioral change\\n\\n## Why\\n\\n- Reliability: manual JSON building is error-prone with special characters\\n- DRY: Crystal's JSON::Serializable handles this correctly by default\\n- Maintainability: less custom code to maintain",
   "id": "vugcr-2ry",
   "labels": [],
   "parent": "vugcr-gp8",
   "priority": 1,
-  "status": "open",
+  "status": "closed",
   "title": "Fix LogEntry#to_json to use JSON serialization instead of manual string building",
   "type": "task",
-  "updated_at": "2026-06-06T19:09:40Z"
+  "updated_at": "2026-06-06T19:12:57Z"
 }
