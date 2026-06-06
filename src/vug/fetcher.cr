@@ -197,18 +197,12 @@ module Vug
       rescue ex : URI::Error
         @config.error("fetch_single(#{url})", "Invalid URL format: #{ex.message}")
         Vug.failure("Invalid URL", url, error_type: :invalid_url)
-      rescue ex : Socket::Addrinfo::Error
-        @config.error("fetch_single(#{url})", format_exception(ex, "DNS resolution failed"))
-        Vug.failure("DNS resolution failed", url, error_type: :fetch_error)
-      rescue ex : OpenSSL::SSL::Error
-        @config.error("fetch_single(#{url})", format_exception(ex, "SSL error"))
-        Vug.failure("SSL error", url, error_type: :fetch_error)
-      rescue ex : IO::TimeoutError
+      rescue ex : Socket::Addrinfo::Error | OpenSSL::SSL::Error
+        @config.error("fetch_single(#{url})", format_exception(ex, "Connection security error"))
+        Vug.failure(ex.message || "Connection error", url, error_type: :fetch_error)
+      rescue ex : IO::TimeoutError | IO::Error | Socket::Error
         @config.warning("fetch_single(#{url}): #{ex.message}")
-        Vug.failure("Read timed out", url, error_type: :fetch_error)
-      rescue ex : IO::Error | Socket::Error
-        @config.error("fetch_single(#{url})", format_exception(ex))
-        Vug.failure(ex.message || "Unknown error", url, error_type: :fetch_error)
+        Vug.failure(ex.message || "Network error", url, error_type: :fetch_error)
       ensure
         @semaphore.release if acquired
       end
@@ -312,6 +306,7 @@ module Vug
 
     private def perform_http_request(url : String, uri : URI, redirect_count : Int32) : Result
       client = @http_client_factory.create_client(uri)
+      success = false
 
       headers = HTTP::Headers{
         "User-Agent"      => @config.user_agent,
@@ -326,13 +321,10 @@ module Vug
           result ||= process_response(url, response) if response.status.success?
           result ||= handle_error(url, response.status_code)
         end
-      rescue ex : Exception
-        # Close the client on any exception to avoid reusing corrupted connections
-        @http_client_factory.release_client(uri, client, success: false)
-        raise ex
-      else
-        # Only pool successful requests
-        @http_client_factory.release_client(uri, client, success: true)
+        success = true
+      ensure
+        # Release client back to pool on success, discard on failure
+        @http_client_factory.release_client(uri, client, success: success)
       end
       result || Vug.failure("Unexpected HTTP error", url.to_s)
     end
