@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-06T20:27:11Z",
+  "description": "## Goal\nAddress readability and reliability issues in `src/vug/fetcher.cr` (the largest source file at 234 lines). Extract unrelated internal types to dedicated files, remove dead code, tighten type safety of the fetch-loop return values, and consolidate duplicated URI-parsing logic.\n\n## Why\n`fetcher.cr` currently mixes several concerns:\n- 3 private classes/enums (`LoopState`, `Action`, `RedirectLoopError`) that are only used inside Fetcher\n- A dead `DDG_DEFAULT_ICON_SIZE` constant alias\n- 3-tuple returns from `fetch_result_uri` / `gray_placeholder_uri` (`{Action, String?, URI?}`) that are easy to mis-order and don't carry their own meaning\n- A `MAX_GRAY_ATTEMPTS` constant that lives in `LoopState` but is a gray-placeholder-domain concern\n- Two inconsistent URI-parsing helpers (`Fetcher#parse_uri_safe` vs `SingleRequest#parse_uri`) with different log levels and exception policies\n- A `apply_action` case statement whose control flow is hard to follow (mixes state mutation, early returns, and fall-throughs)\n\nSplitting these out makes each unit testable in isolation, removes the dead alias, prevents tuple-swap bugs, and aligns the file with the existing refactor style (see recent commits `a6f2c95`, `dbb9ae0`, `6be767f`).\n\n## Non-goals\n- No public API changes to `Fetcher#fetch` or `Result`.\n- No behavior change for any existing spec.\n- No new dependencies.\n\n## Children\nThis epic has 6 child tickets, each independently reviewable.",
+  "id": "vugcr-khz",
+  "labels": [],
+  "priority": 2,
+  "status": "open",
+  "title": "Refactor Fetcher.cr for SRP, DRY, and reliability",
+  "type": "epic",
+  "updated_at": "2026-06-06T20:27:11Z"
+}
