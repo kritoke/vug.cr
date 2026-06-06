@@ -8,6 +8,11 @@ module Vug
   # (on_save, on_load, on_debug, etc.) which are not comparable and cannot be used
   # in Crystal records. If callback support is ever removed, consider converting
   # to a record to gain automatic `copy_with` support.
+  #
+  # MAINTENANCE: When adding/removing config fields, update all 3 locations:
+  # 1. getter declaration (above)
+  # 2. initialize method parameters and body
+  # 3. copy_with method parameters and body
   class Config
     DEFAULT_USER_AGENT      = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     DEFAULT_ACCEPT_LANGUAGE = "en-US,en;q=0.9"
