@@ -5,7 +5,10 @@ module Vug
       @cache_manager = CacheManager.new(@config, cache)
       @cache_coordinator = cache_coordinator || CacheCoordinator.new(@config, cache, @cache_manager)
       @fetcher = Fetcher.new(@config, cache, @http_client_factory, @cache_manager, nil, @cache_coordinator)
-      @html_fetcher = HtmlExtractor.new(@config, nil, @http_client_factory, @cache_manager, @cache_coordinator)
+      @html_fetcher = HtmlExtractor.new(@config, HtmlExtractor::Dependencies.new(
+        http_client_factory: @http_client_factory,
+        cache_coordinator: @cache_coordinator
+      ))
     end
 
     def site(url : String) : Result

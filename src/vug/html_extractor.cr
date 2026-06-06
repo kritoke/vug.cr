@@ -22,10 +22,17 @@ module Vug
       "link[type='image/x-icon']",
     ]
 
-    def initialize(@config : Config = Config.default, manifest_extractor : ManifestExtractor? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, cache_coordinator : CacheCoordinator? = nil)
-      @manifest_extractor = manifest_extractor || ManifestExtractor.new(@config)
-      @http_client_factory = http_client_factory || HttpClientFactory.new(@config)
-      @cache_coordinator = cache_coordinator || CacheCoordinator.new(@config, nil, cache_manager)
+    # Injectable dependencies for HtmlExtractor.
+    # All fields default to nil; the constructor wires defaults when nil.
+    record Dependencies,
+      manifest_extractor : ManifestExtractor? = nil,
+      http_client_factory : HttpClientFactory? = nil,
+      cache_coordinator : CacheCoordinator? = nil
+
+    def initialize(@config : Config = Config.default, deps : Dependencies = Dependencies.new)
+      @manifest_extractor = deps.manifest_extractor || ManifestExtractor.new(@config)
+      @http_client_factory = deps.http_client_factory || HttpClientFactory.new(@config)
+      @cache_coordinator = deps.cache_coordinator || CacheCoordinator.new(@config)
     end
 
     # Extract favicon information from a site's HTML.
@@ -163,7 +170,7 @@ module Vug
       return unless data_result
 
       data, media_type = data_result
-      data_url_id = "data:#{Digest::SHA256.hexdigest(data.to_slice)}"
+      data_url_id = HtmlExtractor.data_url_identifier(data)
       favicon_info = FaviconInfo.new(url: data_url_id, sizes: nil, type: media_type, purpose: nil)
       @config.debug("Found data URL favicon: #{data_url_id}")
       favicons << favicon_info
@@ -185,6 +192,13 @@ module Vug
         purpose: nil
       )
       favicons << favicon_info
+    end
+
+    # Generate a stable synthetic URL identifier for a data-URL resource.
+    # Uses SHA256 of the content bytes, prefixed with "data:" to distinguish
+    # from real URLs. Suitable as a cache key.
+    def self.data_url_identifier(data : Bytes) : String
+      "data:#{Digest::SHA256.hexdigest(data.to_slice)}"
     end
 
     private def sanitize_html(html : String) : String
