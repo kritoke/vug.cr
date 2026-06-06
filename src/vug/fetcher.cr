@@ -16,6 +16,13 @@ require "./semaphore"
 
 module Vug
   class Fetcher
+    # Type-safe action enum replacing bare Symbol dispatch.
+    enum Action
+      Redirect
+      TryFallback
+      ReturnResult
+      UseCached
+    end
     def initialize(@config : Config = Config.default, cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectHandler? = nil, cache_coordinator : CacheCoordinator? = nil, image_processor : ImageProcessor? = nil, rate_limiter : RateLimiter? = nil)
       @http_client_factory = http_client_factory || HttpClientFactory.new(@config)
       @cache_manager = cache_manager || CacheManager.new(@config, cache)
@@ -85,14 +92,14 @@ module Vug
         action, next_url, current_uri = fetch_result_uri(current_url, result, current_uri)
 
         case action
-        when :redirect, :try_fallback
+        when .redirect?, .try_fallback?
           current_url, redirects, gray_placeholder_attempts, current_uri = handle_result_action(
             action, next_url, current_url, redirects, gray_placeholder_attempts, initial_dns_ips
           )
-          next if action == :redirect || (action == :try_fallback && next_url)
-          return result if action == :try_fallback
-        when :return_result, :use_cached
-          return Vug.success(current_url, next_url) if action == :use_cached && next_url
+          next if action.redirect? || (action.try_fallback? && next_url)
+          return result if action.try_fallback?
+        when .return_result?, .use_cached?
+          return Vug.success(current_url, next_url) if action.use_cached? && next_url
           return result
         end
       end
@@ -112,7 +119,7 @@ module Vug
     end
 
     private def handle_result_action(
-      action : Symbol,
+      action : Action,
       next_url : String?,
       current_url : String,
       redirects : Int32,
@@ -121,18 +128,20 @@ module Vug
     ) : {String, Int32, Int32, URI?}
       new_uri : URI? = nil
       case action
-      when :redirect
+      when .redirect?
         if next_url
           new_uri = handle_redirect_action(next_url, initial_dns_ips)
           current_url = next_url
         end
         redirects += 1
-      when :try_fallback
+      when .try_fallback?
         gray_placeholder_attempts += 1
         if next_url
           current_url = next_url
           new_uri = nil # Will be parsed on next iteration
         end
+      else
+        # ReturnResult / UseCached are handled by the caller
       end
       {current_url, redirects, gray_placeholder_attempts, new_uri}
     end
@@ -160,31 +169,31 @@ module Vug
       elapsed > @config.timeout
     end
 
-    private def fetch_result_uri(current_url : String, result : Result, current_uri : URI?) : {Symbol, String?, URI?}
+    private def fetch_result_uri(current_url : String, result : Result, current_uri : URI?) : {Action, String?, URI?}
       if result.redirect?
-        return {:redirect, result.url, current_uri}
+        return {Action::Redirect, result.url, current_uri}
       end
 
       if result.success?
         return gray_placeholder_uri(current_url, result, current_uri)
       end
 
-      {:return_result, nil, current_uri}
+      {Action::ReturnResult, nil, current_uri}
     end
 
-    private def gray_placeholder_uri(current_url : String, result : Result, current_uri : URI?) : {Symbol, String?, URI?}
-      return {:return_result, nil, current_uri} unless gray_placeholder?(current_url, result.bytes)
+    private def gray_placeholder_uri(current_url : String, result : Result, current_uri : URI?) : {Action, String?, URI?}
+      return {Action::ReturnResult, nil, current_uri} unless gray_placeholder?(current_url, result.bytes)
 
       if current_url.includes?("google.com/s2/favicons")
         larger_url = google_larger_url(current_url)
         if cached = @cache_coordinator.try(&.fetch(larger_url))
           @cache_coordinator.try(&.store(current_url, cached))
-          return {:use_cached, cached, current_uri}
+          return {Action::UseCached, cached, current_uri}
         end
       end
 
       next_url = gray_fallback_url(current_url)
-      {:try_fallback, next_url, nil}
+      {Action::TryFallback, next_url, nil}
     end
 
     private def fetch_single(url : String, uri : URI?, initial_dns_ips : Hash(String, Array(String)), redirect_count : Int32) : Result
