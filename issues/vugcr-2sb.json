@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-06T19:35:25Z",
+  "description": "## Problem\n\n`HtmlExtractor#extract_all` (src/vug/html_extractor.cr, lines 41–69) manually implements retry logic with exponential backoff, sleep, and attempt counting. This duplicates the exact functionality already provided by `RetryHelpers.with_retry` (src/vug/retry_helpers.cr).\n\nThe module already supports:\n- Configurable max_retries, base_delay, max_delay\n- Retryable exception filtering (IO::TimeoutError, Socket::Error, IO::Error, OpenSSL::SSL::Error match the current rescue list)\n- Exponential backoff with jitter via `backoff_delay`\n- on_retry callback for logging\n\n## Proposed Fix\n\nReplace the manual loop with:\n\n```crystal\nRetryHelpers.with_retry(\n  max_retries: max_retries,\n  base_delay: base_delay,\n  max_delay: max_delay,\n  on_retry: -\u003e(attempt : Int32, ex : Exception, delay : Time::Span) {\n    @config.debug(\"Transient error on #{site_url}: #{ex.message}. Retrying in #{delay.total_milliseconds.round}ms...\")\n  }\n) do\n  client = @http_client_factory.create_client(uri, read_timeout)\n  begin\n    headers = build_html_headers\n    result = [] of FaviconInfo\n    client.get(uri.request_target, headers: headers) do |response|\n      result = process_html_response(response, site_url)\n    end\n    result\n  ensure\n    client.try(\u0026.close)\n  end\nend\n```\n\nThis eliminates ~25 lines of duplicated retry mechanics and keeps the method focused on HTML extraction.\n\n## Files\n- src/vug/html_extractor.cr (primary)\n- spec/vug/extractor_initialization_spec.cr (verify no regressions)",
+  "id": "vugcr-2sb",
+  "labels": [],
+  "priority": 1,
+  "status": "open",
+  "title": "DRY: Replace hand-rolled retry loop in HtmlExtractor#extract_all with RetryHelpers.with_retry",
+  "type": "task",
+  "updated_at": "2026-06-06T19:35:25Z"
+}
