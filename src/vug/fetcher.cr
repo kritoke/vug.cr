@@ -184,6 +184,5 @@ module Vug
       next_url = @gray_placeholder_handler.fallback_url(current_url)
       {LoopAction::TryFallback, next_url, nil}
     end
-
   end
 end
