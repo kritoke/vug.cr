@@ -106,7 +106,7 @@ module Vug
     private def check_termination(state : LoopState) : Result?
       return Vug.failure("Timeout", state.initial_url, error_type: :timeout) if timed_out?(state.start_time)
       return Vug.failure("Too many redirects", state.initial_url, error_type: :too_many_redirects) if state.redirects > @config.max_redirects
-      return Vug.failure("Too many gray placeholder attempts", state.initial_url, error_type: :too_many_gray_placeholder_attempts) if state.gray_placeholder_attempts >= LoopState::MAX_GRAY_ATTEMPTS
+      return Vug.failure("Too many gray placeholder attempts", state.initial_url, error_type: :too_many_gray_placeholder_attempts) if state.gray_placeholder_attempts >= GrayPlaceholderHandler::MAX_FALLBACK_ATTEMPTS
       nil
     end
 
