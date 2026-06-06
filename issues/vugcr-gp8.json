@@ -2,13 +2,14 @@
   "assignee": "",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-06-06T19:27:50Z",
   "created": "2026-06-06T19:09:12Z",
   "description": "## Overview\\n\\nsrc/vug/config.cr (236 lines) and src/vug/image_validator.cr (226 lines) are the two largest source files. Both have SRP violations and DRY issues that reduce readability and maintainability.\\n\\n## Issues Found\\n\\n### config.cr\\n- LogLevel and LogEntry mixed into Config (SRP)\\n- copy_with duplicates all 22 parameters (DRY)\\n- LogEntry.to_json manual JSON building is fragile (reliability)\\n- Validation helpers potentially reusable\\n\\n### image_validator.cr  \\n- Format detection, validation, and dimension parsing in one module (SRP)\\n- gif? method has unnecessary allocations\\n\\n### Cross-cutting\\n- Retry backoff logic duplicated\\n- UrlValidator logging inconsistency\\n\\n## Dependency Graph\\n\\n```mermaid\\ngraph LR\\n    vugcr-4xz --\u003e vugcr-2ry\\n    vugcr-4xz --\u003e vugcr-8qw\\n    vugcr-c0b --\u003e vugcr-bd0\\n```\\n\\nExtract LogEntry first (4xz), then fix its to_json (2ry) and simplify copy_with (8qw). Extract dimensions (c0b), then simplify gif? (bd0). Backoff and URL validator are independent.",
   "id": "vugcr-gp8",
   "labels": [],
   "priority": 2,
-  "status": "open",
+  "status": "closed",
   "title": "Refactor config.cr and image_validator.cr for SRP and DRY",
   "type": "epic",
-  "updated_at": "2026-06-06T19:09:12Z"
+  "updated_at": "2026-06-06T19:27:50Z"
 }
