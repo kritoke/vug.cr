@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-06T20:28:07Z",
+  "description": "## Goal\nMove the `MAX_GRAY_ATTEMPTS = 3` constant from `Fetcher::LoopState` to `Vug::GrayPlaceholderHandler`, where the gray-placeholder policy actually lives.\n\n## Why (SRP)\n`LoopState` is a generic fetch-loop state container. It currently carries a `gray_placeholder_attempts` counter and a `MAX_GRAY_ATTEMPTS = 3` cap. Both are gray-placeholder concerns:\n- The counter is only ever incremented in the `TryFallback` branch, which is gray-placeholder-specific.\n- The cap is checked in `check_termination` with a `Too many gray placeholder attempts` error.\n- The actual fallback URL strategy lives in `GrayPlaceholderHandler`.\n\nPlacing the cap in `GrayPlaceholderHandler` (alongside the existing `DDG_DEFAULT_ICON_SIZE`, `GOOGLE_FAVICON_SIZE`) keeps gray-placeholder policy in one file and lets `LoopState` stay domain-neutral.\n\n## Approach\n1. In `src/vug/gray_placeholder_handler.cr`, add:\n   ```crystal\n   MAX_FALLBACK_ATTEMPTS = 3\n   ```\n   (or a more descriptive name; the existing comment says \"3 attempts\" so keep the value.)\n2. In `src/vug/fetcher.cr`:\n   - Remove the `MAX_GRAY_ATTEMPTS = 3` constant from `LoopState`.\n   - Update `check_termination` to reference `GrayPlaceholderHandler::MAX_FALLBACK_ATTEMPTS` (or the chosen name).\n3. No change to `LoopState`'s `gray_placeholder_attempts` field — it stays as a counter; only the cap moves.\n\n## Acceptance\n- `MAX_GRAY_ATTEMPTS` no longer exists in `LoopState`.\n- The cap is referenced from one place (`check_termination`) and defined in `GrayPlaceholderHandler`.\n- The default value (3) is unchanged, so existing behavior is preserved.\n- All fetcher and gray_placeholder_handler specs pass.\n\n## Notes\n- The chosen name (`MAX_FALLBACK_ATTEMPTS` here) is a suggestion; the final name is up to the implementer as long as it lives in `GrayPlaceholderHandler`.",
+  "id": "vugcr-khz.5",
+  "labels": [],
+  "parent": "vugcr-khz",
+  "priority": 2,
+  "status": "open",
+  "title": "Move MAX_GRAY_ATTEMPTS into GrayPlaceholderHandler",
+  "type": "task",
+  "updated_at": "2026-06-06T20:28:07Z"
+}
