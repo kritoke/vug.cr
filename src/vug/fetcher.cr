@@ -28,9 +28,6 @@ module Vug
       end
     end
 
-    # Backward-compatible alias — canonical value lives in GrayPlaceholderHandler.
-    DDG_DEFAULT_ICON_SIZE = GrayPlaceholderHandler::DDG_DEFAULT_ICON_SIZE
-
     # Type-safe action enum replacing bare Symbol dispatch.
     enum Action
       Redirect
