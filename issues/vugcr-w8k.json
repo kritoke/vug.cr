@@ -2,14 +2,15 @@
   "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-06-06T19:23:45Z",
   "created": "2026-06-06T19:08:38Z",
   "description": "## Problem\\n\\nsrc/vug/html_extractor.cr contains calculate_backoff_delay for exponential backoff with jitter. This is a generic utility pattern that could be shared across the codebase.\\n\\n## What to do\\n\\n1. Create src/vug/retry_helpers.cr with a module containing:\\n   - calculate_backoff_delay(attempt, base_delay, max_delay) : Time::Span\\n   - with_retry(max_retries, base_delay, max_delay, \u0026block) for the retry loop pattern\\n2. Update HtmlExtractor to use the shared utility\\n3. Check if Fetcher or SingleRequest could also benefit from the shared pattern\\n4. Run specs to verify\\n\\n## Why\\n\\n- DRY: retry logic should not be reimplemented in each class\\n- Consistency: all retry behavior uses the same backoff strategy\\n- Testability: backoff logic can be tested in isolation",
   "id": "vugcr-w8k",
   "labels": [],
   "parent": "vugcr-gp8",
   "priority": 2,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Extract retry backoff logic into shared utility",
   "type": "task",
-  "updated_at": "2026-06-06T19:20:44Z"
+  "updated_at": "2026-06-06T19:23:45Z"
 }
