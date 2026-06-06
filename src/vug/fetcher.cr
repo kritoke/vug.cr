@@ -14,6 +14,7 @@ require "./diagnostics"
 require "./rate_limiter"
 require "./semaphore"
 require "./gray_placeholder_handler"
+require "./loop_state"
 require "./single_request"
 
 module Vug
@@ -34,28 +35,6 @@ module Vug
       TryFallback
       ReturnResult
       UseCached
-    end
-
-    # Mutable state threaded through the fetch loop, replacing scattered
-    # local variables and positional tuple returns.
-    class LoopState
-      property current_url : String
-      property current_uri : URI?
-      property redirects : Int32 = 0
-      property gray_placeholder_attempts : Int32 = 0
-      getter visited_urls : Set(String)
-      getter initial_dns_ips : Hash(String, Array(String))
-      getter start_time : Time::Span
-      getter initial_url : String
-
-      MAX_GRAY_ATTEMPTS = 3
-
-      def initialize(@initial_url : String, @start_time : Time::Span)
-        @current_url = @initial_url
-        @current_uri = URI.parse(@initial_url) rescue nil
-        @visited_urls = Set(String).new
-        @initial_dns_ips = {} of String => Array(String)
-      end
     end
 
     def initialize(@config : Config = Config.default, cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectHandler? = nil, cache_coordinator : CacheCoordinator? = nil, image_processor : ImageProcessor? = nil, rate_limiter : RateLimiter? = nil)
