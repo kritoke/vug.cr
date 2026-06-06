@@ -132,19 +132,14 @@ module Vug
       ["http", "https"].includes?(scheme.downcase)
     end
 
-    private def self.dangerous_host?(host : String?, config : Vug::Config? = nil) : Bool
+    private def self.dangerous_host?(host : String?) : Bool
       host = normalize_host(host)
-      return log_and_block(config, "dangerous_host?(#{host.inspect})", "Blocked: host is nil or empty") if host.nil? || host.empty?
-      return log_and_block(config, "dangerous_host?(#{host})", "Blocked: localhost-like host") if localhost_like?(host)
-      return log_and_block(config, "dangerous_host?(#{host})", "Blocked: IP in private range") if private_ip_range?(host)
-      return log_and_block(config, "dangerous_host?(#{host})", "Blocked: .local domain") if host.ends_with?(".local")
-      return log_and_block(config, "dangerous_host?(#{host})", "Blocked: resolves to private IP") if resolves_to_private_ip?(host)
+      return true if host.nil? || host.empty?
+      return true if localhost_like?(host)
+      return true if private_ip_range?(host)
+      return true if host.ends_with?(".local")
+      return true if resolves_to_private_ip?(host)
       false
-    end
-
-    private def self.log_and_block(config : Vug::Config?, method : String, msg : String) : Bool
-      config.try &.error(method, msg)
-      true
     end
 
     # Normalize hostnames for validation: strip trailing dot and downcase
