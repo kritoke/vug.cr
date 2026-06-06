@@ -293,6 +293,33 @@ describe Vug::UrlProcessor do
     end
   end
 
+  describe ".parse_and_validate" do
+    it "parses a valid HTTPS URL" do
+      result = Vug::UrlProcessor.parse_and_validate("https://example.com/path")
+      result.should_not be_nil
+      result.try(&.scheme).should eq("https")
+      result.try(&.hostname).should eq("example.com")
+    end
+
+    it "sanitizes feed suffix before validation" do
+      result = Vug::UrlProcessor.parse_and_validate("https://example.com/feed/")
+      result.should_not be_nil
+      result.try(&.to_s).should eq("https://example.com")
+    end
+
+    it "rejects URLs with dangerous schemes" do
+      Vug::UrlProcessor.parse_and_validate("javascript:alert(1)").should be_nil
+    end
+
+    it "rejects unparseable URLs" do
+      Vug::UrlProcessor.parse_and_validate("://bad").should be_nil
+    end
+
+    it "rejects URLs without a scheme" do
+      Vug::UrlProcessor.parse_and_validate("example.com/path").should be_nil
+    end
+  end
+
   describe ".derive_site_url" do
     it "derives site root from atom.xml feed URL" do
       result = Vug::UrlProcessor.derive_site_url("https://jvns.ca/atom.xml")
