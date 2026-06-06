@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-06T19:08:09Z",
+  "description": "## Problem\\n\\nsrc/vug/image_validator.cr (226 lines) does three distinct things:\\n1. Format detection (png?, jpeg?, ico?, svg?, webp?, gif?)\\n2. Validation (valid?)\\n3. Binary dimension parsing (read_png_dimensions, scan_jpeg_dimensions, read_webp_dimensions, read_ico_dimensions, read_gif_dimensions)\\n\\nThis violates Single Responsibility. The dimension parsing is complex binary manipulation that deserves its own module.\\n\\n## What to do\\n\\n1. Create src/vug/image_dimensions.cr with a module containing:\\n   - get_image_dimensions (public entry point)\\n   - All the private read_*_dimensions methods\\n   - The format detection helpers needed by dimension parsing\\n2. Update ImageValidator to delegate to ImageDimensions\\n3. Update specs if needed\\n4. Run crystal spec to verify\\n\\n## Why\\n\\n- SRP: format detection, validation, and dimension parsing are separate concerns\\n- Binary parsing code is complex and benefits from isolation\\n- Easier to test dimension parsing independently",
+  "id": "vugcr-c0b",
+  "labels": [],
+  "priority": 2,
+  "status": "open",
+  "title": "Extract image dimension parsing from ImageValidator into separate module",
+  "type": "task",
+  "updated_at": "2026-06-06T19:08:09Z"
+}
