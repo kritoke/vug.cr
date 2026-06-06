@@ -5,14 +5,15 @@
     "vugcr-2ry",
     "vugcr-8qw"
   ],
+  "closed_at": "2026-06-06T19:12:50Z",
   "created": "2026-06-06T19:07:12Z",
   "description": "## Problem\\n\\nsrc/vug/config.cr (236 lines) violates Single Responsibility Principle by mixing three concerns:\\n- Configuration settings (timeouts, limits, callbacks)\\n- LogLevel enum definition\\n- LogEntry class with manual JSON serialization\\n\\n## What to do\\n\\n1. Create a new file  containing:\\n   - The  enum\\n   - The  class\\n2. Update  to use Crystal's  instead of manual string building (current implementation is fragile and doesn't escape special characters)\\n3. Update  to  and remove the extracted code\\n4. Update any spec files that reference LogLevel/LogEntry if needed\\n5. Run .......................................................................................................................................................................................................................................................................................................................................................................\n\nFinished in 18.33 seconds\n359 examples, 0 failures, 0 errors, 0 pending to verify all 359 tests still pass\\n\\n## Why\\n\\n- SRP: Config should own configuration, not logging types\\n- LogEntry's manual JSON building doesn't escape quotes or special characters in message/context fields, which is a reliability bug\\n- Smaller files are easier to understand and maintain",
   "id": "vugcr-4xz",
   "labels": [],
   "parent": "vugcr-gp8",
   "priority": 1,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Extract LogLevel and LogEntry from config.cr into separate logging module",
   "type": "task",
-  "updated_at": "2026-06-06T19:10:56Z"
+  "updated_at": "2026-06-06T19:12:50Z"
 }
