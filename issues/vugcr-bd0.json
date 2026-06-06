@@ -1,6 +1,8 @@
 {
   "assignee": "",
-  "blocked_by": [],
+  "blocked_by": [
+    "vugcr-c0b"
+  ],
   "blocks": [],
   "created": "2026-06-06T19:08:26Z",
   "description": "## Problem\\n\\nThe gif? method in src/vug/image_validator.cr creates full 6-byte arrays just to slice them:\\n\\ndata[0..2] == Bytes[0x47, 0x49, 0x46, 0x38, 0x37, 0x61][0..2]\\n\\nThis allocates a 6-byte Bytes literal then slices to 3 bytes for comparison. Unnecessary allocation.\\n\\n## What to do\\n\\n1. Replace with direct byte comparisons:\\n   data[0] == 0x47 \u0026\u0026 data[1] == 0x49 \u0026\u0026 data[2] == 0x46\\n   (GIF87a and GIF89a share the same first 3 bytes: GIF)\\n2. Simplify the overall logic - the current boolean expression is harder to read than needed\\n3. Run specs to verify\\n\\n## Why\\n\\n- Performance: avoid unnecessary Bytes allocation on every call\\n- Readability: direct comparisons are clearer than array slicing",
@@ -11,5 +13,5 @@
   "status": "open",
   "title": "Simplify ImageValidator.gif? method - unnecessary byte array creation",
   "type": "task",
-  "updated_at": "2026-06-06T19:09:21Z"
+  "updated_at": "2026-06-06T19:09:28Z"
 }
