@@ -1,5 +1,5 @@
 {
-  "assignee": "",
+  "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [],
   "created": "2026-06-06T20:27:55Z",
@@ -8,8 +8,8 @@
   "labels": [],
   "parent": "vugcr-khz",
   "priority": 3,
-  "status": "open",
+  "status": "in_progress",
   "title": "Remove dead Fetcher::DDG_DEFAULT_ICON_SIZE alias",
   "type": "task",
-  "updated_at": "2026-06-06T20:27:55Z"
+  "updated_at": "2026-06-06T20:32:18Z"
 }
