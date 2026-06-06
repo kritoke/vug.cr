@@ -1,6 +1,7 @@
 require "./cache_manager"
 require "./types"
 require "./image_validator"
+require "./image_dimensions"
 
 module Vug
   abstract class ImageProcessor
@@ -39,7 +40,7 @@ module Vug
         return Vug.failure("Unsupported image format", url, error_type: :invalid_image)
       end
 
-      if dims = ImageValidator.get_image_dimensions(data)
+      if dims = ImageDimensions.get(data)
         width, height = dims
         @config.debug("Favicon fetched: #{url}, size=#{data.size}, type=#{content_type} (#{width}x#{height})")
       else
