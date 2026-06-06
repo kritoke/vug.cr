@@ -197,6 +197,5 @@ module Vug
       next_url = @gray_placeholder_handler.fallback_url(current_url)
       FetchDecision.new(LoopAction::TryFallback, next_url, reparse: true)
     end
-
   end
 end
