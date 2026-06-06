@@ -6,9 +6,10 @@
   "description": "## Problem\\n\\nUrlValidator.dangerous_host? accepts an optional config parameter for logging, but most callers do not pass it. This means most validation failures are silently swallowed with no logging.\\n\\n## What to do\\n\\n1. Either make config required in dangerous_host? and update all callers, or\\n2. Use a module-level config accessor (like other modules do) instead of parameter passing\\n3. Ensure all validation failures are logged consistently\\n4. Run specs to verify\\n\\n## Why\\n\\n- Reliability: silent validation failures make debugging harder\\n- Consistency: some paths log, others dont\\n- The optional parameter pattern is error-prone",
   "id": "vugcr-7yf",
   "labels": [],
+  "parent": "vugcr-gp8",
   "priority": 2,
   "status": "open",
   "title": "Fix inconsistent logging in UrlValidator.dangerous_host?",
   "type": "task",
-  "updated_at": "2026-06-06T19:08:47Z"
+  "updated_at": "2026-06-06T19:09:21Z"
 }
