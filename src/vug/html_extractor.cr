@@ -35,47 +35,37 @@ module Vug
       return [] of FaviconInfo unless uri
 
       read_timeout = timeout || @config.html_fetch_timeout
-      max_retries = @config.max_retries
-      base_delay = @config.retry_base_delay
-      max_delay = @config.retry_max_delay
 
-      favicons = [] of FaviconInfo
-      attempt = 0
-      last_error : Exception? = nil
-
-      loop do
-        client : HTTP::Client? = nil
-        begin
-          @config.debug("Fetching HTML from: #{site_url} (attempt #{attempt + 1})")
-          client = @http_client_factory.create_client(uri, read_timeout)
-          headers = build_html_headers
-
-          client.get(uri.request_target, headers: headers) do |response|
-            favicons = process_html_response(response, site_url)
-          end
-          return favicons
-        rescue ex : IO::TimeoutError | Socket::Error | IO::Error | OpenSSL::SSL::Error
-          last_error = ex
-          if attempt < max_retries
-            delay = RetryHelpers.backoff_delay(attempt, base_delay, max_delay)
-            @config.debug("Transient error on #{site_url}: #{ex.message}. Retrying in #{delay.total_milliseconds.round}ms...")
-            sleep(delay)
-            attempt += 1
-          else
-            @config.debug("Max retries (#{max_retries}) reached for #{site_url}, giving up")
-            @config.debug("extract_all(#{site_url}): #{Vug::Diagnostics.format_exception(ex)}")
-            return [] of FaviconInfo
-          end
-        rescue ex : Exception
-          # Non-transient error, don't retry
-          log_error("extract_all(#{site_url})", ex)
-          return [] of FaviconInfo
-        ensure
-          client.try(&.close)
-        end
+      RetryHelpers.with_retry(
+        max_retries: @config.max_retries,
+        base_delay: @config.retry_base_delay,
+        max_delay: @config.retry_max_delay,
+        on_retry: ->(_attempt : Int32, ex : Exception, delay : Time::Span) {
+          @config.debug("Transient error on #{site_url}: #{ex.message}. Retrying in #{delay.total_milliseconds.round}ms...")
+          nil
+        }
+      ) do
+        fetch_html_from_url(site_url, uri, read_timeout)
       end
+    rescue ex : Exception
+      # Non-transient error (not retryable) or retries exhausted
+      log_error("extract_all(#{site_url})", ex)
+      [] of FaviconInfo
+    end
 
-      favicons
+    private def fetch_html_from_url(site_url : String, uri : URI, read_timeout : Time::Span) : Array(FaviconInfo)
+      client : HTTP::Client? = nil
+      begin
+        @config.debug("Fetching HTML from: #{site_url}")
+        client = @http_client_factory.create_client(uri, read_timeout)
+        result = [] of FaviconInfo
+        client.get(uri.request_target, headers: build_html_headers) do |response|
+          result = process_html_response(response, site_url)
+        end
+        result
+      ensure
+        client.try(&.close)
+      end
     end
 
     private def parse_validated_url(site_url : String) : URI?
@@ -124,8 +114,8 @@ module Vug
       html = sanitize_html(html)
       @config.debug("HTML sanitized: #{html.size} bytes")
       html
-    rescue IO::TimeoutError
-      @config.debug("HTML fetch timeout")
+    rescue ex : IO::TimeoutError | IO::Error | Socket::Error
+      @config.debug("HTML fetch/IO error: #{ex.class} - #{ex.message}")
       ""
     end
 
@@ -208,12 +198,9 @@ module Vug
 
     private def sanitize_html(html : String) : String
       Sanitize::Policy::HTMLSanitizer.common.process(html)
-    rescue ex : HTML5::HTMLException | URI::Error
+    rescue ex : HTML5::HTMLException | URI::Error | IO::Error | Socket::Error
       @config.debug("HTML sanitization failed: #{ex.message}")
       ""
-    rescue ex : IO::Error | Socket::Error
-      @config.debug("HTML processing failed: #{ex.message}")
-      raise ex
     end
   end
 end
