@@ -1,7 +1,9 @@
 {
   "assignee": "",
   "blocked_by": [],
-  "blocks": [],
+  "blocks": [
+    "vugcr-pvr"
+  ],
   "created": "2026-06-06T15:21:10Z",
   "description": "## Problem\nThe pattern `URI.parse(url) rescue nil` appears in 4+ places in fetcher.cr:\n- `fetch_loop` line ~55 (current_uri init)\n- `fetch_loop` line ~63 (inside loop body)\n- `handle_redirect_action` line ~127\n- `gray_fallback_url` line ~208\n\nThis is a DRY violation and the silent nil swallowing makes debugging harder.\n\n## Proposal\nAdd a `parse_uri_safe(url : String) : URI?` private method to Fetcher (or extract to a shared utility module):\n- Returns URI on success, nil on parse failure\n- Optionally logs the parse failure via config.debug/error\n- Replace all `URI.parse(url) rescue nil` occurrences with this method\n\nThe existing `parse_uri(url)` that raises already exists but is only used in `fetch_single`. Consider whether both are needed or if one can unify them.\n\n## Benefits\n- DRY: single point of change for URI parsing behavior\n- Consistent error handling for malformed URLs\n- Easier to add logging or metrics for parse failures",
   "id": "vugcr-1ee",
@@ -10,5 +12,5 @@
   "status": "open",
   "title": "Eliminate URI.parse rescue nil duplication in Fetcher",
   "type": "task",
-  "updated_at": "2026-06-06T15:21:10Z"
+  "updated_at": "2026-06-06T15:22:58Z"
 }
