@@ -2,13 +2,14 @@
   "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-06-06T16:29:27Z",
   "created": "2026-06-01T10:38:45Z",
   "description": "The current Config#debug, #error, #warning methods use Proc callbacks which work but have limitations:\\n\\n1. No standard log levels (DEBUG, INFO, WARN, ERROR)\\n2. No structured data (just strings)\\n3. No timestamps\\n4. No log destination control\\n\\nConsider adding optional structured logging support that can emit JSON-formatted log entries with:\\n- timestamp\\n- level\\n- message\\n- context (url, error type, etc.)\\n\\nThis would integrate better with modern observability tools (Datadog, New Relic, etc.) and make debugging in production easier. The existing Proc callbacks could be kept for backward compatibility, with the new structured logging as an opt-in feature.\\n\\nExample: ",
   "id": "vugcr-82j",
   "labels": [],
   "priority": 3,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Add structured logging option to Config for JSON output",
   "type": "task",
-  "updated_at": "2026-06-06T16:10:44Z"
+  "updated_at": "2026-06-06T16:29:27Z"
 }
