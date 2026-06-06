@@ -13,6 +13,7 @@ require "./types"
 require "./diagnostics"
 require "./rate_limiter"
 require "./semaphore"
+require "./gray_placeholder_handler"
 
 module Vug
   class Fetcher
@@ -33,6 +34,7 @@ module Vug
       @image_processor = image_processor || ImageProcessor::Default.new(@config, @cache_manager)
       @semaphore = Vug.shared_semaphore(@config.max_concurrent_requests)
       @rate_limiter = rate_limiter || RateLimiter.new
+      @gray_placeholder_handler = GrayPlaceholderHandler.new(@config, @cache_coordinator)
     end
 
     def fetch(url : String) : Result
@@ -182,17 +184,14 @@ module Vug
     end
 
     private def gray_placeholder_uri(current_url : String, result : Result, current_uri : URI?) : {Action, String?, URI?}
-      return {Action::ReturnResult, nil, current_uri} unless gray_placeholder?(current_url, result.bytes)
+      return {Action::ReturnResult, nil, current_uri} unless @gray_placeholder_handler.gray_placeholder?(current_url, result.bytes)
 
-      if current_url.includes?("google.com/s2/favicons")
-        larger_url = google_larger_url(current_url)
-        if cached = @cache_coordinator.try(&.fetch(larger_url))
-          @cache_coordinator.try(&.store(current_url, cached))
-          return {Action::UseCached, cached, current_uri}
-        end
+      if cached = @gray_placeholder_handler.cached_larger_version(current_url)
+        @gray_placeholder_handler.store_larger_version(current_url, cached)
+        return {Action::UseCached, cached, current_uri}
       end
 
-      next_url = gray_fallback_url(current_url)
+      next_url = @gray_placeholder_handler.fallback_url(current_url)
       {Action::TryFallback, next_url, nil}
     end
 
@@ -288,60 +287,7 @@ module Vug
       true
     end
 
-    # DuckDuckGo's default icon returned when it has no real favicon
-    # for a domain. This is a 32x32 PNG always at exactly 2441 bytes.
-    DDG_DEFAULT_ICON_SIZE = 2441
 
-    private def gray_placeholder?(url : String, data : Bytes?) : Bool
-      return false if data.nil?
-      return true if data.size == @config.gray_placeholder_size
-
-      # Detect DuckDuckGo default icon from its favicon API
-      if url.includes?("icons.duckduckgo.com") && data.size == DDG_DEFAULT_ICON_SIZE
-        return true
-      end
-
-      false
-    end
-
-    private def gray_fallback_url(current_url : String) : String?
-      if current_url.includes?("google.com/s2/favicons")
-        google_larger_url(current_url)
-      elsif current_url.includes?("icons.duckduckgo.com/ip3/")
-        # Extract domain from DDG URL path: /ip3/{domain}.ico
-        if domain = extract_domain_from_ddg_url(current_url)
-          encoded = URI.encode_www_form(domain)
-          google_url = "https://www.google.com/s2/favicons?domain=#{encoded}&sz=256"
-          @config.debug("DDG default icon, falling back to Google: #{google_url}")
-          return google_url
-        end
-        @config.debug("DDG default icon but could not extract domain")
-        nil
-      else
-        @config.debug("Gray placeholder from non-Google source, trying Google fallback")
-        if host = parse_uri_safe(current_url).try(&.host)
-          encoded_host = URI.encode_www_form(host)
-          google_url = "https://www.google.com/s2/favicons?domain=#{encoded_host}&sz=256"
-          @config.debug("Google fallback URL: #{google_url}")
-          return google_url
-        end
-        @config.debug("Gray placeholder fallback skipped: no valid host")
-        nil
-      end
-    end
-
-    private def extract_domain_from_ddg_url(url : String) : String?
-      path = URI.parse(url).path
-      return unless path
-      match = path.match(%r{/ip3/(.+?)\.ico\z})
-      match.try(&.[1])
-    rescue URI::Error
-      nil
-    end
-
-    private def google_larger_url(url : String) : String
-      url.gsub(/sz=\d+/, "sz=256")
-    end
 
     private def handle_error(url : String, status_code : Int32) : Result
       case status_code
