@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-06T22:38:04Z",
+  "description": "## Problem\n`GrayPlaceholderHandler` already owns gray placeholder *detection* (`gray_placeholder?`, `ddg_default_icon?`), but the *decision* about what to do when a gray placeholder is detected lives in `Fetcher` (`src/vug/fetcher.cr:206-214` — `gray_placeholder_uri`) and the related termination constant `MAX_GRAY_ATTEMPTS = 3` is stranded inside `LoopState` (`fetcher.cr:46`).\n\nThis is an SRP violation: `Fetcher` should orchestrate, not own the gray placeholder strategy.\n\n## Fix\n1. Add a public method on `GrayPlaceholderHandler`:\n   ```crystal\n   # Returns the action Fetcher should take, or :not_a_gray_placeholder to\n   # indicate the result is final.\n   def decide_action(current_url : String, result : Result) : Tuple(Symbol, String?)\n   ```\n   The return shape: `{:return, nil}` if not a gray placeholder, `{:use_cached, path}` if a larger cached version is available, `{:try_fallback, fallback_url}` to retry with a different source.\n\n2. Move `MAX_GRAY_ATTEMPTS = 3` from `LoopState` to `GrayPlaceholderHandler::MAX_GRAY_ATTEMPTS` and reference it from `check_termination`.\n\n3. In `Fetcher`:\n   - Delete `gray_placeholder_uri`.\n   - Update `fetch_result_uri` to call the new `decide_action` method and translate the symbol to the existing `Action` enum.\n\n## Why\n- SRP: `GrayPlaceholderHandler` becomes the single source of truth for gray placeholder policy.\n- Cohesion: the `MAX_GRAY_ATTEMPTS` constant lives next to the policy it limits.\n- Testability: gray placeholder decision can be unit-tested in isolation.\n\n## Acceptance\n- [ ] `GrayPlaceholderHandler#decide_action` exists and returns the documented shape.\n- [ ] `Fetcher#gray_placeholder_uri` is removed.\n- [ ] `MAX_GRAY_ATTEMPTS` lives on `GrayPlaceholderHandler`.\n- [ ] `LoopState` no longer references gray-attempt policy.\n- [ ] `check_termination` uses the new constant location.\n- [ ] All existing specs pass: `spec/vug/fetcher_logic_spec.cr` (the \"DuckDuckGo default icon detection\" and \"gray placeholder size detection\" groups), and `spec/vug/gray_placeholder_handler_spec.cr` if it exists.\n- [ ] `ameba src/` reports 0 failures.\n- [ ] Public API unchanged (`GrayPlaceholderHandler` is not in `API.md`'s table of contents, so adding a method is non-breaking).\n\n## Out of scope\n- Do not change the `Action` enum signature in `Fetcher`.\n- Do not refactor `apply_action` (separate ticket).",
+  "id": "vugcr-bcz",
+  "labels": [],
+  "priority": 2,
+  "status": "open",
+  "title": "fetcher: move gray placeholder decision logic to GrayPlaceholderHandler",
+  "type": "task",
+  "updated_at": "2026-06-06T22:38:04Z"
+}
