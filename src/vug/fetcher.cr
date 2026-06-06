@@ -48,7 +48,7 @@ module Vug
 
     private def fetch_loop(initial_url : String, start_time : Time::Span, initial_dns_ips : Hash(String, Array(String)), visited_urls : Set(String)) : Result
       current_url = initial_url
-      current_uri = URI.parse(initial_url) rescue nil
+      current_uri = parse_uri_safe(initial_url)
       redirects = 0
       gray_placeholder_attempts = 0
       max_gray_attempts = 3
@@ -65,7 +65,7 @@ module Vug
 
         # Resolve DNS for the current host (deferred until after cache check
         # to avoid wasted DNS lookups on cache hits)
-        current_uri = URI.parse(current_url) rescue nil
+        current_uri = parse_uri_safe(current_url)
         if current_uri && (host = current_uri.hostname)
           initial_dns_ips[host] ||= DnsCache.resolve(host)
         end
@@ -80,7 +80,7 @@ module Vug
         @config.debug("Fetching favicon from: #{current_url}")
 
         # Reuse parsed URI if available, only parse if we have a redirect URL
-        uri = current_uri || (URI.parse(current_url) rescue nil)
+        uri = current_uri || parse_uri_safe(current_url)
         result = fetch_single(current_url, uri, initial_dns_ips, redirects)
         action, next_url, current_uri = fetch_result_uri(current_url, result, current_uri)
 
@@ -143,7 +143,7 @@ module Vug
 
     # Update DNS cache for a redirect target host. Returns the parsed URI.
     private def handle_redirect_action(new_url : String, initial_dns_ips : Hash(String, Array(String))) : URI?
-      new_uri = URI.parse(new_url) rescue nil
+      new_uri = parse_uri_safe(new_url)
       if new_uri && (new_host = new_uri.hostname)
         initial_dns_ips[new_host] ||= DnsCache.resolve(new_host)
       end
@@ -225,6 +225,15 @@ module Vug
       false
     end
 
+    # Parse a URI, returning nil on failure instead of raising.
+    # Logs the failure at debug level to aid troubleshooting.
+    private def parse_uri_safe(url : String) : URI?
+      URI.parse(url)
+    rescue ex : URI::Error
+      @config.debug("URI parse failed for #{url}: #{ex.message}")
+      nil
+    end
+
     private def parse_uri(url : String) : URI
       URI.parse(url)
     rescue ex : URI::Error
@@ -301,16 +310,11 @@ module Vug
         nil
       else
         @config.debug("Gray placeholder from non-Google source, trying Google fallback")
-        begin
-          if host = URI.parse(current_url).host
-            encoded_host = URI.encode_www_form(host)
-            google_url = "https://www.google.com/s2/favicons?domain=#{encoded_host}&sz=256"
-            @config.debug("Google fallback URL: #{google_url}")
-            return google_url
-          end
-        rescue ex : URI::Error
-          @config.error("gray placeholder fallback(#{current_url})", ex.message || "Unknown error")
-          @config.debug("Gray placeholder fallback skipped: host parsing failed")
+        if host = parse_uri_safe(current_url).try(&.host)
+          encoded_host = URI.encode_www_form(host)
+          google_url = "https://www.google.com/s2/favicons?domain=#{encoded_host}&sz=256"
+          @config.debug("Google fallback URL: #{google_url}")
+          return google_url
         end
         @config.debug("Gray placeholder fallback skipped: no valid host")
         nil
