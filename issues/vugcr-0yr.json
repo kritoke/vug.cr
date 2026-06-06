@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-06T22:37:20Z",
+  "description": "## Problem\nTwo methods in `src/vug/fetcher.cr` contain near-identical \"parse URI, get hostname, resolve DNS into `initial_dns_ips` if not cached\" logic:\n\n- `prepare_request` (around lines 121–125)\n- `handle_redirect_action` (around lines 187–193)\n\nIf the DNS caching policy changes (TTL, parallel resolution, error handling), it has to change in two places — a DRY violation and a reliability risk.\n\n## Fix\nExtract a private helper on `Fetcher` (or, if cleaner, on a small `DnsPrefetcher` collaborator) such as:\n\n```crystal\nprivate def prefetch_dns(url : String, cache : Hash(String, Array(String))) : URI?\n  uri = parse_uri_safe(url)\n  if host = uri.try(\u0026.hostname)\n    cache[host] ||= DnsCache.resolve(host)\n  end\n  uri\nend\n```\n\nThen call it from both `prepare_request` and `handle_redirect_action`. Keep `handle_redirect_action` returning the new URI for the caller to assign.\n\n## Why\n- DRY: one place to evolve DNS strategy.\n- Readability: both call sites become a single line.\n\n## Acceptance\n- [ ] Helper extracted and used in both `prepare_request` and `handle_redirect_action`.\n- [ ] `ameba src/` reports 0 failures.\n- [ ] `crystal spec` (full suite) still passes.\n- [ ] Public API unchanged.\n- [ ] `initial_dns_ips` caching semantics preserved (do not re-resolve a host already in the hash).\n\n## Out of scope\n- Do not change `DnsCache` itself.\n- Do not move the `initial_dns_ips` map out of `LoopState`.",
+  "id": "vugcr-0yr",
+  "labels": [],
+  "priority": 3,
+  "status": "open",
+  "title": "fetcher: extract shared DNS-pre-resolve helper",
+  "type": "task",
+  "updated_at": "2026-06-06T22:37:20Z"
+}
