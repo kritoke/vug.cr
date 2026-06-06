@@ -10,6 +10,7 @@ require "./manifest_extractor"
 require "./diagnostics"
 require "./data_url_handler"
 require "./cache_manager"
+require "./retry_helpers"
 
 module Vug
   class HtmlExtractor
@@ -56,7 +57,7 @@ module Vug
         rescue ex : IO::TimeoutError | Socket::Error | IO::Error | OpenSSL::SSL::Error
           last_error = ex
           if attempt < max_retries
-            delay = calculate_backoff_delay(attempt, base_delay, max_delay)
+            delay = RetryHelpers.backoff_delay(attempt, base_delay, max_delay)
             @config.debug("Transient error on #{site_url}: #{ex.message}. Retrying in #{delay.total_milliseconds.round}ms...")
             sleep(delay)
             attempt += 1
@@ -75,17 +76,6 @@ module Vug
       end
 
       favicons
-    end
-
-    # Calculate exponential backoff delay with jitter.
-    private def calculate_backoff_delay(attempt : Int32, base_delay : Time::Span, max_delay : Time::Span) : Time::Span
-      # Exponential backoff: base_delay * 2^attempt
-      exponential = base_delay * (2 ** attempt)
-      # Cap at max_delay
-      capped = exponential > max_delay ? max_delay : exponential
-      # Add jitter (0-25% of delay)
-      jitter_ns = (rand * 0.25 * capped.total_nanoseconds).to_i64
-      Time::Span.new(nanoseconds: capped.total_nanoseconds.to_i64 + jitter_ns)
     end
 
     private def parse_validated_url(site_url : String) : URI?
