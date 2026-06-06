@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-06T20:27:23Z",
+  "description": "## Goal\nMove the private `Fetcher::LoopState` class out of `src/vug/fetcher.cr` into a dedicated file.\n\n## Why (SRP)\n`fetcher.cr` currently defines a 22-line state container (`LoopState`) in addition to the fetch loop. The class is only used by `Fetcher` itself, so it doesn't need to be inside `fetcher.cr`. Moving it to its own file:\n- Lets `LoopState` be unit-tested in isolation (it has its own invariants and `MAX_GRAY_ATTEMPTS`).\n- Makes `fetcher.cr` easier to scan top-to-bottom.\n- Sets a precedent for splitting unrelated types out of \"main\" files.\n\n## Approach\n1. Create `src/vug/loop_state.cr` (file name aligned with other types in the project).\n2. Move the `class LoopState` block (lines 43-65 of `src/vug/fetcher.cr`) verbatim to the new file, inside `module Vug`.\n3. Add `require \"./loop_state\"` to `fetcher.cr`.\n4. Change references from `Fetcher::LoopState` (if any, internal) to `Vug::LoopState`. Internal references are all `LoopState` (without prefix) and don't need updating.\n5. Re-export from the top-level `src/vug.cr` so consumers can require it via the umbrella file.\n\n## Acceptance\n- `LoopState` is defined in `src/vug/loop_state.cr`, not in `fetcher.cr`.\n- All fetcher specs pass (`crystal spec spec/vug/fetcher_spec.cr spec/vug/fetcher_logic_spec.cr`).\n- `crystal tool format` and `ameba` show no new violations.\n- No public API change.\n\n## Notes\n- Keep the `MAX_GRAY_ATTEMPTS = 3` constant inside `LoopState` for now; it is the subject of a separate ticket (`vugcr-mri`).",
+  "id": "vugcr-khz.1",
+  "labels": [],
+  "parent": "vugcr-khz",
+  "priority": 2,
+  "status": "open",
+  "title": "Extract LoopState class to its own file",
+  "type": "task",
+  "updated_at": "2026-06-06T20:27:23Z"
+}
