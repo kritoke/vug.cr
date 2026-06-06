@@ -4,13 +4,14 @@
     "vugcr-ber"
   ],
   "blocks": [],
+  "closed_at": "2026-06-06T15:43:37Z",
   "created": "2026-06-06T15:22:14Z",
   "description": "## Problem\nFetcher contains several magic numbers and hardcoded values:\n- `max_gray_attempts = 3` in fetch_loop (should be a Config field or constant)\n- `256` in google_larger_url and gray_fallback_url (Google favicon size parameter)\n- Google favicon URL template `\"https://www.google.com/s2/favicons?domain=#{encoded}\u0026sz=256\"` duplicated in gray_fallback_url\n- DDG URL pattern `/ip3/(.+?)\\.ico` hardcoded in extract_domain_from_ddg_url\n\n## Proposal\n1. Extract `GOOGLE_FAVICON_URL_TEMPLATE` and `GOOGLE_FAVICON_SIZE = 256` as constants\n2. Extract `DDG_IP3_PATH_PATTERN` as a constant regex\n3. Move `max_gray_attempts` to Config or make it a class constant\n4. Consider extracting all external service URL patterns into a constants section at the top of the class (or the new GrayPlaceholderHandler if vugcr-ber is done first)\n\n## Benefits\n- Easier to update service URLs/parameters in one place\n- Self-documenting: named constants explain what magic numbers mean\n- Reduces risk of inconsistency from duplicated values",
   "id": "vugcr-jot",
   "labels": [],
   "priority": 2,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Replace magic numbers with named constants in Fetcher",
   "type": "task",
-  "updated_at": "2026-06-06T15:40:47Z"
+  "updated_at": "2026-06-06T15:43:37Z"
 }
