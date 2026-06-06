@@ -35,7 +35,7 @@ module Vug
 
         # Binary search to find the first non-expired timestamp
         # This is O(log n) instead of O(n) for reject!
-        idx = timestamps.bsearch_index { |ts| ts >= cutoff }
+        idx = timestamps.bsearch_index { |timestamp| timestamp >= cutoff }
         if idx && idx > 0
           # Remove all expired entries (everything before idx)
           timestamps.shift(idx)
@@ -75,7 +75,7 @@ module Vug
         return @max_per_minute unless timestamps
 
         # Count active timestamps using binary search
-        idx = timestamps.bsearch_index { |ts| ts >= cutoff } || timestamps.size
+        idx = timestamps.bsearch_index { |timestamp| timestamp >= cutoff } || timestamps.size
         active = timestamps.size - idx
         (@max_per_minute - active).clamp(0, @max_per_minute)
       end
@@ -99,7 +99,7 @@ module Vug
         cutoff = now - WINDOW
 
         @windows.each_value do |timestamps|
-          idx = timestamps.bsearch_index { |ts| ts >= cutoff } || timestamps.size
+          idx = timestamps.bsearch_index { |timestamp| timestamp >= cutoff } || timestamps.size
           timestamps.shift(idx) if idx > 0
         end
 

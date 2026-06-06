@@ -107,6 +107,7 @@ module Vug
 
     private def perform_http_request(url : String, uri : URI, redirect_count : Int32) : Result
       client = @http_client_factory.create_client(uri)
+      # ameba:disable Lint/UselessAssign — used in ensure block
       success = false
 
       headers = HTTP::Headers{

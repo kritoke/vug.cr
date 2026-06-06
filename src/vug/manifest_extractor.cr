@@ -46,6 +46,7 @@ module Vug
 
       @config.debug("Fetching manifest: #{manifest_url}")
 
+      # ameba:disable Lint/UselessAssign — used in ensure block
       client : HTTP::Client? = nil
       begin
         uri = URI.parse(manifest_url)
