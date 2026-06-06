@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-06T15:21:35Z",
+  "description": "## Problem\nFetcher.perform_http_request and fetch_single together handle HTTP client creation, header setup, response processing, redirect handling, error mapping, and client lifecycle. This is ~80 lines of HTTP-specific logic inside a class whose primary job is fetch orchestration.\n\nNote: there is already a ticket vugcr-pvr for this extraction. This ticket refines it.\n\n## Proposal\nCreate `Fetcher::SingleRequest` class that encapsulates one HTTP request cycle:\n- Constructor receives config, http_client_factory, image_processor\n- `execute(url, uri, initial_dns_ips, redirect_count) : Result`\n- Owns: client creation, header construction, response processing, redirect detection, error classification\n- Owns: semaphore acquire/release, rate limiting check, DNS revalidation\n\nThis leaves Fetcher responsible for:\n- URL validation\n- Loop management (redirects, gray placeholder retries)\n- Cache coordination\n- DNS tracking across redirect chains\n\n## Benefits\n- Single Responsibility: one HTTP request = one object\n- Fetcher drops from ~396 lines to ~200 lines\n- HTTP request logic becomes independently testable",
+  "id": "vugcr-mpb",
+  "labels": [],
+  "priority": 2,
+  "status": "open",
+  "title": "Extract HTTP request execution from Fetcher into SingleRequest class",
+  "type": "task",
+  "updated_at": "2026-06-06T15:21:35Z"
+}
