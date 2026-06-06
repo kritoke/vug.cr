@@ -10,9 +10,11 @@ module Vug
     # for a domain. This is a 32x32 PNG always at exactly 2441 bytes.
     DDG_DEFAULT_ICON_SIZE = 2441
 
-    # Google favicon API returns a 198-byte SVG placeholder when no
-    # real favicon exists for a domain.
-    GOOGLE_PLACEHOLDER_SIZE = 198
+    # Google favicon API size parameter for high-resolution favicons.
+    GOOGLE_FAVICON_SIZE = 256
+
+    # Regex to extract domain from DuckDuckGo /ip3/{domain}.ico URLs.
+    DDG_IP3_PATTERN = %r{/ip3/(.+?)\.ico\z}
 
     def initialize(@config : Config, @cache_coordinator : CacheCoordinator?)
     end
@@ -20,7 +22,7 @@ module Vug
     # Returns true if the fetched data is a known gray placeholder image.
     def gray_placeholder?(url : String, data : Bytes?) : Bool
       return false if data.nil?
-      return true if data.size == @config.gray_placeholder_size
+      return true if data.size == Config::GOOGLE_PLACEHOLDER_SIZE
       return true if ddg_default_icon?(url, data)
       false
     end
@@ -56,8 +58,7 @@ module Vug
     # Extract domain from DDG URL and build a Google favicon fallback URL.
     private def ddg_to_google_fallback(url : String) : String?
       if domain = extract_domain_from_ddg_url(url)
-        encoded = URI.encode_www_form(domain)
-        google_url = "https://www.google.com/s2/favicons?domain=#{encoded}&sz=256"
+        google_url = google_favicon_url(domain)
         @config.debug("DDG default icon, falling back to Google: #{google_url}")
         return google_url
       end
@@ -69,8 +70,7 @@ module Vug
     private def generic_google_fallback(url : String) : String?
       @config.debug("Gray placeholder from non-Google source, trying Google fallback")
       if host = URI.parse(url).host
-        encoded_host = URI.encode_www_form(host)
-        google_url = "https://www.google.com/s2/favicons?domain=#{encoded_host}&sz=256"
+        google_url = google_favicon_url(host)
         @config.debug("Google fallback URL: #{google_url}")
         return google_url
       end
@@ -84,14 +84,20 @@ module Vug
     private def extract_domain_from_ddg_url(url : String) : String?
       path = URI.parse(url).path
       return unless path
-      match = path.match(%r{/ip3/(.+?)\.ico\z})
+      match = path.match(DDG_IP3_PATTERN)
       match.try(&.[1])
     rescue URI::Error
       nil
     end
 
     private def google_larger_url(url : String) : String
-      url.gsub(/sz=\d+/, "sz=256")
+      url.gsub(/sz=\d+/, "sz=#{GOOGLE_FAVICON_SIZE}")
+    end
+
+    # Build a Google favicon API URL for the given domain.
+    private def google_favicon_url(domain : String) : String
+      encoded = URI.encode_www_form(domain)
+      "https://www.google.com/s2/favicons?domain=#{encoded}&sz=#{GOOGLE_FAVICON_SIZE}"
     end
   end
 end

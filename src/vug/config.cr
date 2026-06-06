@@ -11,6 +11,10 @@ module Vug
     DEFAULT_USER_AGENT      = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     DEFAULT_ACCEPT_LANGUAGE = "en-US,en;q=0.9"
 
+    # Google favicon API returns a 198-byte SVG placeholder when no
+    # real favicon exists for a domain.
+    GOOGLE_PLACEHOLDER_SIZE = 198
+
     getter timeout : Time::Span = 30.seconds
     getter html_fetch_timeout : Time::Span = 60.seconds # Longer timeout for HTML page fetches
     getter connect_timeout : Time::Span = 10.seconds
@@ -25,7 +29,7 @@ module Vug
 
     # Google SVG placeholders are exactly 198 bytes when fetched from google.com/s2/favicons.
     # Detecting this size allows us to fall back to a larger resolution.
-    getter gray_placeholder_size : Int32 = 198
+    getter gray_placeholder_size : Int32 = GOOGLE_PLACEHOLDER_SIZE
 
     # NOTE: This setting controls the process-wide semaphore limit.
     # Only the first-initialized value takes effect; subsequent Fetcher
@@ -80,7 +84,7 @@ module Vug
       @max_size = validate_positive_int(max_size, "max_size", 100 * 1024)
       @cache_size_limit = validate_positive_int(cache_size_limit, "cache_size_limit", 10 * 1024 * 1024)
       @cache_entry_ttl = validate_positive_timespan(cache_entry_ttl, "cache_entry_ttl", 7.days)
-      @gray_placeholder_size = validate_non_negative(gray_placeholder_size, "gray_placeholder_size", 198)
+      @gray_placeholder_size = validate_non_negative(gray_placeholder_size, "gray_placeholder_size", GOOGLE_PLACEHOLDER_SIZE)
       @max_concurrent_requests = validate_positive_int(max_concurrent_requests, "max_concurrent_requests", 8)
       @max_retries = validate_non_negative(max_retries, "max_retries", 2)
       @retry_base_delay = validate_positive_timespan(retry_base_delay, "retry_base_delay", 500.milliseconds)
