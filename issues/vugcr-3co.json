@@ -2,13 +2,14 @@
   "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-06-06T16:10:36Z",
   "created": "2026-06-01T10:38:57Z",
   "description": "In multiple places, URI.parse is called without proper nil checking:\\n\\n1. fetcher.cr line ~300:  parses redirect location but some code paths assume it succeeds\\n2. The  method returns  when current_uri might be nil\\n3. handle_result_action expects URI? but not all callers ensure it's set\\n\\nWhile Crystal's type system catches many issues at compile time, the Result/redirect handling has edge cases where nil URI could cause runtime errors.\\n\\nExample: If URI.parse fails in handle_redirect_action for a redirect URL, the code continues but with a nil URI, which may cause issues in subsequent iterations.",
   "id": "vugcr-3co",
   "labels": [],
   "priority": 2,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Add missing null checks for URI parsing failures in redirect handling",
   "type": "task",
-  "updated_at": "2026-06-06T16:05:41Z"
+  "updated_at": "2026-06-06T16:10:36Z"
 }
