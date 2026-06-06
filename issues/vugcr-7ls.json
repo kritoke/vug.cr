@@ -6,9 +6,10 @@
   "description": "## Problem\\n\\nConfig.cr has private validation methods:\\n- validate_positive_timespan\\n- validate_positive_int\\n- validate_non_negative\\n\\nThese are useful validation patterns that could benefit other parts of the codebase.\\n\\n## What to do\\n\\n1. Evaluate if other modules need similar validation\\n2. If yes, extract to a shared Validators module\\n3. If not, leave as-is but add a comment explaining why they are private\\n4. Run specs to verify\\n\\n## Why\\n\\n- Reusability: validation patterns should be shared if used in multiple places\\n- YAGNI: if only Config uses them, keeping them private is correct",
   "id": "vugcr-7ls",
   "labels": [],
+  "parent": "vugcr-gp8",
   "priority": 2,
   "status": "open",
   "title": "Consider making Config validation helpers reusable",
   "type": "task",
-  "updated_at": "2026-06-06T19:08:58Z"
+  "updated_at": "2026-06-06T19:09:21Z"
 }
