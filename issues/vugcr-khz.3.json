@@ -1,5 +1,5 @@
 {
-  "assignee": "",
+  "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [],
   "created": "2026-06-06T20:27:45Z",
@@ -8,8 +8,8 @@
   "labels": [],
   "parent": "vugcr-khz",
   "priority": 2,
-  "status": "open",
+  "status": "in_progress",
   "title": "Extract RedirectLoopError to its own file",
   "type": "task",
-  "updated_at": "2026-06-06T20:27:45Z"
+  "updated_at": "2026-06-06T20:43:44Z"
 }
