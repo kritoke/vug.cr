@@ -2,13 +2,14 @@
   "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-06-06T19:51:47Z",
   "created": "2026-06-06T19:36:19Z",
   "description": "## Problem\n\nIn `process_data_favicon` (line 150), the data URL identifier is generated inline:\n\n```crystal\ndata_url_id = \"data:#{Digest::SHA256.hexdigest(data.to_slice)}\"\n```\n\nThis magic string pattern — `data:` prefix + SHA256 hash — is used as a stable synthetic URL for caching data-URL favicons. The intent is unclear without reading the surrounding code, and the pattern could be needed elsewhere.\n\n## Proposed Fix\n\nExtract into a documented class method:\n\n```crystal\n# Generate a stable synthetic URL identifier for a data-URL resource.\n# Uses SHA256 of the content bytes, prefixed with \"data:\" to distinguish\n# from real URLs. Suitable as a cache key.\ndef self.data_url_identifier(data : Bytes) : String\n  \"data:#{Digest::SHA256.hexdigest(data.to_slice)}\"\nend\n```\n\nThen simplify:\n```crystal\ndata_url_id = HtmlExtractor.data_url_identifier(data)\n```\n\n## Files\n- src/vug/html_extractor.cr (extract method)",
   "id": "vugcr-uju",
   "labels": [],
   "priority": 3,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Extract DataURL identifier generation into named method with docs",
   "type": "task",
-  "updated_at": "2026-06-06T19:48:08Z"
+  "updated_at": "2026-06-06T19:51:47Z"
 }
