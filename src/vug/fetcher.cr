@@ -60,7 +60,7 @@ module Vug
 
         @config.debug("Fetching favicon from: #{state.current_url}")
 
-        uri = state.current_uri || parse_uri_safe(state.current_url)
+        uri = state.current_uri || UrlValidator.parse_or_nil(state.current_url)
         result = @single_request.execute(state.current_url, uri, state.initial_dns_ips, state.redirects)
         action, next_url, state.current_uri = fetch_result_uri(state.current_url, result, state.current_uri)
 
@@ -91,7 +91,10 @@ module Vug
 
     # Resolve DNS and check for redirect loops before making a request.
     private def prepare_request(state : LoopState) : Nil
-      state.current_uri = parse_uri_safe(state.current_url)
+      state.current_uri = UrlValidator.parse_or_nil(state.current_url)
+      if state.current_uri.nil?
+        @config.debug("URI parse failed for #{state.current_url}")
+      end
       if host = state.current_uri.try(&.hostname)
         state.initial_dns_ips[host] ||= DnsCache.resolve(host)
       end
@@ -137,7 +140,7 @@ module Vug
     # Returns nil if the redirect URL cannot be parsed — the caller must
     # handle this gracefully (e.g. by letting the next iteration fail).
     private def handle_redirect_action(new_url : String, initial_dns_ips : Hash(String, Array(String))) : URI?
-      new_uri = parse_uri_safe(new_url)
+      new_uri = UrlValidator.parse_or_nil(new_url)
       unless new_uri
         @config.warning("Redirect target could not be parsed: #{new_url}")
         return
@@ -182,13 +185,5 @@ module Vug
       {LoopAction::TryFallback, next_url, nil}
     end
 
-    # Parse a URI, returning nil on failure instead of raising.
-    # Logs the failure at debug level to aid troubleshooting.
-    private def parse_uri_safe(url : String) : URI?
-      URI.parse(url)
-    rescue ex : URI::Error
-      @config.debug("URI parse failed for #{url}: #{ex.message}")
-      nil
-    end
   end
 end

@@ -33,7 +33,11 @@ module Vug
       acquired = acquire_semaphore(url)
       return Vug.failure("Semaphore acquire failed", url, error_type: :fetch_error) unless acquired
       begin
-        parsed_uri = uri || parse_uri(url)
+        parsed_uri = uri || UrlValidator.parse_or_nil(url)
+        unless parsed_uri
+          @config.error("fetch_single(#{url})", "Invalid URL format")
+          return Vug.failure("Invalid URL", url, error_type: :invalid_url)
+        end
         host = parsed_uri.hostname
         check_rate_and_dns(url, host, initial_dns_ips, redirect_count, parsed_uri)
       rescue ex : URI::Error
@@ -59,13 +63,6 @@ module Vug
     rescue ex : Channel::ClosedError
       @config.error("fetch_single(#{url})", "Semaphore channel closed: #{ex.message}")
       false
-    end
-
-    private def parse_uri(url : String) : URI
-      URI.parse(url)
-    rescue ex : URI::Error
-      @config.error("fetch_single(#{url})", "Invalid URL format: #{ex.message}")
-      raise ex
     end
 
     private def check_rate_and_dns(url : String, host : String?, initial_dns_ips : Hash(String, Array(String)), redirect_count : Int32, uri : URI) : Result

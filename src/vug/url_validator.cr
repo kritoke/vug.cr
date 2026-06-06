@@ -132,6 +132,15 @@ module Vug
       ["http", "https"].includes?(scheme.downcase)
     end
 
+    # Parse a URL string, returning `nil` on `URI::Error` instead of raising.
+    # Callers handle the nil case at the appropriate log level for their
+    # context (Fetcher logs at debug, SingleRequest logs at error).
+    def self.parse_or_nil(url : String) : URI?
+      URI.parse(url)
+    rescue URI::Error
+      nil
+    end
+
     private def self.dangerous_host?(host : String?) : Bool
       host = normalize_host(host)
       return true if host.nil? || host.empty?
