@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-06T19:07:51Z",
+  "description": "## Problem\\n\\nConfig.copy_with duplicates all 22 parameters from initialize. Every new config field requires changes in 3 places: getter, initialize, copy_with. This is a classic DRY violation.\\n\\n## What to do\\n\\n1. Investigate if Crystal has a macro or pattern to generate copy_with from the field declarations\\n2. If not, consider using a Crystal macro to auto-generate both initialize and copy_with from a single field definition DSL\\n3. Alternatively, document the pattern clearly and add a comment reminding maintainers to update all 3 locations\\n4. Run specs after any changes\\n\\n## Why\\n\\n- DRY: 22 parameters x 3 locations = 66 places to keep in sync\\n- Every new config field is a maintenance trap\\n- The Unset sentinel pattern for nullable Proc fields adds complexity",
+  "id": "vugcr-8qw",
+  "labels": [],
+  "priority": 2,
+  "status": "open",
+  "title": "Simplify Config.copy_with to reduce parameter duplication",
+  "type": "task",
+  "updated_at": "2026-06-06T19:07:51Z"
+}
