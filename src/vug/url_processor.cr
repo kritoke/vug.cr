@@ -39,6 +39,19 @@ module Vug
       UrlValidator.valid_scheme?(scheme)
     end
 
+    # Parse and validate a URL in one step: sanitize feed suffixes,
+    # validate scheme and host safety, and return a parsed URI.
+    # Returns nil if the URL is invalid, dangerous, or unparseable.
+    def self.parse_and_validate(url : String) : URI?
+      clean = sanitize_feed_url(url)
+      return nil unless UrlValidator.valid_url?(clean)
+      parsed = URI.parse(clean)
+      return nil unless parsed.scheme
+      parsed
+    rescue URI::Error
+      nil
+    end
+
     # Extracts host from URL, handling feed URLs and HTTP/HTTPS schemes
     # Sanitizes by removing /feed/ suffix and extracts hostname from URI
     def self.extract_host_from_url(url : String) : String?

@@ -69,15 +69,7 @@ module Vug
     end
 
     private def parse_validated_url(site_url : String) : URI?
-      clean_url = UrlProcessor.sanitize_feed_url(site_url)
-      return debug_return("URL blocked by validator: #{clean_url}") unless UrlValidator.valid_url?(clean_url)
-
-      parsed = URI.parse(clean_url)
-      return debug_return("URL missing scheme: #{clean_url}") unless parsed.scheme
-      parsed
-    rescue ex : URI::Error
-      @config.debug("Invalid URL for HTML extraction: #{clean_url} - #{ex.message}")
-      nil
+      UrlProcessor.parse_and_validate(site_url) || debug_return("URL validation failed: #{site_url}")
     end
 
     private def debug_return(msg : String)
