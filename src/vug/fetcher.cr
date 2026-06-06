@@ -15,6 +15,7 @@ require "./rate_limiter"
 require "./semaphore"
 require "./gray_placeholder_handler"
 require "./loop_state"
+require "./loop_action"
 require "./single_request"
 
 module Vug
@@ -27,14 +28,6 @@ module Vug
       def initialize(@url : String)
         super("Redirect loop detected: #{@url}")
       end
-    end
-
-    # Type-safe action enum replacing bare Symbol dispatch.
-    enum Action
-      Redirect
-      TryFallback
-      ReturnResult
-      UseCached
     end
 
     def initialize(@config : Config = Config.default, cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectHandler? = nil, cache_coordinator : CacheCoordinator? = nil, image_processor : ImageProcessor? = nil, rate_limiter : RateLimiter? = nil)
@@ -90,7 +83,7 @@ module Vug
 
     # Apply the action from a fetch result. Returns a Result to return
     # immediately, or nil to continue the loop.
-    private def apply_action(action : Action, next_url : String?, result : Result, state : LoopState) : Result?
+    private def apply_action(action : LoopAction, next_url : String?, result : Result, state : LoopState) : Result?
       case action
       when .redirect?, .try_fallback?
         handle_result_action(action, next_url, state)
@@ -126,7 +119,7 @@ module Vug
       nil
     end
 
-    private def handle_result_action(action : Action, next_url : String?, state : LoopState) : Nil
+    private def handle_result_action(action : LoopAction, next_url : String?, state : LoopState) : Nil
       case action
       when .redirect?
         if next_url
@@ -174,28 +167,28 @@ module Vug
       elapsed > @config.timeout
     end
 
-    private def fetch_result_uri(current_url : String, result : Result, current_uri : URI?) : {Action, String?, URI?}
+    private def fetch_result_uri(current_url : String, result : Result, current_uri : URI?) : {LoopAction, String?, URI?}
       if result.redirect?
-        return {Action::Redirect, result.url, current_uri}
+        return {LoopAction::Redirect, result.url, current_uri}
       end
 
       if result.success?
         return gray_placeholder_uri(current_url, result, current_uri)
       end
 
-      {Action::ReturnResult, nil, current_uri}
+      {LoopAction::ReturnResult, nil, current_uri}
     end
 
-    private def gray_placeholder_uri(current_url : String, result : Result, current_uri : URI?) : {Action, String?, URI?}
-      return {Action::ReturnResult, nil, current_uri} unless @gray_placeholder_handler.gray_placeholder?(current_url, result.bytes)
+    private def gray_placeholder_uri(current_url : String, result : Result, current_uri : URI?) : {LoopAction, String?, URI?}
+      return {LoopAction::ReturnResult, nil, current_uri} unless @gray_placeholder_handler.gray_placeholder?(current_url, result.bytes)
 
       if cached = @gray_placeholder_handler.cached_larger_version(current_url)
         @gray_placeholder_handler.store_larger_version(current_url, cached)
-        return {Action::UseCached, cached, current_uri}
+        return {LoopAction::UseCached, cached, current_uri}
       end
 
       next_url = @gray_placeholder_handler.fallback_url(current_url)
-      {Action::TryFallback, next_url, nil}
+      {LoopAction::TryFallback, next_url, nil}
     end
 
     # Parse a URI, returning nil on failure instead of raising.
