@@ -2,13 +2,14 @@
   "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-06-06T15:40:16Z",
   "created": "2026-06-06T15:22:46Z",
   "description": "## Problem\nFetcher.perform_http_request rescues `Exception` (the broadest possible type) on line ~290:\n```crystal\nrescue ex : Exception\n  @http_client_factory.release_client(uri, client, success: false)\n  raise ex\n```\n\nWhile it re-raises (good), the `rescue Exception` in fetch_single already catches everything. This creates confusing control flow where some exceptions are caught twice.\n\nAlso, `fetch_single` rescues 6 different exception types individually. While thorough, the pattern is verbose and each rescue block does nearly the same thing (log + return failure). Some of these could be consolidated.\n\n## Proposal\n1. In perform_http_request: remove the broad `rescue ex : Exception` — the ensure block pattern or a more targeted rescue is safer\n2. In fetch_single: group related exceptions that share the same handling:\n   - Network errors (Socket::Error, IO::Error, IO::TimeoutError) → one rescue\n   - Security errors (OpenSSL::SSL::Error) → one rescue  \n   - URI errors (URI::Error) → one rescue\n3. Consider using an ensure-based cleanup pattern instead of re-raise in perform_http_request\n\n## Benefits\n- Clearer exception flow\n- Less risk of accidentally swallowing important exceptions\n- Easier to add new exception handling without missing a rescue",
   "id": "vugcr-xr2",
   "labels": [],
   "priority": 2,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Consolidate broad exception rescue in perform_http_request",
   "type": "task",
-  "updated_at": "2026-06-06T15:38:17Z"
+  "updated_at": "2026-06-06T15:40:16Z"
 }
