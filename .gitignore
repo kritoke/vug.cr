@@ -16,6 +16,7 @@ fetcher
 *.dylib
 *.dll
 *.exe
+docs/
 
 # Logs
 *.log
