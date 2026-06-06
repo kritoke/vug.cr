@@ -16,20 +16,11 @@ require "./semaphore"
 require "./gray_placeholder_handler"
 require "./loop_state"
 require "./loop_action"
+require "./fetch_errors"
 require "./single_request"
 
 module Vug
   class Fetcher
-    # Raised by prepare_request on redirect loop detection.
-    # Caught by fetch_loop to return a clean failure result.
-    private class RedirectLoopError < Exception
-      getter url : String
-
-      def initialize(@url : String)
-        super("Redirect loop detected: #{@url}")
-      end
-    end
-
     def initialize(@config : Config = Config.default, cache : MemoryCache? = nil, http_client_factory : HttpClientFactory? = nil, cache_manager : CacheManager? = nil, redirect_validator : RedirectHandler? = nil, cache_coordinator : CacheCoordinator? = nil, image_processor : ImageProcessor? = nil, rate_limiter : RateLimiter? = nil)
       @http_client_factory = http_client_factory || HttpClientFactory.new(@config)
       @cache_manager = cache_manager || CacheManager.new(@config, cache)
