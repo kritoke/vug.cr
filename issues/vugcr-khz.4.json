@@ -2,14 +2,15 @@
   "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-06-06T20:34:12Z",
   "created": "2026-06-06T20:27:55Z",
   "description": "## Goal\nDelete the `DDG_DEFAULT_ICON_SIZE` constant alias from `src/vug/fetcher.cr`. The canonical value is `Vug::GrayPlaceholderHandler::DDG_DEFAULT_ICON_SIZE` and the alias has no users.\n\n## Why (DRY + dead code)\nThe constant is declared with the comment:\n\n\u003e Backward-compatible alias — canonical value lives in GrayPlaceholderHandler.\n\nA repo-wide search confirms `Fetcher::DDG_DEFAULT_ICON_SIZE` (and `Vug::Fetcher::DDG_DEFAULT_ICON_SIZE`) is not referenced anywhere — not in `src/`, not in `spec/`, not in any documentation. The \"backward-compatible\" purpose has no consumer, so the alias is dead code that:\n- Re-implements the indirection the comment warns against (one more place to keep in sync).\n- Adds noise to `fetcher.cr`'s top-level surface.\n- Misleads readers into thinking the value can be overridden via `Fetcher::DDG_DEFAULT_ICON_SIZE`.\n\n## Approach\n1. Delete lines 31-33 of `src/vug/fetcher.cr`:\n   ```crystal\n   # Backward-compatible alias — canonical value lives in GrayPlaceholderHandler.\n   DDG_DEFAULT_ICON_SIZE = GrayPlaceholderHandler::DDG_DEFAULT_ICON_SIZE\n   ```\n2. If `GrayPlaceholderHandler` was only `require`d to satisfy this alias, keep the require (it is also used by `@gray_placeholder_handler`).\n\n## Acceptance\n- `Fetcher::DDG_DEFAULT_ICON_SIZE` no longer exists.\n- The canonical `Vug::GrayPlaceholderHandler::DDG_DEFAULT_ICON_SIZE` is unchanged.\n- A repo-wide grep for `Fetcher::DDG_DEFAULT_ICON_SIZE` returns no matches.\n- All specs pass.\n- `ameba` is clean.\n\n## Notes\n- This is the smallest, safest ticket in the epic. Good first PR.",
   "id": "vugcr-khz.4",
   "labels": [],
   "parent": "vugcr-khz",
   "priority": 3,
-  "status": "in_progress",
+  "status": "closed",
   "title": "Remove dead Fetcher::DDG_DEFAULT_ICON_SIZE alias",
   "type": "task",
-  "updated_at": "2026-06-06T20:32:18Z"
+  "updated_at": "2026-06-06T20:34:12Z"
 }
