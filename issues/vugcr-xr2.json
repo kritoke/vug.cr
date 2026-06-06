@@ -1,5 +1,5 @@
 {
-  "assignee": "",
+  "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [],
   "created": "2026-06-06T15:22:46Z",
@@ -7,8 +7,8 @@
   "id": "vugcr-xr2",
   "labels": [],
   "priority": 2,
-  "status": "open",
+  "status": "in_progress",
   "title": "Consolidate broad exception rescue in perform_http_request",
   "type": "task",
-  "updated_at": "2026-06-06T15:22:46Z"
+  "updated_at": "2026-06-06T15:38:17Z"
 }
