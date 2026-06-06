@@ -19,8 +19,6 @@ module Vug
     getter start_time : Time::Span
     getter initial_url : String
 
-    MAX_GRAY_ATTEMPTS = 3
-
     def initialize(@initial_url : String, @start_time : Time::Span)
       @current_url = @initial_url
       @current_uri = URI.parse(@initial_url) rescue nil
