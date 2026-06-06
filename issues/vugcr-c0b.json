@@ -1,5 +1,5 @@
 {
-  "assignee": "",
+  "assignee": "kritoke",
   "blocked_by": [],
   "blocks": [
     "vugcr-bd0"
@@ -10,8 +10,8 @@
   "labels": [],
   "parent": "vugcr-gp8",
   "priority": 1,
-  "status": "open",
+  "status": "in_progress",
   "title": "Extract image dimension parsing from ImageValidator into separate module",
   "type": "task",
-  "updated_at": "2026-06-06T19:09:40Z"
+  "updated_at": "2026-06-06T19:13:02Z"
 }
