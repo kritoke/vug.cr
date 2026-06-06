@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-06T20:28:34Z",
+  "description": "## Goal\nUnify the two divergent URI-parsing wrappers in the codebase — `Fetcher#parse_uri_safe` and `SingleRequest#parse_uri` — into a single shared helper.\n\n## Why (DRY)\nThe codebase has two different `URI.parse` wrappers, each with a different error policy:\n\n| Method                       | Failure log level | On failure             |\n| ---------------------------- | ----------------- | ---------------------- |\n| `Fetcher#parse_uri_safe`     | `debug`           | returns `nil`          |\n| `SingleRequest#parse_uri`    | `error`           | re-raises the exception |\n\nThe inconsistency is a real readability issue:\n- A reader cannot tell at a glance why one helper swallows the error and the other propagates.\n- The two helpers were almost certainly written at different times by different authors without coordination.\n- A bug in the parse error path could behave differently depending on which caller triggered it.\n\n## Approach\n1. Add a small helper to `UrlValidator` (the natural home; it already owns `valid_url?`) or to a new `src/vug/uri_parser.cr`:\n   ```crystal\n   def self.parse_or_nil(url : String) : URI?\n     URI.parse(url)\n   rescue URI::Error\n     nil\n   end\n   ```\n2. Replace `Fetcher#parse_uri_safe` and `SingleRequest#parse_uri` with calls to the shared helper. The shared helper does NOT log; the caller logs at the level that makes sense for its context.\n3. Keep the logging site decision in the caller. The two current call sites log at different levels (`debug` for the outer fetch loop, `error` for the inner single-request path), which is reasonable because the inner path is closer to the I/O and the outer path is a defensive re-parse.\n4. Delete the private `parse_uri_safe` and `parse_uri` methods.\n\n## Acceptance\n- Exactly one `URI.parse` rescue wrapper exists in the codebase.\n- `parse_uri_safe` and `parse_uri` are removed from `fetcher.cr` and `single_request.cr`.\n- The log levels in the two call sites are preserved (one debug, one error).\n- All fetcher and single_request specs pass.\n- `ameba` is clean.\n\n## Notes\n- This is a behavioral no-op except for unifying the call path. Both helpers today end up with the same `URI.parse` semantics; only the failure handling differs by call site.",
+  "id": "vugcr-khz.7",
+  "labels": [],
+  "parent": "vugcr-khz",
+  "priority": 2,
+  "status": "open",
+  "title": "Consolidate URI-parsing helpers between Fetcher and SingleRequest",
+  "type": "task",
+  "updated_at": "2026-06-06T20:28:34Z"
+}
