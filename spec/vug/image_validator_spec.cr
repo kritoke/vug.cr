@@ -42,8 +42,6 @@ describe Vug::ImageValidator do
     end
   end
 
-
-
   describe ".svg?" do
     it "detects SVG with XML declaration followed by svg tag" do
       # <?xml version="1.0"?>\n<svg xmlns="...

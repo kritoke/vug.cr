@@ -79,7 +79,6 @@ describe Vug::DnsCache do
 
   describe ".recreate" do
     it "creates a new instance" do
-      old = Vug::DnsCache.instance
       Vug::DnsCache.recreate
       new_instance = Vug::DnsCache.instance
       # After recreate, it should still be a valid instance

@@ -331,11 +331,8 @@ describe Vug::Fetcher do
 
   describe "DuckDuckGo default icon detection" do
     it "detects DDG default icon size from duckduckgo URLs" do
-      config = Vug::Config.new
-      fetcher = Vug::Fetcher.new(config)
       # DDG default icon is exactly 2441 bytes
       ddg_default = Bytes.new(Vug::GrayPlaceholderHandler::DDG_DEFAULT_ICON_SIZE)
-      ddg_url = "https://icons.duckduckgo.com/ip3/reddit.com.ico"
       # Access private method via the object's public behavior
       # The size check should match
       ddg_default.size.should eq(2441)
