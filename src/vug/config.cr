@@ -7,6 +7,35 @@ module Vug
   # (on_save, on_load, on_debug, etc.) which are not comparable and cannot be used
   # in Crystal records. If callback support is ever removed, consider converting
   # to a record to gain automatic `copy_with` support.
+  # Log severity levels for structured logging.
+  enum LogLevel
+    Debug
+    Info
+    Warn
+    Error
+  end
+
+  # A structured log entry with level, message, optional context, and timestamp.
+  class LogEntry
+    getter level : LogLevel
+    getter message : String
+    getter context : String?
+    getter timestamp : Time
+
+    def initialize(@level : LogLevel, @message : String, @context : String? = nil, @timestamp : Time = Time.utc)
+    end
+
+    def to_json : String
+      String.build do |io|
+        io << "{\"timestamp\":\"" << timestamp.to_rfc3339 << "\",\"level\":\"" << level.to_s.downcase << "\",\"message\":\"" << message << "\""
+        if ctx = context
+          io << ",\"context\":\"" << ctx << "\""
+        end
+        io << "}"
+      end
+    end
+  end
+
   class Config
     DEFAULT_USER_AGENT      = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     DEFAULT_ACCEPT_LANGUAGE = "en-US,en;q=0.9"
@@ -48,6 +77,10 @@ module Vug
     getter on_error : Proc(String, String, Nil)? = nil
     getter on_warning : Proc(String, Nil)? = nil
 
+    # Optional structured logging callback. When set, receives LogEntry
+    # objects alongside the existing level-specific callbacks.
+    getter on_log : Proc(LogEntry, Nil)? = nil
+
     DEFAULT = Config.new
 
     def self.default : Config
@@ -75,6 +108,7 @@ module Vug
       on_debug : Proc(String, Nil)? = nil,
       on_error : Proc(String, String, Nil)? = nil,
       on_warning : Proc(String, Nil)? = nil,
+      on_log : Proc(LogEntry, Nil)? = nil,
     )
       @timeout = validate_positive_timespan(timeout, "timeout", 30.seconds)
       @html_fetch_timeout = validate_positive_timespan(html_fetch_timeout, "html_fetch_timeout", 60.seconds)
@@ -97,6 +131,7 @@ module Vug
       @on_debug = on_debug
       @on_error = on_error
       @on_warning = on_warning
+      @on_log = on_log
     end
 
     private def validate_positive_timespan(value : Time::Span?, name : String, default : Time::Span) : Time::Span
@@ -119,14 +154,17 @@ module Vug
 
     def debug(message : String) : Nil
       @on_debug.try(&.call(message))
+      @on_log.try(&.call(LogEntry.new(LogLevel::Debug, message)))
     end
 
     def error(context : String, message : String) : Nil
       @on_error.try(&.call(context, message))
+      @on_log.try(&.call(LogEntry.new(LogLevel::Error, message, context)))
     end
 
     def warning(message : String) : Nil
       @on_warning.try(&.call(message))
+      @on_log.try(&.call(LogEntry.new(LogLevel::Warn, message)))
     end
 
     def save(url : String, data : Bytes, content_type : String) : String?
@@ -138,7 +176,12 @@ module Vug
     end
 
     # Sentinel used by copy_with to distinguish "not provided" from "explicitly nil"
-    private module Unset
+    private struct Unset
+      INSTANCE = new
+
+      def self.instance : self
+        INSTANCE
+      end
     end
 
     # ameba:disable Metrics/CyclomaticComplexity
@@ -163,6 +206,7 @@ module Vug
       on_debug : Proc(String, Nil)? | Unset = Unset.instance,
       on_error : Proc(String, String, Nil)? | Unset = Unset.instance,
       on_warning : Proc(String, Nil)? | Unset = Unset.instance,
+      on_log : Proc(LogEntry, Nil)? | Unset = Unset.instance,
     ) : Config
       Config.new(
         timeout: timeout || @timeout,
@@ -185,6 +229,7 @@ module Vug
         on_debug: on_debug.is_a?(Unset) ? @on_debug : on_debug.as(Proc(String, Nil)?),
         on_error: on_error.is_a?(Unset) ? @on_error : on_error.as(Proc(String, String, Nil)?),
         on_warning: on_warning.is_a?(Unset) ? @on_warning : on_warning.as(Proc(String, Nil)?),
+        on_log: on_log.is_a?(Unset) ? @on_log : on_log.as(Proc(LogEntry, Nil)?),
       )
     end
   end
