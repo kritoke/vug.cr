@@ -16,6 +16,7 @@ require "./semaphore"
 require "./gray_placeholder_handler"
 require "./loop_state"
 require "./loop_action"
+require "./fetch_decision"
 require "./fetch_errors"
 require "./single_request"
 
@@ -62,9 +63,10 @@ module Vug
 
         uri = state.current_uri || UrlValidator.parse_or_nil(state.current_url)
         result = @single_request.execute(state.current_url, uri, state.initial_dns_ips, state.redirects)
-        action, next_url, state.current_uri = fetch_result_uri(state.current_url, result, state.current_uri)
+        decision = fetch_decision(state.current_url, result)
+        state.current_uri = nil if decision.reparse
 
-        if outcome = apply_action(action, next_url, result, state)
+        if outcome = apply_action(decision, result, state)
           return outcome
         end
       end
@@ -74,16 +76,18 @@ module Vug
 
     # Apply the action from a fetch result. Returns a Result to return
     # immediately, or nil to continue the loop.
-    private def apply_action(action : LoopAction, next_url : String?, result : Result, state : LoopState) : Result?
-      case action
+    private def apply_action(decision : FetchDecision, result : Result, state : LoopState) : Result?
+      case decision.action
       when .redirect?, .try_fallback?
-        handle_result_action(action, next_url, state)
-        return if action.redirect? || (action.try_fallback? && next_url)
-        return result if action.try_fallback?
+        handle_result_action(decision, state)
+        return if decision.action.redirect? || (decision.action.try_fallback? && decision.next_url)
+        return result if decision.action.try_fallback?
       when .return_result?
         return result
       when .use_cached?
-        return Vug.success(state.current_url, next_url) if next_url
+        if next_url = decision.next_url
+          return Vug.success(state.current_url, next_url)
+        end
         return result
       end
       nil
@@ -113,19 +117,20 @@ module Vug
       nil
     end
 
-    private def handle_result_action(action : LoopAction, next_url : String?, state : LoopState) : Nil
-      case action
+    private def handle_result_action(decision : FetchDecision, state : LoopState) : Nil
+      case decision.action
       when .redirect?
-        if next_url
+        if next_url = decision.next_url
           state.current_uri = handle_redirect_action(next_url, state.initial_dns_ips)
           state.current_url = next_url
         end
         state.redirects += 1
       when .try_fallback?
         state.gray_placeholder_attempts += 1
-        if next_url
+        if next_url = decision.next_url
           state.current_url = next_url
-          state.current_uri = nil # Will be parsed on next iteration
+          # current_uri is already nil because the call site set
+          # state.current_uri = nil when decision.reparse was true.
         end
       else
         # ReturnResult / UseCached are handled by the caller
@@ -161,28 +166,26 @@ module Vug
       elapsed > @config.timeout
     end
 
-    private def fetch_result_uri(current_url : String, result : Result, current_uri : URI?) : {LoopAction, String?, URI?}
+    private def fetch_decision(current_url : String, result : Result) : FetchDecision
       if result.redirect?
-        return {LoopAction::Redirect, result.url, current_uri}
+        return FetchDecision.new(LoopAction::Redirect, result.url, reparse: false)
       end
 
-      if result.success?
-        return gray_placeholder_uri(current_url, result, current_uri)
-      end
+      return gray_placeholder_decision(current_url, result) if result.success?
 
-      {LoopAction::ReturnResult, nil, current_uri}
+      FetchDecision.new(LoopAction::ReturnResult, nil, reparse: false)
     end
 
-    private def gray_placeholder_uri(current_url : String, result : Result, current_uri : URI?) : {LoopAction, String?, URI?}
-      return {LoopAction::ReturnResult, nil, current_uri} unless @gray_placeholder_handler.gray_placeholder?(current_url, result.bytes)
+    private def gray_placeholder_decision(current_url : String, result : Result) : FetchDecision
+      return FetchDecision.new(LoopAction::ReturnResult, nil, reparse: false) unless @gray_placeholder_handler.gray_placeholder?(current_url, result.bytes)
 
       if cached = @gray_placeholder_handler.cached_larger_version(current_url)
         @gray_placeholder_handler.store_larger_version(current_url, cached)
-        return {LoopAction::UseCached, cached, current_uri}
+        return FetchDecision.new(LoopAction::UseCached, cached, reparse: false)
       end
 
       next_url = @gray_placeholder_handler.fallback_url(current_url)
-      {LoopAction::TryFallback, next_url, nil}
+      FetchDecision.new(LoopAction::TryFallback, next_url, reparse: true)
     end
 
   end
