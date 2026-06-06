@@ -78,19 +78,29 @@ module Vug
     # immediately, or nil to continue the loop.
     private def apply_action(decision : FetchDecision, result : Result, state : LoopState) : Result?
       case decision.action
-      when .redirect?, .try_fallback?
+      when .redirect?
         handle_result_action(decision, state)
-        return if decision.action.redirect? || (decision.action.try_fallback? && decision.next_url)
-        return result if decision.action.try_fallback?
+        # Always continue: the next iteration will either follow the
+        # redirect (state.current_url was just updated) or terminate via
+        # check_termination if the redirect chain is exhausted.
+        nil
+      when .try_fallback?
+        handle_result_action(decision, state)
+        # Continue if we have a fallback URL to try; otherwise return the
+        # gray-placeholder result that triggered the decision.
+        decision.next_url ? nil : result
       when .return_result?
-        return result
+        result
       when .use_cached?
         if next_url = decision.next_url
-          return Vug.success(state.current_url, next_url)
+          Vug.success(state.current_url, next_url)
+        else
+          # Defensive: in the current dispatch UseCached always carries
+          # a next_url, but if a future caller passes nil we fall back
+          # to the result rather than raising.
+          result
         end
-        return result
       end
-      nil
     end
 
     # Resolve DNS and check for redirect loops before making a request.
