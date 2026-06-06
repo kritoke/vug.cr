@@ -1,5 +1,5 @@
 {
-  "assignee": "",
+  "assignee": "kritoke",
   "blocked_by": [
     "vugcr-4xz"
   ],
@@ -10,8 +10,8 @@
   "labels": [],
   "parent": "vugcr-gp8",
   "priority": 2,
-  "status": "open",
+  "status": "in_progress",
   "title": "Simplify Config.copy_with to reduce parameter duplication",
   "type": "task",
-  "updated_at": "2026-06-06T19:09:40Z"
+  "updated_at": "2026-06-06T19:24:15Z"
 }
