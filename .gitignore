@@ -47,3 +47,4 @@ planning/
 .catseye/
 # Local Pi runtime state
 .atl/
+.worktrees/
