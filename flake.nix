@@ -41,7 +41,7 @@
 
         shellHook = ''
           echo "vug.cr DevShell Active"
-           '' + privateShellHook;
+          '' + privateShellHook;
       };
     };
 }
