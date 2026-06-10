@@ -117,9 +117,6 @@ module Vug
       html = sanitize_html(html)
       @config.debug("HTML sanitized: #{html.size} bytes")
       html
-    rescue ex : IO::TimeoutError | IO::Error | Socket::Error
-      @config.debug("HTML fetch/IO error: #{ex.class} - #{ex.message}")
-      ""
     end
 
     private def add_manifest_favicons(html : String, site_url : String, favicons : Array(FaviconInfo))

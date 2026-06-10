@@ -19,7 +19,7 @@ module Vug
     def self.valid?(data : Bytes, hard_validation : Bool = false) : Bool
       return false if data.size < 4
 
-      return true if png?(data) || jpeg?(data) || ico?(data) || svg?(data) || webp?(data)
+      return true if png?(data) || jpeg?(data) || ico?(data) || svg?(data) || webp?(data) || gif?(data)
 
       return false unless hard_validation
 

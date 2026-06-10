@@ -20,18 +20,13 @@ module Vug
       @mutex.synchronize do
         if entry = @cache[url]?
           age = Time.monotonic - entry.timestamp
-          if age < 0.seconds
+          if age < 0.seconds || age >= @entry_ttl
             @current_size -= entry.size
             @cache.delete(url)
             @insertion_order.delete(url)
             nil
-          elsif age < @entry_ttl
-            entry.path
           else
-            @current_size -= entry.size
-            @cache.delete(url)
-            @insertion_order.delete(url)
-            nil
+            entry.path
           end
         end
       end

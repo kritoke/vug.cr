@@ -19,6 +19,11 @@ describe Vug::ImageValidator do
       Vug::ImageValidator.valid?(ico_header).should be_true
     end
 
+    it "identifies GIF images" do
+      gif_header = Bytes[0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x00, 0x00, 0x00, 0x00]
+      Vug::ImageValidator.valid?(gif_header).should be_true
+    end
+
     it "rejects invalid data" do
       invalid = Bytes[0x00, 0x00, 0x00, 0x00]
       Vug::ImageValidator.valid?(invalid).should be_false
