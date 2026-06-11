@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:30:32Z",
+  "description": "QUAL-09: DnsCache::Instance never evicts entries for hosts that are never queried again. Over process lifetime this grows unboundedly. Add periodic eviction (remove entries older than TTL when cache exceeds a size threshold). RateLimiter already implements a similar cleanup pattern. File: src/vug/dns_cache.cr:24-36",
+  "id": "vugcr-zyg.21",
+  "labels": [],
+  "parent": "vugcr-zyg",
+  "priority": 2,
+  "status": "open",
+  "title": "QUAL: Add bounded eviction to DnsCache",
+  "type": "task",
+  "updated_at": "2026-06-11T10:30:32Z"
+}
