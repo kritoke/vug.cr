@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:30:07Z",
+  "description": "SRP-01: FaviconResolver handles URL sanitization, extraction orchestration, fallback chain (standard paths → Google → DuckDuckGo), cache coordination, placeholder generation, and URL building. Extract: (1) fallback chain to FallbackChain class, (2) placeholder generation to PlaceholderHandler (also absorbs DRY-03). Resolver becomes thin orchestrator: extract → pick best → fetch → fallback. File: src/vug/favicon_resolver.cr (153 lines, 14 methods)",
+  "id": "vugcr-zyg.9",
+  "labels": [],
+  "parent": "vugcr-zyg",
+  "priority": 2,
+  "status": "open",
+  "title": "SRP: Extract fallback chain from FaviconResolver",
+  "type": "task",
+  "updated_at": "2026-06-11T10:30:07Z"
+}
