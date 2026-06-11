@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:40:39Z",
+  "description": "PASS2-14: domain \"www.\" → clean_domain[4..-1] = \"\", relies on first? fallback. Add explicit guard. File: src/vug/placeholder_generator.cr:31-36",
+  "id": "vugcr-zyg.22.15",
+  "labels": [],
+  "parent": "vugcr-zyg.22",
+  "priority": 3,
+  "status": "open",
+  "title": "TYPES: Handle www.-only domain edge case in PlaceholderGenerator",
+  "type": "task",
+  "updated_at": "2026-06-11T10:40:39Z"
+}
