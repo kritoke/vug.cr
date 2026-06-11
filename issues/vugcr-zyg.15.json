@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:30:31Z",
+  "description": "QUAL-03: release_client accepts uri and success parameters that are never used. All callers pass them but the method ignores them. Remove unused params. File: src/vug/http_client_factory.cr:35-40",
+  "id": "vugcr-zyg.15",
+  "labels": [],
+  "parent": "vugcr-zyg",
+  "priority": 3,
+  "status": "open",
+  "title": "QUAL: Remove unused parameters from HttpClientFactory.release_client",
+  "type": "task",
+  "updated_at": "2026-06-11T10:30:31Z"
+}
