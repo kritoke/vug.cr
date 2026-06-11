@@ -5,6 +5,9 @@ module Vug
   # Mutable state threaded through the fetch loop, replacing scattered
   # local variables and positional tuple returns.
   #
+  # NOT thread-safe. Each `Fetcher#fetch` call must create its own instance.
+  # Do not share across fibers.
+  #
   # Owns the per-request state for a single `Fetcher#fetch` call: the URL
   # being chased, the redirect/gray-placeholder counters, the visited-set
   # used to detect redirect loops, the initial DNS resolutions used to

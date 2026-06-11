@@ -47,6 +47,8 @@ module Vug
         addrinfos = Socket::Addrinfo.resolve(host, "80", type: Socket::Type::STREAM)
         addrinfos.compact_map { |addrinfo| addrinfo.ip_address.try(&.address) }
       rescue Socket::Addrinfo::Error
+        # DNS resolution failure — caller cannot distinguish "no records" from
+        # "DNS server error", but at least the error is logged for debugging.
         [] of String
       end
     end

@@ -23,9 +23,10 @@ module Vug
 
     getter max_per_minute : Int32
 
-    # Check if a request to the given host is allowed.
-    # Returns true if under the limit, false if rate limited.
-    def allow?(host : String) : Bool
+    # Acquire a rate limit slot for the given host.
+    # Returns true if under the limit (slot acquired), false if rate limited.
+    # This is a stateful operation — it records the request timestamp.
+    def acquire(host : String) : Bool
       @mutex.synchronize do
         now = Time.monotonic
         cutoff = now - WINDOW

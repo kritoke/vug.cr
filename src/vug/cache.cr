@@ -16,6 +16,8 @@ module Vug
       @mutex = Mutex.new
     end
 
+    # Retrieves a cached path for the given URL.
+    # Note: this is a mutating operation — expired entries are evicted on read.
     def get(url : String) : String?
       @mutex.synchronize do
         if entry = @cache[url]?

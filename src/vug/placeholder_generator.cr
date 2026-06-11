@@ -33,6 +33,7 @@ module Vug
         clean_domain = clean_domain.downcase
         if clean_domain.starts_with?("www.")
           clean_domain = clean_domain[4..-1]
+          clean_domain = "?" if clean_domain.empty?
         end
       end
 
