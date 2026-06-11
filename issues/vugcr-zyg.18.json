@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:30:32Z",
+  "description": "QUAL-06: SingleRequest#format_exception (L164-166) is a private method used exactly once that just delegates to Diagnostics.format_exception. Replace the call site with direct Diagnostics call. File: src/vug/single_request.cr:164-166",
+  "id": "vugcr-zyg.18",
+  "labels": [],
+  "parent": "vugcr-zyg",
+  "priority": 3,
+  "status": "open",
+  "title": "QUAL: Inline trivial SingleRequest.format_exception wrapper",
+  "type": "task",
+  "updated_at": "2026-06-11T10:30:32Z"
+}
