@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:29:46Z",
+  "description": "DRY-05: HTTP client create-use-close lifecycle duplicated in HtmlExtractor (L71-84), ManifestExtractor (L48-84), SingleRequest (L88-106). All use same pattern: create client, begin/ensure/close. Add HttpClientFactory.with_client(uri, timeout, \u0026block) that handles create + ensure-close automatically.",
+  "id": "vugcr-zyg.5",
+  "labels": [],
+  "parent": "vugcr-zyg",
+  "priority": 2,
+  "status": "open",
+  "title": "DRY: Extract HTTP client lifecycle helper",
+  "type": "task",
+  "updated_at": "2026-06-11T10:29:46Z"
+}
