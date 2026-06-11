@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:30:32Z",
+  "description": "QUAL-07: Vug.favicons manually wires dependencies (HttpClientFactory, HtmlExtractor) and bypasses caching, unlike Vug.fetch/site/best which delegate through Fetcher/FaviconResolver. Either delegate to FaviconResolver#extract_favicon_collection or document why it intentionally bypasses cache. File: src/vug.cr:47-57",
+  "id": "vugcr-zyg.19",
+  "labels": [],
+  "parent": "vugcr-zyg",
+  "priority": 2,
+  "status": "open",
+  "title": "QUAL: Fix Vug.favicons to use standard DI path",
+  "type": "task",
+  "updated_at": "2026-06-11T10:30:32Z"
+}
