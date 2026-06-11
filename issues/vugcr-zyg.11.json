@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:30:07Z",
+  "description": "FUNC-03: ImageProcessor::Default#process_bytes (L18-46) mixes validation, format checking, logging, disk save via @config.save, and cache update via @cache_manager.set. Split into: (1) validate_and_measure(data) returning pure result, (2) persist(url, data, content_type) handling save + cache. Caller chains them. Improves testability. File: src/vug/image_processor.cr",
+  "id": "vugcr-zyg.11",
+  "labels": [],
+  "parent": "vugcr-zyg",
+  "priority": 2,
+  "status": "open",
+  "title": "FUNC: Split ImageProcessor.process_bytes into validate + persist",
+  "type": "task",
+  "updated_at": "2026-06-11T10:30:07Z"
+}
