@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:40:39Z",
+  "description": "PASS2-07: LoopState has 6 mutable properties with no mutex. Safe only because each fetch creates its own. Add class-level doc: NOT thread-safe, do not share across fibers. File: src/vug/loop_state.cr",
+  "id": "vugcr-zyg.22.16",
+  "labels": [],
+  "parent": "vugcr-zyg.22",
+  "priority": 3,
+  "status": "open",
+  "title": "CONCURRENCY: Add single-fiber invariant doc to LoopState",
+  "type": "task",
+  "updated_at": "2026-06-11T10:40:39Z"
+}
