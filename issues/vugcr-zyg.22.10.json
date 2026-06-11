@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:40:39Z",
+  "description": "PASS2-19: GrayPlaceholderHandler (120 lines) has significant detection logic untested. Only constant tested. File: src/vug/gray_placeholder_handler.cr",
+  "id": "vugcr-zyg.22.10",
+  "labels": [],
+  "parent": "vugcr-zyg.22",
+  "priority": 2,
+  "status": "open",
+  "title": "TEST: Add GrayPlaceholderHandler unit tests",
+  "type": "task",
+  "updated_at": "2026-06-11T10:40:39Z"
+}
