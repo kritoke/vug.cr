@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:40:39Z",
+  "description": "PASS2-20: RetryHelpers (61 lines) — backoff_delay, with_retry, default_retryable? all untested. File: src/vug/retry_helpers.cr",
+  "id": "vugcr-zyg.22.11",
+  "labels": [],
+  "parent": "vugcr-zyg.22",
+  "priority": 2,
+  "status": "open",
+  "title": "TEST: Add RetryHelpers unit tests",
+  "type": "task",
+  "updated_at": "2026-06-11T10:40:39Z"
+}
