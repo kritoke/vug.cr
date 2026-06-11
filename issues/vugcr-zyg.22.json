@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:40:38Z",
+  "description": "Deep-dive review covering error handling consistency, concurrency safety, resource management, API surface, type safety, and test coverage gaps. See reviews/pass-2-deep-dive.md.",
+  "id": "vugcr-zyg.22",
+  "labels": [],
+  "parent": "vugcr-zyg",
+  "priority": 1,
+  "status": "open",
+  "title": "Code review pass 2: error handling, concurrency, types, test gaps",
+  "type": "task",
+  "updated_at": "2026-06-11T10:40:38Z"
+}
