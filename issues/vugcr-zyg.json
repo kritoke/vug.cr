@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:29:25Z",
+  "description": "Full code review of vug.cr focusing on DRY violations, single responsibility principle, and functional/pure programming patterns. See reviews/pass-1-dry-srp-functional.md for full findings.",
+  "id": "vugcr-zyg",
+  "labels": [],
+  "priority": 1,
+  "status": "open",
+  "title": "Code review pass 1: DRY, SRP, functional purity",
+  "type": "task",
+  "updated_at": "2026-06-11T10:29:25Z"
+}
