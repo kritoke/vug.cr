@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:40:39Z",
+  "description": "PASS2-13: read_png uses safe to_i32 (raises on overflow), read_jpeg/read_webp use unsafe to_i32! (silent wrap). Standardize on safe conversion returning nil on overflow. File: src/vug/image_dimensions.cr",
+  "id": "vugcr-zyg.22.14",
+  "labels": [],
+  "parent": "vugcr-zyg.22",
+  "priority": 3,
+  "status": "open",
+  "title": "TYPES: Fix inconsistent to_i32 vs to_i32! in ImageDimensions",
+  "type": "task",
+  "updated_at": "2026-06-11T10:40:39Z"
+}
