@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:40:39Z",
+  "description": "PASS2-04: Error messages like 'Empty response', 'Invalid image', 'Timeout' lack diagnostic context. Add URL, content-type, elapsed time. Files: src/vug/image_processor.cr, src/vug/fetcher.cr",
+  "id": "vugcr-zyg.22.17",
+  "labels": [],
+  "parent": "vugcr-zyg.22",
+  "priority": 3,
+  "status": "open",
+  "title": "ERR: Enrich generic error messages in ImageProcessor and Fetcher",
+  "type": "task",
+  "updated_at": "2026-06-11T10:40:39Z"
+}
