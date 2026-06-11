@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:40:39Z",
+  "description": "PASS2-11: FetchAction and FetchDecision share 'Fetch' prefix. FetchAction::Follow and LoopAction::Redirect both mean 'follow redirect' at different levels. Rename FetchAction to RedirectDecision. Files: src/vug/fetch_types.cr, src/vug/redirect_handler*.cr",
+  "id": "vugcr-zyg.22.18",
+  "labels": [],
+  "parent": "vugcr-zyg.22",
+  "priority": 3,
+  "status": "open",
+  "title": "API: Rename FetchAction to RedirectDecision for clarity",
+  "type": "task",
+  "updated_at": "2026-06-11T10:40:39Z"
+}
