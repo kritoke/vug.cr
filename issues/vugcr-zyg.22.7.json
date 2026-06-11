@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:40:38Z",
+  "description": "PASS2-10: Vug.favicons takes http_client_factory as 3rd param, while all siblings take cache. Related to QUAL-07 (bypasses standard DI path). File: src/vug.cr:52",
+  "id": "vugcr-zyg.22.7",
+  "labels": [],
+  "parent": "vugcr-zyg.22",
+  "priority": 2,
+  "status": "open",
+  "title": "API: Fix Vug.favicons parameter inconsistency (http_client_factory vs cache)",
+  "type": "task",
+  "updated_at": "2026-06-11T10:40:38Z"
+}
