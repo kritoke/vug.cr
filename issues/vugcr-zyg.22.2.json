@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:40:38Z",
+  "description": "PASS2-17: SingleRequest (168 lines) handles semaphore, rate limiting, DNS revalidation, HTTP lifecycle, redirects, response processing, 6 exception types — all untested. Create spec/vug/single_request_spec.cr with mocked deps.",
+  "id": "vugcr-zyg.22.2",
+  "labels": [],
+  "parent": "vugcr-zyg.22",
+  "priority": 1,
+  "status": "open",
+  "title": "TEST: Add SingleRequest unit tests (zero coverage)",
+  "type": "task",
+  "updated_at": "2026-06-11T10:40:38Z"
+}
