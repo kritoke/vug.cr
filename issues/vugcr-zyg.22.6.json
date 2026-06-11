@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:40:38Z",
+  "description": "PASS2-16: with_retry rescues Exception base class, catching Interrupt and SignalException. A custom retryable callback could retry on Ctrl+C. Add explicit rescue for Interrupt|SignalException before general handler. File: src/vug/retry_helpers.cr:39-51",
+  "id": "vugcr-zyg.22.6",
+  "labels": [],
+  "parent": "vugcr-zyg.22",
+  "priority": 2,
+  "status": "open",
+  "title": "TYPES: Fix RetryHelpers.with_retry catching Interrupt/SignalException",
+  "type": "bug",
+  "updated_at": "2026-06-11T10:40:38Z"
+}
