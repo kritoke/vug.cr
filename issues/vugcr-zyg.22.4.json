@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:40:38Z",
+  "description": "PASS2-01: Vug.favicons returns FaviconCollection? (nil for all failures), while all other public methods return Result with error info. Callers get zero diagnostics. File: src/vug.cr:52",
+  "id": "vugcr-zyg.22.4",
+  "labels": [],
+  "parent": "vugcr-zyg.22",
+  "priority": 2,
+  "status": "open",
+  "title": "ERR: Fix inconsistent error signaling in Vug.favicons (returns nil)",
+  "type": "task",
+  "updated_at": "2026-06-11T10:40:38Z"
+}
