@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:40:38Z",
+  "description": "PASS2-12: fetch_data_url_favicon assumes HtmlExtractor already saved data URL to cache, but this coupling is not enforced by types. If cache coordinator instances differ, data URL favicons silently return nil. Document or enforce shared coordinator. File: src/vug/favicon_resolver.cr:111-120",
+  "id": "vugcr-zyg.22.8",
+  "labels": [],
+  "parent": "vugcr-zyg.22",
+  "priority": 2,
+  "status": "open",
+  "title": "API: Document hidden cache coupling in FaviconResolver + HtmlExtractor",
+  "type": "task",
+  "updated_at": "2026-06-11T10:40:38Z"
+}
