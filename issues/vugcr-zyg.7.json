@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:29:47Z",
+  "description": "DRY-07: CacheCoordinator.fetch_from_cache checks CacheManager.get (which checks config.load + memory_cache) then checks memory_cache again — redundant read. CacheCoordinator.store_to_cache writes to memory_cache AND calls CacheManager.set (which also writes to memory_cache) — double write, double LRU eviction. Remove direct @memory_cache references; delegate through @cache_manager which already handles both layers.",
+  "id": "vugcr-zyg.7",
+  "labels": [],
+  "parent": "vugcr-zyg",
+  "priority": 2,
+  "status": "open",
+  "title": "DRY: Remove redundant MemoryCache access in CacheCoordinator",
+  "type": "task",
+  "updated_at": "2026-06-11T10:29:47Z"
+}
