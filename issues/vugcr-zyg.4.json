@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:29:46Z",
+  "description": "DRY-04: FaviconCollection construction duplicated in Vug.favicons (src/vug.cr:51-56) and FaviconResolver#extract_site_favicons (L59-64). Both do: extract, check empty, create collection, add_all. Add FaviconCollection.from_favicons(Array(FaviconInfo)) : FaviconCollection? factory.",
+  "id": "vugcr-zyg.4",
+  "labels": [],
+  "parent": "vugcr-zyg",
+  "priority": 3,
+  "status": "open",
+  "title": "DRY: Add FaviconCollection.from_favicons factory method",
+  "type": "task",
+  "updated_at": "2026-06-11T10:29:46Z"
+}
