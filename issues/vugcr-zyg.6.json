@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:29:47Z",
+  "description": "DRY-06: sanitize_feed_url→derive_site_url chain repeated in Vug.favicons (L49-50), FaviconResolver#extract_favicon_collection (L23-24), and other locations. Add UrlProcessor.sanitize_and_derive_site_url(url) convenience method.",
+  "id": "vugcr-zyg.6",
+  "labels": [],
+  "parent": "vugcr-zyg",
+  "priority": 3,
+  "status": "open",
+  "title": "DRY: Add UrlProcessor.sanitize_and_derive convenience method",
+  "type": "task",
+  "updated_at": "2026-06-11T10:29:47Z"
+}
