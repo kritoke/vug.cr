@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:29:46Z",
+  "description": "DRY-03: Placeholder generate→save→cache pattern duplicated in Vug.placeholder (src/vug.cr:68-77) and FaviconResolver#placeholder_fallback (src/vug/favicon_resolver.cr:118-132). Core flow is identical: generate, save via config, store in cache, return success/failure. Extract PlaceholderHandler.generate_and_persist(host, config, cache_store). High severity — diverging error messages signal maintenance debt.",
+  "id": "vugcr-zyg.3",
+  "labels": [],
+  "parent": "vugcr-zyg",
+  "priority": 1,
+  "status": "open",
+  "title": "DRY: Extract shared placeholder persistence logic",
+  "type": "task",
+  "updated_at": "2026-06-11T10:29:46Z"
+}
