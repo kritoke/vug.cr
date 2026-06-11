@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:30:31Z",
+  "description": "QUAL-01: Docstring says 'Store a cached path under both the original and larger URL keys' but implementation only stores under original URL. Either fix docstring or add the second store call for google_larger_url. File: src/vug/gray_placeholder_handler.cr:44-46",
+  "id": "vugcr-zyg.13",
+  "labels": [],
+  "parent": "vugcr-zyg",
+  "priority": 2,
+  "status": "open",
+  "title": "QUAL: Fix misleading docstring in GrayPlaceholderHandler.store_larger_version",
+  "type": "bug",
+  "updated_at": "2026-06-11T10:30:31Z"
+}
