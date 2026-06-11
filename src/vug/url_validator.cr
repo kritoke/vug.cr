@@ -60,8 +60,8 @@ module Vug
       # Loopback: ::1
       return true if normalized == "::1"
 
-      # Unique Local Addresses (ULA): fc00::/7
-      return true if normalized =~ /^fc00|^fd00/i
+      # Unique Local Addresses (ULA): fc00::/7 covers fc00–fcff and fd00–fdff
+      return true if normalized.starts_with?("fc") || normalized.starts_with?("fd")
 
       # Link-local: fe80::/10
       return true if normalized.starts_with?("fe80")
