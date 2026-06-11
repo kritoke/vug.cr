@@ -62,7 +62,7 @@ describe Vug::CacheCoordinator do
     config = Vug::Config.new(on_load: ->(_url : String) : String? { "/cm/#{_url}" })
     cache_manager = Vug::CacheManager.new(config, nil)
     coord = Vug::CacheCoordinator.new(Vug::Config.default, nil, cache_manager)
-    coord.fetch_from_cache("u").should eq("/cm/u")
+    coord.fetch("u").should eq("/cm/u")
   end
 
   it "falls back to memory cache" do
@@ -78,7 +78,7 @@ describe Vug::CacheCoordinator do
       mem_cache = Vug::MemoryCache.new
       mem_cache.set("u", path)
       coord = Vug::CacheCoordinator.new(Vug::Config.default, mem_cache, cache_manager)
-      coord.fetch_from_cache("u").should eq(path)
+      coord.fetch("u").should eq(path)
     ensure
       FileUtils.rm_rf(dir)
     end

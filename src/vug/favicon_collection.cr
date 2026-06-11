@@ -19,6 +19,13 @@ module Vug
       @favicons = [] of FaviconInfo
     end
 
+    # Factory: build a collection from an array of favicons.
+    # Returns nil if the array is empty.
+    def self.from_favicons(favicons : Array(FaviconInfo)) : FaviconCollection?
+      return if favicons.empty?
+      new.tap(&.add_all(favicons))
+    end
+
     def add(favicon : FaviconInfo)
       @favicons << favicon
     end

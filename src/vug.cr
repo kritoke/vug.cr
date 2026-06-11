@@ -20,8 +20,10 @@ require "./vug/html_extractor"
 require "./vug/manifest_extractor"
 require "./vug/favicon_collection"
 require "./vug/cache"
+require "./vug/crimage_helper"
 require "./vug/image_validator"
 require "./vug/data_url_handler"
+require "./vug/fallback_urls"
 require "./vug/placeholder_generator"
 require "./vug/favicon_resolver"
 
@@ -46,15 +48,9 @@ module Vug
   def self.favicons(site_url : String, config : Config = Config.default, http_client_factory : HttpClientFactory? = nil) : FaviconCollection?
     factory = http_client_factory || HttpClientFactory.new(config)
     html_extractor = HtmlExtractor.new(config, HtmlExtractor::Dependencies.new(http_client_factory: factory))
-    clean_url = UrlProcessor.sanitize_feed_url(site_url)
-    site_url = UrlProcessor.derive_site_url(clean_url)
+    site_url = UrlProcessor.sanitize_and_derive_site_url(site_url)
     favicons = html_extractor.extract_all(site_url)
-
-    return if favicons.empty?
-
-    collection = FaviconCollection.new
-    collection.add_all(favicons)
-    collection
+    FaviconCollection.from_favicons(favicons)
   end
 
   def self.best(site_url : String, config : Config = Config.default, cache : MemoryCache? = nil) : Result

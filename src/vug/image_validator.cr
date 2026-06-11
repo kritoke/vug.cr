@@ -1,4 +1,4 @@
-require "crimage"
+require "./crimage_helper"
 
 module Vug
   # Validates image format detection and checks if data is a valid image.
@@ -91,16 +91,6 @@ module Vug
         data[5] == 0x61                         # a
     end
 
-    private def self.with_crimage_result(data : Bytes, default, & : CrImage::Image -> _)
-      return default if data.empty?
-      io = IO::Memory.new(data)
-      image = CrImage.read(io)
-      return default if image.nil?
-      yield image
-    rescue CrImage::Error | CrImage::UnknownFormat | IO::Error | ArgumentError | IndexError | NotImplementedError | Compress::Deflate::Error | Compress::Zlib::Error
-      default
-    end
-
     private def self.contains_svg_tag?(data : Bytes) : Bool
       # Scan a reasonable window after <?xml for the <svg element
       limit = Math.min(data.size, SVG_SCAN_WINDOW)
@@ -124,7 +114,7 @@ module Vug
     end
 
     private def self.valid_via_crimage?(data : Bytes) : Bool
-      with_crimage_result(data, false) do |image|
+      CrImageHelper.with_image(data, false) do |image|
         !image.nil?
       end
     end

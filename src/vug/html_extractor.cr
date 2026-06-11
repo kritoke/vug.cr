@@ -69,20 +69,15 @@ module Vug
     # Perform a single HTTP request and return the response body as HTML.
     # Returns "" on non-success status or IO errors.
     private def perform_html_request(site_url : String, uri : URI, timeout : Time::Span) : String
-      # ameba:disable Lint/UselessAssign — used in ensure block
-      client : HTTP::Client? = nil
-      begin
-        @config.debug("Fetching HTML from: #{site_url}")
-        client = @http_client_factory.create_client(uri, timeout)
-        body = ""
+      @config.debug("Fetching HTML from: #{site_url}")
+      body = ""
+      @http_client_factory.with_client(uri, timeout) do |client|
         client.get(uri.request_target, headers: build_html_headers) do |response|
           return "" unless response.status.success?
           body = fetch_html(response.body_io)
         end
-        body
-      ensure
-        client.try(&.close)
       end
+      body
     end
 
     private def parse_validated_url(site_url : String) : URI?
@@ -173,6 +168,13 @@ module Vug
       @config.debug("Found data URL favicon: #{data_url_id}")
       favicons << favicon_info
 
+      # Persist decoded data immediately — the bytes are already in memory
+      # from base64 decode, and the caller (FaviconResolver) expects to find
+      # them in cache via fetch_data_url_favicon.
+      persist_data_url(data_url_id, data, media_type)
+    end
+
+    private def persist_data_url(data_url_id : String, data : Bytes, media_type : String) : Nil
       if saved_path = @config.save(data_url_id, data, media_type)
         @config.debug("Data URL favicon saved: #{saved_path}")
         @cache_coordinator.try(&.store(data_url_id, saved_path))

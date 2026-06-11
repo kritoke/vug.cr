@@ -32,10 +32,15 @@ module Vug
     # Release/close a client after use.
     # In Crystal, HTTP::Client handles connection pooling internally,
     # so we just close the client to ensure clean state.
-    def release_client(uri : URI, client : HTTP::Client, success : Bool = true) : Nil
-      # Always close the client to reset connection state.
-      # The HTTP::Client's internal connection pool will handle reuse.
-      client.close
+    # Execute a block with a managed HTTP client lifecycle.
+    # Creates a client, yields it, and ensures it is closed afterward.
+    def with_client(uri : URI, timeout : Time::Span? = nil, & : HTTP::Client -> T) : T forall T
+      client = timeout ? create_client(uri, timeout) : create_client(uri)
+      begin
+        yield client
+      ensure
+        client.close
+      end
     end
   end
 end

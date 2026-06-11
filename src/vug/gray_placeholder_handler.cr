@@ -1,6 +1,7 @@
 require "uri"
 require "./config"
 require "./cache_coordinator"
+require "./fallback_urls"
 
 module Vug
   # Detects gray/placeholder favicon images and generates fallback URLs.
@@ -10,7 +11,8 @@ module Vug
     # for a domain. This is a 32x32 PNG always at exactly 2441 bytes.
     DDG_DEFAULT_ICON_SIZE = 2441
 
-    # Google favicon API size parameter for high-resolution favicons.
+    # Google favicon API size parameter — kept as a local constant for
+    # google_larger_url regex replacement within this handler.
     GOOGLE_FAVICON_SIZE = 256
 
     # Regex to extract domain from DuckDuckGo /ip3/{domain}.ico URLs.
@@ -41,7 +43,7 @@ module Vug
       @cache_coordinator.try(&.fetch(larger_url))
     end
 
-    # Store a cached path under both the original and larger URL keys.
+    # Store a cached path under the original URL key.
     def store_larger_version(url : String, cached_path : String) : Nil
       @cache_coordinator.try(&.store(url, cached_path))
     end
@@ -100,10 +102,8 @@ module Vug
       url.gsub(/sz=\d+/, "sz=#{GOOGLE_FAVICON_SIZE}")
     end
 
-    # Build a Google favicon API URL for the given domain.
     private def google_favicon_url(domain : String) : String
-      encoded = URI.encode_www_form(domain)
-      "https://www.google.com/s2/favicons?domain=#{encoded}&sz=#{GOOGLE_FAVICON_SIZE}"
+      FallbackUrls.google_favicon_url(domain)
     end
   end
 end

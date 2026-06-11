@@ -8,7 +8,7 @@ module Vug
       @cache_manager = cache_manager
     end
 
-    def fetch_from_cache(url : String) : String?
+    def fetch(url : String) : String?
       if path = @cache_manager.try(&.get(url))
         return path
       end
@@ -22,17 +22,9 @@ module Vug
     # The `on_save` callback is called by `ImageProcessor::Default#process_bytes` before
     # this method is reached. This avoids double-persisting the same data.
     # See `CacheManager#set` for details on the write-path asymmetry.
-    def store_to_cache(url : String, path : String) : Nil
+    def store(url : String, path : String) : Nil
       @memory_cache.try(&.set(url, path))
       @cache_manager.try(&.set(url, path))
-    end
-
-    def fetch(url : String) : String?
-      fetch_from_cache(url)
-    end
-
-    def store(url : String, path : String) : Nil
-      store_to_cache(url, path)
     end
   end
 end

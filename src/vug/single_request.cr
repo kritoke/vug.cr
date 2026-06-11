@@ -44,7 +44,7 @@ module Vug
         @config.error("fetch_single(#{url})", "Invalid URL format: #{ex.message}")
         Vug.failure("Invalid URL", url, error_type: :invalid_url)
       rescue ex : Socket::Addrinfo::Error | OpenSSL::SSL::Error
-        @config.error("fetch_single(#{url})", format_exception(ex, "Connection security error"))
+        @config.error("fetch_single(#{url})", Diagnostics.format_exception(ex, "Connection security error"))
         Vug.failure(ex.message || "Connection error", url, error_type: :fetch_error)
       rescue ex : IO::TimeoutError | IO::Error | Socket::Error
         @config.warning("fetch_single(#{url}): #{ex.message}")
@@ -66,7 +66,7 @@ module Vug
     end
 
     private def check_rate_and_dns(url : String, host : String?, initial_dns_ips : Hash(String, Array(String)), redirect_count : Int32, uri : URI) : Result
-      if host && !@rate_limiter.allow?(host)
+      if host && !@rate_limiter.acquire(host)
         @config.debug("Rate limited: #{host} exceeded #{@rate_limiter.max_per_minute} requests/minute")
         return Vug.failure("Rate limited", url, error_type: :rate_limited)
       end
@@ -103,10 +103,6 @@ module Vug
     end
 
     private def perform_http_request(url : String, uri : URI, redirect_count : Int32) : Result
-      client = @http_client_factory.create_client(uri)
-      # ameba:disable Lint/UselessAssign — used in ensure block
-      success = false
-
       headers = HTTP::Headers{
         "User-Agent"      => @config.user_agent,
         "Accept-Language" => @config.accept_language,
@@ -114,15 +110,12 @@ module Vug
       }
 
       result : Result? = nil
-      begin
+      @http_client_factory.with_client(uri) do |client|
         client.get(uri.request_target, headers: headers) do |response|
           result = handle_redirect(url, uri, response, redirect_count) if response.status.redirection?
           result ||= process_response(url, response) if response.status.success?
           result ||= handle_error(url, response.status_code)
         end
-        success = true
-      ensure
-        @http_client_factory.release_client(uri, client, success: success)
       end
       result || Vug.failure("Unexpected HTTP error", url.to_s)
     end
@@ -164,10 +157,6 @@ module Vug
         @config.debug("Favicon error #{status_code}: #{url}")
       end
       Vug.failure("HTTP #{status_code}", url, error_type: :http_error)
-    end
-
-    private def format_exception(ex : Exception, prefix : String? = nil) : String
-      Diagnostics.format_exception(ex, prefix)
     end
   end
 end

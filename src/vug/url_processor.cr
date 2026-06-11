@@ -75,6 +75,11 @@ module Vug
       url.sub(/\/feed\/?\z/, "")
     end
 
+    # Convenience: sanitize a feed URL and derive the site root URL in one step.
+    def self.sanitize_and_derive_site_url(url : String) : String
+      derive_site_url(sanitize_feed_url(url))
+    end
+
     # Matches common feed URL path suffixes
     FEED_PATH_PATTERN = %r{
       /(

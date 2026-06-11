@@ -46,42 +46,37 @@ module Vug
 
       @config.debug("Fetching manifest: #{manifest_url}")
 
-      # ameba:disable Lint/UselessAssign — used in ensure block
-      client : HTTP::Client? = nil
       begin
         uri = URI.parse(manifest_url)
-        client = @http_client_factory.create_client(uri)
 
         headers = HTTP::Headers{
           "User-Agent" => @config.user_agent,
           "Accept"     => "application/manifest+json,application/json,*/*;q=0.8",
         }
 
-        client.get(uri.request_target, headers: headers) do |response|
-          if response.status.success?
-            memory = IO::Memory.new
-            IO.copy(response.body_io, memory, limit: @config.max_size)
-            json_content = memory.to_slice.to_s
+        @http_client_factory.with_client(uri) do |client|
+          client.get(uri.request_target, headers: headers) do |response|
+            if response.status.success?
+              memory = IO::Memory.new
+              IO.copy(response.body_io, memory, limit: @config.max_size)
+              json_content = memory.to_slice.to_s
 
-            begin
-              manifest = JSON.parse(json_content)
-              return parse_manifest_icons(manifest, manifest_url)
-            rescue ex : JSON::ParseException
-              @config.debug("Manifest JSON parse failed: #{ex.message}")
+              begin
+                manifest = JSON.parse(json_content)
+                return parse_manifest_icons(manifest, manifest_url)
+              rescue ex : JSON::ParseException
+                @config.debug("Manifest JSON parse failed: #{ex.message}")
+              end
+            else
+              @config.debug("Manifest fetch failed #{response.status_code}: #{manifest_url}")
+              return
             end
-          else
-            @config.debug("Manifest fetch failed #{response.status_code}: #{manifest_url}")
-            return
           end
         end
-      rescue ex : IO::TimeoutError
-        @config.error("extract_manifest_favicons(#{manifest_url})", Vug::Diagnostics.format_exception(ex, "Read timed out"))
+      rescue IO::TimeoutError
         @config.debug("Manifest fetch timeout: #{manifest_url}")
       rescue ex : JSON::ParseException | OpenSSL::SSL::Error | IO::Error | Socket::Error
-        @config.error("extract_manifest_favicons(#{manifest_url})", Vug::Diagnostics.format_exception(ex))
         @config.debug("Error fetching manifest: #{ex.message}")
-      ensure
-        client.try(&.close)
       end
     end
 
@@ -111,11 +106,6 @@ module Vug
       end
 
       icons
-    end
-
-    # Deprecated: use `extract_manifest_favicons` instead.
-    def extract_favicons_from_manifest(manifest_url : String) : Array(FaviconInfo)?
-      extract_manifest_favicons(manifest_url)
     end
   end
 end

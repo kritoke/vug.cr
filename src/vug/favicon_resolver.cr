@@ -20,14 +20,12 @@ module Vug
     end
 
     def extract_favicon_collection(url : String) : FaviconCollection?
-      clean_url = UrlProcessor.sanitize_feed_url(url)
-      site_url = UrlProcessor.derive_site_url(clean_url)
+      site_url = UrlProcessor.sanitize_and_derive_site_url(url)
       extract_site_favicons(site_url)
     end
 
     private def resolve_favicon(url : String) : Result?
       clean_url = UrlProcessor.sanitize_feed_url(url)
-
       try_extracted_favicon(clean_url) || try_fallback_chain(clean_url)
     end
 
@@ -60,11 +58,7 @@ module Vug
 
     private def extract_site_favicons(site_url : String) : FaviconCollection?
       favicons = @html_fetcher.extract_all(site_url)
-      return if favicons.empty?
-
-      collection = FaviconCollection.new
-      collection.add_all(favicons)
-      collection
+      FaviconCollection.from_favicons(favicons)
     end
 
     private def try_standard_paths(host : String) : Result?
@@ -130,24 +124,14 @@ module Vug
 
     private def extract_host(url : String) : String?
       UrlProcessor.extract_host_from_url(url)
-    rescue ex : URI::Error
-      @config.debug("Failed to extract host from URL: #{url} - #{ex.message}")
-      nil
     end
 
     def self.google_favicon_url(domain : String) : String
-      host = UrlProcessor.extract_host_from_url(domain) || domain
-      # encode host as a single query component rather than a k=v form
-      # Use encode_www_form to percent-encode host; note: stdlib lacks a
-      # direct "encode component" alias, so reuse existing helper.
-      encoded_host = URI.encode_www_form(host)
-      "https://www.google.com/s2/favicons?domain=#{encoded_host}&sz=256"
+      FallbackUrls.google_favicon_url(domain)
     end
 
     def self.duckduckgo_favicon_url(domain : String) : String
-      host = UrlProcessor.extract_host_from_url(domain) || domain
-      encoded_host = URI.encode_path(host)
-      "https://icons.duckduckgo.com/ip3/#{encoded_host}.ico"
+      FallbackUrls.duckduckgo_favicon_url(domain)
     end
   end
 end

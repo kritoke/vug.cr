@@ -1,4 +1,4 @@
-require "crimage"
+require "./crimage_helper"
 require "./image_validator"
 
 module Vug
@@ -22,7 +22,7 @@ module Vug
         return read_gif(data)
       end
 
-      with_crimage(data, nil) do |image|
+      CrImageHelper.with_image(data, nil) do |image|
         {image.bounds.width, image.bounds.height}
       end
     end
@@ -31,7 +31,7 @@ module Vug
       return unless data.size >= 24
       w = (data[16].to_u32 << 24) | (data[17].to_u32 << 16) | (data[18].to_u32 << 8) | data[19].to_u32
       h = (data[20].to_u32 << 24) | (data[21].to_u32 << 16) | (data[22].to_u32 << 8) | data[23].to_u32
-      {w.to_i32, h.to_i32}
+      {safe_dim(w), safe_dim(h)}
     end
 
     private def self.read_jpeg(data : Bytes) : {Int32, Int32}?
@@ -47,7 +47,7 @@ module Vug
           return unless data.size >= i + 7
           h = (data[i + 3].to_u32 << 8) | data[i + 4].to_u32
           w = (data[i + 5].to_u32 << 8) | data[i + 6].to_u32
-          return {w.to_i32!, h.to_i32!}
+          return {safe_dim(w), safe_dim(h)}
         when 0xD0..0xD7, 0x01, 0xD8, 0xD9
           next
         when 0xFF
@@ -72,18 +72,18 @@ module Vug
         return unless data.size >= 30
         w = (data[26].to_u32 | (data[27].to_u32 << 8)) & 0x3FFF
         h = (data[28].to_u32 | (data[29].to_u32 << 8)) & 0x3FFF
-        {w.to_i32!, h.to_i32!}
+        {safe_dim(w), safe_dim(h)}
       when "VP8L"
         return unless data.size >= 25
         bits = data[21].to_u32 | (data[22].to_u32 << 8) | (data[23].to_u32 << 16) | (data[24].to_u32 << 24)
         w = (bits & 0x3FFF) + 1
         h = ((bits >> 14) & 0x3FFF) + 1
-        {w.to_i32!, h.to_i32!}
+        {safe_dim(w), safe_dim(h)}
       when "VP8X"
         return unless data.size >= 24
         w = (data[24].to_u32 | (data[25].to_u32 << 8) | (data[26].to_u32 << 16)) + 1
         h = (data[27].to_u32 | (data[28].to_u32 << 8) | (data[29].to_u32 << 16)) + 1
-        {w.to_i32!, h.to_i32!}
+        {safe_dim(w), safe_dim(h)}
       end
     end
 
@@ -106,14 +106,8 @@ module Vug
       {w, h}
     end
 
-    private def self.with_crimage(data : Bytes, default, & : CrImage::Image -> _)
-      return default if data.empty?
-      io = IO::Memory.new(data)
-      image = CrImage.read(io)
-      return default if image.nil?
-      yield image
-    rescue CrImage::Error | CrImage::UnknownFormat | IO::Error | ArgumentError | IndexError | NotImplementedError | Compress::Deflate::Error | Compress::Zlib::Error
-      default
+    private def self.safe_dim(value : Int) : Int32
+      value.to_i32
     end
   end
 end
