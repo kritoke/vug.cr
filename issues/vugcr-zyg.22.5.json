@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:40:38Z",
+  "description": "PASS2-06: Semaphore.release sends to a bounded Channel. If called more than acquire, it blocks the fiber indefinitely instead of failing. Add guard or use try_send. File: src/vug/semaphore.cr:13-15",
+  "id": "vugcr-zyg.22.5",
+  "labels": [],
+  "parent": "vugcr-zyg.22",
+  "priority": 2,
+  "status": "open",
+  "title": "CONCURRENCY: Guard Semaphore against double-release deadlock",
+  "type": "bug",
+  "updated_at": "2026-06-11T10:40:38Z"
+}
