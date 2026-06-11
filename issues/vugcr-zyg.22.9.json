@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:40:38Z",
+  "description": "PASS2-03: DnsCache.resolve_uncached silently returns empty array on Socket::Addrinfo::Error. Caller treats empty as 'no records' — indistinguishable from DNS server outage. Log at warning level. File: src/vug/dns_cache.cr:43-47",
+  "id": "vugcr-zyg.22.9",
+  "labels": [],
+  "parent": "vugcr-zyg.22",
+  "priority": 2,
+  "status": "open",
+  "title": "ERR: Log DNS resolution failures instead of silently swallowing",
+  "type": "task",
+  "updated_at": "2026-06-11T10:40:38Z"
+}
