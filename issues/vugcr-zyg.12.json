@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:30:07Z",
+  "description": "FUNC-01: MemoryCache#get evicts expired entries on read. A method named get that deletes entries violates principle of least surprise. Consider: rename to fetch, or move eviction to set-only, or add explicit evict_expired. File: src/vug/cache.cr:39-52",
+  "id": "vugcr-zyg.12",
+  "labels": [],
+  "parent": "vugcr-zyg",
+  "priority": 3,
+  "status": "open",
+  "title": "FUNC: Consider renaming MemoryCache#get to signal eviction side-effect",
+  "type": "task",
+  "updated_at": "2026-06-11T10:30:07Z"
+}
