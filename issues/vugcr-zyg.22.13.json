@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:40:39Z",
+  "description": "PASS2-02: extract_manifest_favicons logs each exception twice (error + debug). Pick one level per error path. File: src/vug/manifest_extractor.cr:72-83",
+  "id": "vugcr-zyg.22.13",
+  "labels": [],
+  "parent": "vugcr-zyg.22",
+  "priority": 3,
+  "status": "open",
+  "title": "ERR: Remove duplicate error logging in ManifestExtractor",
+  "type": "task",
+  "updated_at": "2026-06-11T10:40:39Z"
+}
