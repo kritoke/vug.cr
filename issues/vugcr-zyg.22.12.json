@@ -1,0 +1,15 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-11T10:40:39Z",
+  "description": "PASS2-23: ImageProcessor::Default has 8 branches, only 3 tested. Missing: WebP lossy rejection, dimension logging, cache manager set verification. File: spec/vug/image_processor_spec.cr",
+  "id": "vugcr-zyg.22.12",
+  "labels": [],
+  "parent": "vugcr-zyg.22",
+  "priority": 2,
+  "status": "open",
+  "title": "TEST: Add ImageProcessor WebP lossy rejection and cache interaction tests",
+  "type": "task",
+  "updated_at": "2026-06-11T10:40:39Z"
+}
