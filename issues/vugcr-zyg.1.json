@@ -12,11 +12,15 @@
     {
       "text": "Landed in 8141e4f — FallbackUrls module extracted (google_favicon_url, duckduckgo_favicon_url).",
       "timestamp": "2026-06-17T17:15:30Z"
+    },
+    {
+      "text": "Landed in 8141e4f — FallbackUrls module extracts google_favicon_url / duckduckgo_favicon_url.",
+      "timestamp": "2026-06-17T17:23:43Z"
     }
   ],
   "priority": 2,
   "status": "closed",
   "title": "DRY: Extract shared Google favicon URL builder",
   "type": "task",
-  "updated_at": "2026-06-17T17:15:31Z"
+  "updated_at": "2026-06-17T17:23:43Z"
 }
