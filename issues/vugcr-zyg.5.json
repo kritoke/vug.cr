@@ -7,9 +7,15 @@
   "id": "vugcr-zyg.5",
   "labels": [],
   "parent": "vugcr-zyg",
+  "comments": [
+    {
+      "text": "Landed in 8141e4f — HttpClientFactory.with_client lifecycle helper added.",
+      "timestamp": "2026-06-17T17:15:42Z"
+    }
+  ],
   "priority": 2,
   "status": "open",
   "title": "DRY: Extract HTTP client lifecycle helper",
   "type": "task",
-  "updated_at": "2026-06-11T10:29:46Z"
+  "updated_at": "2026-06-17T17:15:42Z"
 }
