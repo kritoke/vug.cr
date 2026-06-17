@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-17T18:12:06Z",
+  "description": "When a redirect URL cannot be parsed, apply_action previously continued the loop, spinning until timeout. Add a fail-fast branch in the .redirect? case of apply_action that returns Vug.failure with :invalid_redirect error_type when state.current_uri.nil? \u0026\u0026 decision.next_url.\n\nFile: src/vug/fetcher.cr\nRelated: closes the gap left by vugcr-3co (closed). Already implemented in the working tree (uncommitted).",
+  "id": "vugcr-4ud",
+  "labels": [],
+  "priority": 2,
+  "status": "open",
+  "title": "fetcher: add redirect URL parse-fail fail-fast to apply_action",
+  "type": "task",
+  "updated_at": "2026-06-17T18:12:06Z"
+}
