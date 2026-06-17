@@ -6,9 +6,15 @@
   "description": "## Problem\n`src/vug/fetcher.cr:115-128` (`apply_action`) is hard to read. The method:\n1. Dispatches to `handle_result_action` for state mutation, then\n2. Uses early `return` and fall-through logic based on the same action enum.\n\nThe two methods (`apply_action` and `handle_result_action`) share knowledge of which actions mutate state vs. which produce a result, leading to dense control flow.\n\n## Fix\nMake `apply_action` a pure dispatcher: it returns a `Result?` to terminate the loop, or `nil` to continue. Keep `handle_result_action` purely for state mutation (no value returns). Suggested shape:\n\n```crystal\nprivate def apply_action(action : Action, next_url : String?, result : Result, state : LoopState) : Result?\n  case action\n  when .redirect?, .try_fallback?\n    handle_result_action(action, next_url, state)\n    # Redirect always continues; TryFallback with a next_url also continues.\n    # TryFallback without a next_url returns the result.\n    action.try_fallback? \u0026\u0026 next_url.nil? ? result : nil\n  when .return_result?\n    result\n  when .use_cached?\n    next_url ? Vug.success(state.current_url, next_url) : result\n  end\nend\n```\n\n(Exact shape TBD by implementer — the goal is: one method returns \"should I stop the loop?\", the other only mutates state.)\n\n## Why\n- Readability: clear separation between \"mutate state\" and \"decide to stop\".\n- Testability: each method has a single responsibility.\n\n## Acceptance\n- [ ] `apply_action` is the only method that decides loop termination.\n- [ ] `handle_result_action` only mutates `state`.\n- [ ] All existing tests in `spec/vug/fetcher_spec.cr` and `spec/vug/fetcher_logic_spec.cr` still pass.\n- [ ] Public API unchanged.\n\n## Out of scope\n- Do not change the `Action` enum.\n- Do not touch the `fetch_loop` body beyond what the refactor requires.",
   "id": "vugcr-4ru",
   "labels": [],
+  "comments": [
+    {
+      "text": "Duplicate of vugcr-khz.8 (closed). The same work (flat case in apply_action) was already landed in the vugcr-khz epic.",
+      "timestamp": "2026-06-17T18:01:22Z"
+    }
+  ],
   "priority": 3,
   "status": "open",
   "title": "fetcher: simplify apply_action control flow",
   "type": "task",
-  "updated_at": "2026-06-06T22:37:35Z"
+  "updated_at": "2026-06-17T18:01:22Z"
 }
