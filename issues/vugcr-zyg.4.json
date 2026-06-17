@@ -7,9 +7,15 @@
   "id": "vugcr-zyg.4",
   "labels": [],
   "parent": "vugcr-zyg",
+  "comments": [
+    {
+      "text": "Landed in 8141e4f — FaviconCollection.from_favicons factory added.",
+      "timestamp": "2026-06-17T17:15:37Z"
+    }
+  ],
   "priority": 3,
   "status": "open",
   "title": "DRY: Add FaviconCollection.from_favicons factory method",
   "type": "task",
-  "updated_at": "2026-06-11T10:29:46Z"
+  "updated_at": "2026-06-17T17:15:37Z"
 }
