@@ -7,9 +7,15 @@
   "id": "vugcr-zyg.2",
   "labels": [],
   "parent": "vugcr-zyg",
+  "comments": [
+    {
+      "text": "Landed in 8141e4f — CrImageHelper module extracted (with_image).",
+      "timestamp": "2026-06-17T17:15:34Z"
+    }
+  ],
   "priority": 2,
   "status": "open",
   "title": "DRY: Extract shared CrImage loading helper",
   "type": "task",
-  "updated_at": "2026-06-11T10:29:46Z"
+  "updated_at": "2026-06-17T17:15:34Z"
 }
