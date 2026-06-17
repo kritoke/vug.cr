@@ -7,9 +7,15 @@
   "id": "vugcr-zyg.6",
   "labels": [],
   "parent": "vugcr-zyg",
+  "comments": [
+    {
+      "text": "Landed in 8141e4f — UrlProcessor.sanitize_and_derive_site_url added.",
+      "timestamp": "2026-06-17T18:00:19Z"
+    }
+  ],
   "priority": 3,
   "status": "open",
   "title": "DRY: Add UrlProcessor.sanitize_and_derive convenience method",
   "type": "task",
-  "updated_at": "2026-06-11T10:29:47Z"
+  "updated_at": "2026-06-17T18:00:19Z"
 }
