@@ -7,9 +7,15 @@
   "id": "vugcr-zyg.22.16",
   "labels": [],
   "parent": "vugcr-zyg.22",
+  "comments": [
+    {
+      "text": "Landed in 75be79b — LoopState has 'NOT thread-safe. Do not share across fibers.' doc.",
+      "timestamp": "2026-06-17T18:01:14Z"
+    }
+  ],
   "priority": 3,
   "status": "open",
   "title": "CONCURRENCY: Add single-fiber invariant doc to LoopState",
   "type": "task",
-  "updated_at": "2026-06-11T10:40:39Z"
+  "updated_at": "2026-06-17T18:01:14Z"
 }
