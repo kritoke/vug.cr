@@ -7,9 +7,15 @@
   "id": "vugcr-zyg.13",
   "labels": [],
   "parent": "vugcr-zyg",
+  "comments": [
+    {
+      "text": "Landed in 75be79b — GrayPlaceholderHandler.store_larger_version docstring corrected.",
+      "timestamp": "2026-06-17T18:00:33Z"
+    }
+  ],
   "priority": 2,
   "status": "open",
   "title": "QUAL: Fix misleading docstring in GrayPlaceholderHandler.store_larger_version",
   "type": "bug",
-  "updated_at": "2026-06-11T10:30:31Z"
+  "updated_at": "2026-06-17T18:00:33Z"
 }
