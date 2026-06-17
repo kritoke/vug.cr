@@ -7,9 +7,15 @@
   "id": "vugcr-zyg.22.1",
   "labels": [],
   "parent": "vugcr-zyg.22",
+  "comments": [
+    {
+      "text": "Landed in 3f0ba46 — IPv6 ULA detection uses starts_with?(\"fc\") || starts_with?(\"fd\") covering full /7 range.",
+      "timestamp": "2026-06-17T18:01:01Z"
+    }
+  ],
   "priority": 0,
   "status": "open",
   "title": "SECURITY: IPv6 ULA detection regex misses valid ULA addresses",
   "type": "bug",
-  "updated_at": "2026-06-11T10:40:38Z"
+  "updated_at": "2026-06-17T18:01:01Z"
 }
