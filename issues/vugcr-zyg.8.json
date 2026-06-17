@@ -2,6 +2,7 @@
   "assignee": "",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-06-17T18:00:23Z",
   "created": "2026-06-11T10:30:07Z",
   "description": "SRP-02 / FUNC-04: HtmlExtractor.process_data_favicon (L140-152) decodes data URL, creates FaviconInfo, then saves via @config.save and stores in @cache_coordinator. An extractor should extract, not persist. Return the extracted FaviconInfo + raw Bytes + media_type. Let the caller (FaviconResolver) decide whether to save and cache. File: src/vug/html_extractor.cr",
   "id": "vugcr-zyg.8",
@@ -14,7 +15,7 @@
     }
   ],
   "priority": 2,
-  "status": "open",
+  "status": "closed",
   "title": "SRP: Extract persistence from HtmlExtractor.process_data_favicon",
   "type": "task",
   "updated_at": "2026-06-17T18:00:23Z"
