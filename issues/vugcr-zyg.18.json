@@ -7,9 +7,15 @@
   "id": "vugcr-zyg.18",
   "labels": [],
   "parent": "vugcr-zyg",
+  "comments": [
+    {
+      "text": "Landed in 75be79b — SingleRequest.format_exception inlined to use Diagnostics.format_exception directly.",
+      "timestamp": "2026-06-17T18:00:53Z"
+    }
+  ],
   "priority": 3,
   "status": "open",
   "title": "QUAL: Inline trivial SingleRequest.format_exception wrapper",
   "type": "task",
-  "updated_at": "2026-06-11T10:30:32Z"
+  "updated_at": "2026-06-17T18:00:53Z"
 }
