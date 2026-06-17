@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-17T18:01:34Z",
+  "description": "Add a class-level comment to CacheCoordinator#fetch documenting the lookup order:\n  1. CacheManager (config-backed on_load + its own memory cache)\n  2. Coordinator's memory cache (fallback if CacheManager has none)\n\nThis documents the existing behavior so callers understand the two-tier cache. Already implemented in the working tree (uncommitted).\n\nFile: src/vug/cache_coordinator.cr",
+  "id": "vugcr-gm2",
+  "labels": [],
+  "priority": 3,
+  "status": "open",
+  "title": "docs: document CacheCoordinator#fetch lookup order",
+  "type": "task",
+  "updated_at": "2026-06-17T18:01:34Z"
+}
