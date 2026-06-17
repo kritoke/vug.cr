@@ -7,9 +7,15 @@
   "id": "vugcr-zyg.12",
   "labels": [],
   "parent": "vugcr-zyg",
+  "comments": [
+    {
+      "text": "Landed in 75be79b — MemoryCache#get has doc note about eviction side-effect (renamed-not-required, doc-only approach taken).",
+      "timestamp": "2026-06-17T18:00:30Z"
+    }
+  ],
   "priority": 3,
   "status": "open",
   "title": "FUNC: Consider renaming MemoryCache#get to signal eviction side-effect",
   "type": "task",
-  "updated_at": "2026-06-11T10:30:07Z"
+  "updated_at": "2026-06-17T18:00:30Z"
 }
