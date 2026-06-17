@@ -2,6 +2,7 @@
   "assignee": "",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-06-17T17:15:34Z",
   "created": "2026-06-11T10:29:46Z",
   "description": "DRY-02: with_crimage_result (ImageValidator L94-100) and with_crimage (ImageDimensions L109-115) are character-for-character identical: same nil guard, IO::Memory wrap, CrImage.read, 8-type rescue clause. Extract to a shared CrImageHelper module. Files: src/vug/image_validator.cr, src/vug/image_dimensions.cr",
   "id": "vugcr-zyg.2",
@@ -14,7 +15,7 @@
     }
   ],
   "priority": 2,
-  "status": "open",
+  "status": "closed",
   "title": "DRY: Extract shared CrImage loading helper",
   "type": "task",
   "updated_at": "2026-06-17T17:15:34Z"
