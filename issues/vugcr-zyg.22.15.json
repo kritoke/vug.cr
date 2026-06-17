@@ -7,9 +7,15 @@
   "id": "vugcr-zyg.22.15",
   "labels": [],
   "parent": "vugcr-zyg.22",
+  "comments": [
+    {
+      "text": "Landed in 75be79b — www.-only domain guard added: clean_domain = \"?\" if empty after strip.",
+      "timestamp": "2026-06-17T18:01:11Z"
+    }
+  ],
   "priority": 3,
   "status": "open",
   "title": "TYPES: Handle www.-only domain edge case in PlaceholderGenerator",
   "type": "task",
-  "updated_at": "2026-06-11T10:40:39Z"
+  "updated_at": "2026-06-17T18:01:11Z"
 }
