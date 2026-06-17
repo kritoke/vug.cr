@@ -2,6 +2,7 @@
   "assignee": "",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-06-17T18:00:45Z",
   "created": "2026-06-11T10:30:31Z",
   "description": "QUAL-04: CacheCoordinator has both fetch/fetch_from_cache and store/store_to_cache as trivial one-line delegations. Two names for same operation adds cognitive overhead. Pick one canonical name per operation. File: src/vug/cache_coordinator.cr:30-35",
   "id": "vugcr-zyg.16",
@@ -14,8 +15,8 @@
     }
   ],
   "priority": 3,
-  "status": "open",
+  "status": "closed",
   "title": "QUAL: Remove redundant CacheCoordinator fetch/store aliases",
   "type": "task",
-  "updated_at": "2026-06-17T18:00:44Z"
+  "updated_at": "2026-06-17T18:00:45Z"
 }
