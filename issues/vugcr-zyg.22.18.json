@@ -7,9 +7,15 @@
   "id": "vugcr-zyg.22.18",
   "labels": [],
   "parent": "vugcr-zyg.22",
+  "comments": [
+    {
+      "text": "Stale — resolved. FetchAction was refactored away by vugcr-khz epic; the loop now uses LoopAction + FetchDecision (see fetch_decision.cr, loop_action.cr). The remaining FetchAction references in redirect_handler* are a separate concern; this rename is no longer applicable.",
+      "timestamp": "2026-06-17T18:08:57Z"
+    }
+  ],
   "priority": 3,
   "status": "open",
   "title": "API: Rename FetchAction to RedirectDecision for clarity",
   "type": "task",
-  "updated_at": "2026-06-11T10:40:39Z"
+  "updated_at": "2026-06-17T18:08:57Z"
 }
