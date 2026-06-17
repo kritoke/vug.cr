@@ -2,6 +2,7 @@
   "assignee": "",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-06-17T18:01:12Z",
   "created": "2026-06-11T10:40:39Z",
   "description": "PASS2-14: domain \"www.\" → clean_domain[4..-1] = \"\", relies on first? fallback. Add explicit guard. File: src/vug/placeholder_generator.cr:31-36",
   "id": "vugcr-zyg.22.15",
@@ -14,8 +15,8 @@
     }
   ],
   "priority": 3,
-  "status": "open",
+  "status": "closed",
   "title": "TYPES: Handle www.-only domain edge case in PlaceholderGenerator",
   "type": "task",
-  "updated_at": "2026-06-17T18:01:11Z"
+  "updated_at": "2026-06-17T18:01:12Z"
 }
