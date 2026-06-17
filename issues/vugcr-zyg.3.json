@@ -7,9 +7,15 @@
   "id": "vugcr-zyg.3",
   "labels": [],
   "parent": "vugcr-zyg",
+  "comments": [
+    {
+      "text": "Duplicate of vugcr-zyg.9 (open). DRY-03 is absorbed as step (2) of SRP-01. Closing this one — work tracked under .9.",
+      "timestamp": "2026-06-17T18:08:45Z"
+    }
+  ],
   "priority": 1,
   "status": "open",
   "title": "DRY: Extract shared placeholder persistence logic",
   "type": "task",
-  "updated_at": "2026-06-11T10:29:46Z"
+  "updated_at": "2026-06-17T18:08:45Z"
 }
