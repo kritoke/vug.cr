@@ -7,9 +7,15 @@
   "id": "vugcr-zyg.22.14",
   "labels": [],
   "parent": "vugcr-zyg.22",
+  "comments": [
+    {
+      "text": "Landed in 8141e4f — to_i32 standardized via safe_dim helper across all ImageDimensions methods.",
+      "timestamp": "2026-06-17T18:01:07Z"
+    }
+  ],
   "priority": 3,
   "status": "open",
   "title": "TYPES: Fix inconsistent to_i32 vs to_i32! in ImageDimensions",
   "type": "task",
-  "updated_at": "2026-06-11T10:40:39Z"
+  "updated_at": "2026-06-17T18:01:07Z"
 }
