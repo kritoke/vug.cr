@@ -2,6 +2,7 @@
   "assignee": "",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-06-17T18:00:56Z",
   "created": "2026-06-11T10:30:32Z",
   "description": "QUAL-08: read_jpeg (L55), read_webp, and read_ico use to_i32! (unsafe cast) for width/height. If decoded value exceeds Int32::MAX, this silently wraps producing garbage values. Use safe to_i32 instead. File: src/vug/image_dimensions.cr",
   "id": "vugcr-zyg.20",
@@ -14,7 +15,7 @@
     }
   ],
   "priority": 3,
-  "status": "open",
+  "status": "closed",
   "title": "QUAL: Replace unsafe to_i32! with safe to_i32 in ImageDimensions",
   "type": "bug",
   "updated_at": "2026-06-17T18:00:56Z"
