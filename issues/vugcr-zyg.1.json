@@ -2,6 +2,7 @@
   "assignee": "",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-06-17T17:15:31Z",
   "created": "2026-06-11T10:29:46Z",
   "description": "DRY-01: google_favicon_url duplicated in FaviconResolver (L138-144) and GrayPlaceholderHandler (L104-106). Both build https://www.google.com/s2/favicons?domain=X\u0026sz=256. Extract to a single shared function. Files: src/vug/favicon_resolver.cr, src/vug/gray_placeholder_handler.cr",
   "id": "vugcr-zyg.1",
@@ -14,8 +15,8 @@
     }
   ],
   "priority": 2,
-  "status": "open",
+  "status": "closed",
   "title": "DRY: Extract shared Google favicon URL builder",
   "type": "task",
-  "updated_at": "2026-06-17T17:15:30Z"
+  "updated_at": "2026-06-17T17:15:31Z"
 }
