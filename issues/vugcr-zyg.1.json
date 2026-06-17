@@ -7,9 +7,15 @@
   "id": "vugcr-zyg.1",
   "labels": [],
   "parent": "vugcr-zyg",
+  "comments": [
+    {
+      "text": "Landed in 8141e4f — FallbackUrls module extracted (google_favicon_url, duckduckgo_favicon_url).",
+      "timestamp": "2026-06-17T17:15:30Z"
+    }
+  ],
   "priority": 2,
   "status": "open",
   "title": "DRY: Extract shared Google favicon URL builder",
   "type": "task",
-  "updated_at": "2026-06-11T10:29:46Z"
+  "updated_at": "2026-06-17T17:15:30Z"
 }
