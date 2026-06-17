@@ -7,9 +7,15 @@
   "id": "vugcr-zyg.15",
   "labels": [],
   "parent": "vugcr-zyg",
+  "comments": [
+    {
+      "text": "Landed in 8141e4f — release_client fully replaced by with_client lifecycle helper.",
+      "timestamp": "2026-06-17T18:00:41Z"
+    }
+  ],
   "priority": 3,
   "status": "open",
   "title": "QUAL: Remove unused parameters from HttpClientFactory.release_client",
   "type": "task",
-  "updated_at": "2026-06-11T10:30:31Z"
+  "updated_at": "2026-06-17T18:00:41Z"
 }
