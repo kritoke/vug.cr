@@ -7,9 +7,15 @@
   "id": "vugcr-zyg.10",
   "labels": [],
   "parent": "vugcr-zyg",
+  "comments": [
+    {
+      "text": "Landed in 75be79b — RateLimiter.allow? renamed to acquire (spec comment still references old name).",
+      "timestamp": "2026-06-17T18:00:27Z"
+    }
+  ],
   "priority": 2,
   "status": "open",
   "title": "FUNC: Rename RateLimiter.allow? to acquire to signal mutation",
   "type": "task",
-  "updated_at": "2026-06-11T10:30:07Z"
+  "updated_at": "2026-06-17T18:00:27Z"
 }
