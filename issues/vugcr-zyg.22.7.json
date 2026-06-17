@@ -7,9 +7,15 @@
   "id": "vugcr-zyg.22.7",
   "labels": [],
   "parent": "vugcr-zyg.22",
+  "comments": [
+    {
+      "text": "Duplicate of vugcr-zyg.19 (open). Both target Vug.favicons DI/parameter consistency. .19 is the broader QUAL-07 ticket; this PASS2-10 ticket is a sub-case. Closing as dupe.",
+      "timestamp": "2026-06-17T18:08:51Z"
+    }
+  ],
   "priority": 2,
   "status": "open",
   "title": "API: Fix Vug.favicons parameter inconsistency (http_client_factory vs cache)",
   "type": "task",
-  "updated_at": "2026-06-11T10:40:38Z"
+  "updated_at": "2026-06-17T18:08:51Z"
 }
