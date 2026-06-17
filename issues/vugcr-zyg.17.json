@@ -2,6 +2,7 @@
   "assignee": "",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-06-17T18:00:48Z",
   "created": "2026-06-11T10:30:32Z",
   "description": "QUAL-05: extract_host wraps UrlProcessor.extract_host_from_url with a rescue URI::Error, but extract_host_from_url already handles URI::Error internally. The rescue in extract_host will never fire. Replace with direct call. File: src/vug/favicon_resolver.cr:134-139",
   "id": "vugcr-zyg.17",
@@ -14,7 +15,7 @@
     }
   ],
   "priority": 3,
-  "status": "open",
+  "status": "closed",
   "title": "QUAL: Remove redundant rescue in FaviconResolver.extract_host",
   "type": "task",
   "updated_at": "2026-06-17T18:00:48Z"
