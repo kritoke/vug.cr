@@ -7,9 +7,15 @@
   "id": "vugcr-zyg.8",
   "labels": [],
   "parent": "vugcr-zyg",
+  "comments": [
+    {
+      "text": "Landed in 8141e4f — HtmlExtractor.persist_data_url extracted with documented coupling.",
+      "timestamp": "2026-06-17T18:00:23Z"
+    }
+  ],
   "priority": 2,
   "status": "open",
   "title": "SRP: Extract persistence from HtmlExtractor.process_data_favicon",
   "type": "task",
-  "updated_at": "2026-06-11T10:30:07Z"
+  "updated_at": "2026-06-17T18:00:23Z"
 }
