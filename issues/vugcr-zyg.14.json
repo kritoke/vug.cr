@@ -2,6 +2,7 @@
   "assignee": "",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-06-17T18:00:38Z",
   "created": "2026-06-11T10:30:31Z",
   "description": "QUAL-02: ManifestExtractor#extract_favicons_from_manifest (L116-118) is deprecated with zero callers. Remove it. File: src/vug/manifest_extractor.cr",
   "id": "vugcr-zyg.14",
@@ -14,7 +15,7 @@
     }
   ],
   "priority": 3,
-  "status": "open",
+  "status": "closed",
   "title": "QUAL: Remove dead deprecated ManifestExtractor method",
   "type": "task",
   "updated_at": "2026-06-17T18:00:38Z"
