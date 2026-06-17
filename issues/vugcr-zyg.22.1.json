@@ -2,6 +2,7 @@
   "assignee": "",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-06-17T18:01:01Z",
   "created": "2026-06-11T10:40:38Z",
   "description": "PASS2-15: private_ipv6? uses /^fc00|^fd00/ regex which requires 4 hex chars. ULA fc00::/7 covers ALL addresses starting with fc or fd (e.g., fc80::1, fd12::1). These are NOT caught, allowing SSRF to unique-local addresses. Fix: use starts_with?(\"fc\") || starts_with?(\"fd\"). File: src/vug/url_validator.cr:74-85",
   "id": "vugcr-zyg.22.1",
@@ -14,7 +15,7 @@
     }
   ],
   "priority": 0,
-  "status": "open",
+  "status": "closed",
   "title": "SECURITY: IPv6 ULA detection regex misses valid ULA addresses",
   "type": "bug",
   "updated_at": "2026-06-17T18:01:01Z"
