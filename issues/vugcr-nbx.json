@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-17T18:12:17Z",
+  "description": "The DnsCache module declared both @ttl : Time::Span = DEFAULT_TTL (instance var) and class_property ttl : Time::Span = DEFAULT_TTL (class-level). The class_property already provides the default, so the instance var is dead code. Remove the duplicate.\n\nFile: src/vug/dns_cache.cr (line 9)\nAlready implemented in the working tree (uncommitted).",
+  "id": "vugcr-nbx",
+  "labels": [],
+  "priority": 3,
+  "status": "open",
+  "title": "dns_cache: remove duplicate @ttl class var",
+  "type": "task",
+  "updated_at": "2026-06-17T18:12:17Z"
+}
