@@ -2,6 +2,7 @@
   "assignee": "",
   "blocked_by": [],
   "blocks": [],
+  "closed_at": "2026-06-17T18:00:27Z",
   "created": "2026-06-11T10:30:07Z",
   "description": "FUNC-02: RateLimiter.allow? implies a pure query but records the request timestamp and mutates internal state. Command-query violation. Rename to acquire(host) to signal stateful operation. Update callers in SingleRequest. File: src/vug/rate_limiter.cr:40-70",
   "id": "vugcr-zyg.10",
@@ -14,7 +15,7 @@
     }
   ],
   "priority": 2,
-  "status": "open",
+  "status": "closed",
   "title": "FUNC: Rename RateLimiter.allow? to acquire to signal mutation",
   "type": "task",
   "updated_at": "2026-06-17T18:00:27Z"
