@@ -16,11 +16,15 @@
     {
       "text": "Stale — work landed in commit 3f0ba46 (fix(security): correct IPv6 ULA detection to prevent SSRF bypass). Replaced /^fc00|^fd00/ regex with starts_with?(\"fc\") || starts_with?(\"fd\") in url_validator.cr.",
       "timestamp": "2026-06-17T18:09:37Z"
+    },
+    {
+      "text": "Stale — work landed in commit 3f0ba46 (fix(security): correct IPv6 ULA detection to prevent SSRF bypass). The /^fc00|^fd00/ regex was replaced with starts_with?(\"fc\") || starts_with?(\"fd\") in url_validator.cr.",
+      "timestamp": "2026-06-17T18:09:55Z"
     }
   ],
   "priority": 0,
   "status": "closed",
   "title": "SECURITY: IPv6 ULA detection regex misses valid ULA addresses",
   "type": "bug",
-  "updated_at": "2026-06-17T18:09:37Z"
+  "updated_at": "2026-06-17T18:09:55Z"
 }
