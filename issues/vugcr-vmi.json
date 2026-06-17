@@ -1,0 +1,14 @@
+{
+  "assignee": "",
+  "blocked_by": [],
+  "blocks": [],
+  "created": "2026-06-17T18:01:45Z",
+  "description": "API.md documented `collection.largest` and `collection.by_preferred_size(w, h)` methods that don't exist on FaviconCollection. Remove them from the docs to prevent user confusion.\n\nFiles: API.md\nAlready implemented in the working tree (uncommitted).",
+  "id": "vugcr-vmi",
+  "labels": [],
+  "priority": 3,
+  "status": "open",
+  "title": "docs: remove documented-but-unimplemented FaviconCollection methods",
+  "type": "task",
+  "updated_at": "2026-06-17T18:01:45Z"
+}
