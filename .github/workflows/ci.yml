@@ -2,16 +2,16 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
-    tags: [ 'v*' ]
+    branches: [main]
+    tags: ["v*"]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     # Use an official Crystal Docker image so we have crystal + shards available
-    container: crystallang/crystal:1.18.2
+    container: crystallang/crystal:1.19.1
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies

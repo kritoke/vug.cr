@@ -1,7 +1,7 @@
 set shell := ["bash", "-uc"]
 
 NAME := "vug"
-CRYSTAL_VERSION := "1.18.0"
+CRYSTAL_VERSION := "1.19.1"
 VERSION := `grep '^version:' shard.yml | awk '{print $2}'`
 
 os := `uname -s`

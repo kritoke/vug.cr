@@ -11,10 +11,11 @@
       system = "aarch64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
 
-      # Use direct crystal_1_18 from nixpkgs (like fetcher.cr approach)
-      # Prefer the nixpkgs-provided Crystal 1.18 package when available.
+# Use direct crystal_1_19 from nixpkgs (like fetcher.cr approach)
+      # Prefer the nixpkgs-provided Crystal 1.19 package when available.
       # Fall back to pkgs.crystal if the specific attr is not present.
-      crystal_1_18 = if builtins.hasAttr "crystal_1_18" pkgs then pkgs.crystal_1_18 else pkgs.crystal;
+      # Pinning to 1.19.1 (nixpkgs-unstable does not yet ship crystal_1_20).
+      crystal_1_19 = if builtins.hasAttr "crystal_1_19" pkgs then pkgs.crystal_1_19 else pkgs.crystal;
 
       # Read flake.private.nix for per-developer overrides (like fetcher.cr)
       # This allows developers to provide custom shellHook, etc.
@@ -37,7 +38,7 @@
       pwLibs = [];
     in {
       devShells.${system}.default = pkgs.mkShell {
-        buildInputs = with pkgs; [ crystal_1_18 openspec.packages.${system}.default ] ++ pwLibs;
+        buildInputs = with pkgs; [ crystal_1_19 openspec.packages.${system}.default ] ++ pwLibs;
 
         shellHook = ''
           echo "vug.cr DevShell Active"

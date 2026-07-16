@@ -353,11 +353,11 @@ describe Vug::MemoryCache do
       end
 
       timeout = 5.seconds
-      deadline = Time.monotonic + timeout
+      deadline = Time.instant + timeout
       completed = 0
       errors_received = [] of Exception
 
-      while completed < 10 && Time.monotonic < deadline
+      while completed < 10 && Time.instant < deadline
         select
         when results.receive
           completed += 1
@@ -406,11 +406,11 @@ describe Vug::MemoryCache do
       end
 
       timeout = 5.seconds
-      deadline = Time.monotonic + timeout
+      deadline = Time.instant + timeout
       completed = 0
       errors_received = [] of Exception
 
-      while completed < 10 && Time.monotonic < deadline
+      while completed < 10 && Time.instant < deadline
         select
         when results.receive
           completed += 1
@@ -444,10 +444,10 @@ describe Vug::MemoryCache do
         end
 
         timeout = 5.seconds
-        deadline = Time.monotonic + timeout
+        deadline = Time.instant + timeout
         completed = 0
 
-        while completed < 10 && Time.monotonic < deadline
+        while completed < 10 && Time.instant < deadline
           select
           when results.receive
             completed += 1

@@ -9,7 +9,7 @@ description: |
 
 license: MIT
 
-crystal: ">= 1.18.0"
+crystal: ">= 1.19.1"
 
 dependencies:
   sanitize:

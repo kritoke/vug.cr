@@ -43,7 +43,7 @@ module Vug
       end
 
       @config.debug("Fetching favicon: #{url}")
-      fetch_loop(LoopState.new(url, Time.monotonic))
+      fetch_loop(LoopState.new(url, Time.instant))
     end
 
     private def fetch_loop(state : LoopState) : Result
@@ -168,13 +168,10 @@ module Vug
       new_uri
     end
 
-    private def timed_out?(start_time : Time::Span) : Bool
-      # Use monotonic time to avoid issues with system clock changes. A
-      # negative elapsed value can indicate wrap/overflow on some platforms
-      # or anomalies; treat negative elapsed as an immediate timeout to be
-      # defensive about long-running requests.
-      elapsed = Time.monotonic - start_time
-      return true if elapsed < 0.seconds
+    private def timed_out?(start_time : Time::Instant) : Bool
+      # Use monotonic time (Time::Instant) to avoid issues with system clock
+      # changes. `elapsed` is a non-negative Time::Span in Crystal 1.19+.
+      elapsed = start_time.elapsed
       elapsed > @config.timeout
     end
 

@@ -3,7 +3,7 @@ require "mutex"
 require "deque"
 
 module Vug
-  record CacheEntry, path : String, timestamp : Time::Span, size : Int32
+  record CacheEntry, path : String, timestamp : Time::Instant, size : Int32
 
   class MemoryCache
     def initialize(
@@ -21,8 +21,8 @@ module Vug
     def get(url : String) : String?
       @mutex.synchronize do
         if entry = @cache[url]?
-          age = Time.monotonic - entry.timestamp
-          if age < 0.seconds || age >= @entry_ttl
+          age = entry.timestamp.elapsed
+          if age >= @entry_ttl
             @current_size -= entry.size
             @cache.delete(url)
             @insertion_order.delete(url)
@@ -63,7 +63,7 @@ module Vug
           end
         end
 
-        @cache[url] = CacheEntry.new(local_path, Time.monotonic, new_size)
+        @cache[url] = CacheEntry.new(local_path, Time.instant, new_size)
         @current_size += new_size
       end
     end

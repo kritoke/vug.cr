@@ -8,7 +8,7 @@ module Vug
 
     class_property ttl : Time::Span = DEFAULT_TTL
 
-    record DnsEntry, ips : Array(String), timestamp : Time::Span
+    record DnsEntry, ips : Array(String), timestamp : Time::Instant
 
     class Instance
       def initialize(@ttl : Time::Span)
@@ -19,13 +19,13 @@ module Vug
       def resolve(host : String) : Array(String)
         @mutex.synchronize do
           if entry = @cache[host]?
-            if Time.monotonic - entry.timestamp < @ttl
+            if entry.timestamp.elapsed < @ttl
               return entry.ips
             end
           end
 
           ips = resolve_uncached(host)
-          @cache[host] = DnsEntry.new(ips, Time.monotonic)
+          @cache[host] = DnsEntry.new(ips, Time.instant)
           ips
         end
       end

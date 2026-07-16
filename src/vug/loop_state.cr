@@ -19,10 +19,10 @@ module Vug
     property gray_placeholder_attempts : Int32 = 0
     getter visited_urls : Set(String)
     getter initial_dns_ips : Hash(String, Array(String))
-    getter start_time : Time::Span
+    getter start_time : Time::Instant
     getter initial_url : String
 
-    def initialize(@initial_url : String, @start_time : Time::Span)
+    def initialize(@initial_url : String, @start_time : Time::Instant)
       @current_url = @initial_url
       @current_uri = URI.parse(@initial_url) rescue nil
       @visited_urls = Set(String).new
