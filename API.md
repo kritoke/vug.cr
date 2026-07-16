@@ -264,8 +264,6 @@ A collection of `FaviconInfo` entries extracted from a website.
 collection = Vug.favicons("https://example.com")
 if collection
   collection.best           # highest priority
-  collection.largest        # biggest pixel area
-  collection.by_preferred_size(32, 32)  # closest to 32x32
   collection.all            # Array(FaviconInfo)
   collection.size           # count
 end
@@ -276,8 +274,6 @@ end
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `best` | `FaviconInfo?` | Best favicon by size/priority heuristics |
-| `largest` | `FaviconInfo?` | Largest favicon by pixel area |
-| `by_preferred_size(w, h)` | `FaviconInfo?` | Favicon closest to requested dimensions |
 | `all` | `Array(FaviconInfo)` | All favicons (cloned array) |
 | `size` | `Int32` | Number of favicons |
 | `empty?` | `Bool` | Whether collection is empty |

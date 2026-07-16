@@ -8,6 +8,11 @@ module Vug
       @cache_manager = cache_manager
     end
 
+    # Retrieves a cached path for the given URL.
+    #
+    # Lookup order:
+    # 1. CacheManager (config-backed `on_load` + its own memory cache)
+    # 2. Coordinator's memory cache (fallback if CacheManager has none)
     def fetch(url : String) : String?
       if path = @cache_manager.try(&.get(url))
         return path

@@ -80,9 +80,11 @@ module Vug
       case decision.action
       when .redirect?
         handle_result_action(decision, state)
-        # Always continue: the next iteration will either follow the
-        # redirect (state.current_url was just updated) or terminate via
-        # check_termination if the redirect chain is exhausted.
+        # Fail fast if the redirect URL could not be parsed — don't spin
+        # the loop until timeout on an unparseable redirect target.
+        if state.current_uri.nil? && decision.next_url
+          return Vug.failure("Invalid redirect URL", state.current_url, error_type: :invalid_redirect)
+        end
         nil
       when .try_fallback?
         handle_result_action(decision, state)

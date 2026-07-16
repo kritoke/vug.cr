@@ -6,7 +6,6 @@ module Vug
   module DnsCache
     DEFAULT_TTL = 5.minutes
 
-    @ttl : Time::Span = DEFAULT_TTL
     class_property ttl : Time::Span = DEFAULT_TTL
 
     record DnsEntry, ips : Array(String), timestamp : Time::Span
