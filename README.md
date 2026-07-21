@@ -14,9 +14,9 @@ Favicon fetching library with pluggable storage callbacks.
 - In-memory caching with TTL and size limits
 - SSRF protection with DNS rebinding detection
 - Pluggable storage via callbacks (disk, S3, database, memory — your choice)
- - Coordinated caching (in-memory + config-backed) to prefer existing on-disk stores
- - Image processing abstraction with a default processor for validation and saving
- - Safer redirect handling with stricter URL validation to prevent unsafe redirects
+- Coordinated caching (in-memory + config-backed) to prefer existing on-disk stores
+- Image processing abstraction with a default processor for validation and saving
+- Safer redirect handling with stricter URL validation to prevent unsafe redirects
 
 ## Installation
 
@@ -109,6 +109,11 @@ config = Vug::Config.new(
 ```
 
 See [API.md](API.md) for the full configuration reference and advanced usage.
+
+What's new in v0.5.8
+
+- **Crystal 1.19.1 required** — the library now uses the new `Time::Instant` API introduced in Crystal 1.19. If you're on 1.18.x, please upgrade Crystal before pulling this version.
+- **Faster failure on bad redirects** — unparseable redirect URLs now return immediately with an `invalid_redirect` error instead of waiting for the fetch timeout. Useful when scraping sites with broken redirect chains.
 
 What's new in v0.5.1
 

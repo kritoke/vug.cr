@@ -2,14 +2,32 @@
 
 ## [Unreleased]
 
+## [0.5.8] - 2026-07-21
+
 ### Changed
 
-- **Crystal 1.19.1 minimum**: Bumped minimum Crystal version from 1.18.x to 1.19.1. Pinned Docker CI image to `crystallang/crystal:1.19.1` and Nix devshell to `pkgs.crystal_1_19`. nixpkgs-unstable does not yet ship `crystal_1_20`; revisit when available.
+- **Crystal 1.19.1 minimum**: Bumped minimum Crystal version from 1.18.x to 1.19.1. Pinned Docker CI image to `crystallang/crystal:1.19.1` and Nix devshell to `pkgs.crystal_1_19`. nixpkgs-unstable does not yet ship `crystal_1_20`; revisit when available. **Breaking change for consumers on Crystal 1.18.x.**
 - **`Time.monotonic` → `Time.instant`**: Migrated all monotonic clock usages to the 1.19 `Time::Instant` API (`Time.monotonic` was deprecated in 1.19.0, PR #16545). `LoopState#start_time`, `DnsEntry#timestamp`, `CacheEntry#timestamp`, and `RateLimiter#@windows` now hold `Time::Instant`. Read sites use the new `instant.elapsed` idiom for cleaner span arithmetic; the 13 deprecation warnings previously flagged in `easy-wins-debt-fix` are resolved.
+
+### Fixed
+
+- **Fail-fast on unparseable redirect URLs**: `Fetcher#fetch` now returns a new `:invalid_redirect` error immediately when a redirect target cannot be parsed, instead of spinning the fetch loop until the timeout fires. Previously a chain like `redirect → broken URL → …` would consume the entire timeout window before failing.
 
 ### Internal
 
 - **Pinned `crystal.yml` workflow image**: Was unversioned `crystallang/crystal`; now `crystallang/crystal:1.19.1` for reproducibility.
+- **Documented `CacheCoordinator#fetch` lookup order**: Added doc comment explaining the CacheManager-first / coordinator-memory-fallback chain.
+- **Removed redundant `@ttl : Time::Span = DEFAULT_TTL` annotation** in `dns_cache.cr`: `class_property ttl` already declares the type.
+- **Removed `API.md` entries for non-existent methods**: `FaviconCollection#largest` and `#by_preferred_size` were documented but never implemented.
+
+## [0.5.7] - 2026-05-25
+
+### Performance
+
+- **Rate limiter O(log n)**: Binary search replaces linear scan for timestamp pruning in the sliding window.
+- **URI parsing deduplicated**: Avoid repeated parsing across the fetch loop.
+- **Timeout errors downgraded to WARNING**: Transient failures no longer log at ERROR.
+- **HTTP client factory simplified**: Connection handling streamlined.
 
 ## [0.5.6] - 2026-05-24
 
